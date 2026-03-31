@@ -30,7 +30,7 @@ jobs:
           cd C:\Users\oliver\Projects\webdev
           # Kill process on port 4500
           $procs = Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess
-          foreach ($pid in $procs) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+          foreach ($p in $procs) { Stop-Process -Id $p -Force -ErrorAction SilentlyContinue }
           Start-Sleep -Seconds 2
           # Start server detached
           Start-Process -FilePath "node" -ArgumentList "dist\server\index.js" -WorkingDirectory "C:\Users\oliver\Projects\webdev" -WindowStyle Hidden -RedirectStandardOutput "C:\Users\oliver\Projects\webdev\webdev.log" -RedirectStandardError "C:\Users\oliver\Projects\webdev\webdev.err.log"
