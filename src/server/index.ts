@@ -243,8 +243,8 @@ app.get("/api/projects", (_req, res) => {
 
 async function main() {
   // Start HTTP health endpoint
-  app.listen(HTTP_PORT, () => {
-    console.error(`[webdev] Health API on http://localhost:${HTTP_PORT}/api/health`);
+  app.listen(HTTP_PORT, "0.0.0.0", () => {
+    console.error(`[webdev] Health API on http://0.0.0.0:${HTTP_PORT}/api/health`);
   });
 
   // Start MCP over stdio
