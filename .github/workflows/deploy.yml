@@ -25,9 +25,11 @@ jobs:
           username: oliver
           key: ${{ secrets.HP_LAPTOP_SSH_KEY }}
           script: |
-            cd ~/Projects/webdev
-            git pull origin main
-            docker compose up -d --build
-            sleep 10
+            cd C:\Users\oliver\Projects\webdev
+            git -c credential.helper= pull origin main
+            npm install
+            taskkill /f /im node.exe 2>nul
+            start /b npx tsx src/server/index.ts > webdev.log 2>&1
+            timeout /t 8 /nobreak >nul
             curl -sf http://localhost:4500/api/health || exit 1
-            echo "Deploy successful"
+            echo Deploy successful
