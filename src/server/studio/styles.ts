@@ -256,8 +256,8 @@ export const CANVAS_CSS = `
   #canvas-viewport {
     width: 100%; height: calc(100vh - 48px);
     overflow: hidden; position: relative;
-    background: var(--s-bg);
-    background-image: radial-gradient(circle, var(--s-border) 1px, transparent 1px);
+    background: #1a1917;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 
@@ -269,88 +269,78 @@ export const CANVAS_CSS = `
 
   .screen-card {
     position: absolute;
-    width: 320px;
-    background: var(--s-card);
-    border: 2px solid var(--s-border);
-    border-radius: var(--s-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    overflow: hidden;
+    width: 420px;
     user-select: none;
   }
 
-  .screen-card:hover {
-    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  .screen-card .sc-frame-label {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding-bottom: 0.5rem;
+    cursor: grab;
+    white-space: nowrap;
   }
 
-  .screen-card.focused {
-    border-color: var(--s-coral);
-    box-shadow: 0 0 0 3px rgba(255,107,107,0.25);
-  }
+  .screen-card:hover .sc-frame-label { color: rgba(255,255,255,0.8); }
+  .screen-card.focused .sc-frame-label { color: var(--s-coral); }
 
-  .screen-card.entering {
-    animation: fadeSlideIn 0.4s ease-out;
-  }
+  .screen-card.entering { animation: fadeSlideIn 0.4s ease-out; }
 
-  .screen-card.updated {
+  .screen-card.updated .sc-frame-content {
     animation: flashGold 1s ease-out;
+  }
+
+  .screen-card .sc-frame-content {
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.35);
+  }
+
+  .screen-card:hover .sc-frame-content {
+    box-shadow: 0 4px 28px rgba(0,0,0,0.45);
+  }
+
+  .screen-card.focused .sc-frame-content {
+    outline: 2px solid var(--s-coral);
+    outline-offset: 3px;
   }
 
   .screen-card .sc-iframe-wrap {
     width: 100%;
-    aspect-ratio: 16/10;
+    height: 560px;
     overflow: hidden;
-    position: relative;
-    background: white;
   }
 
   .screen-card .sc-iframe {
-    width: 1280px;
-    height: 800px;
+    width: 100%;
+    height: 560px;
     border: none;
-    transform: scale(0.25);
-    transform-origin: top left;
     pointer-events: none;
   }
 
   .screen-card .sc-thumb {
     width: 100%;
-    aspect-ratio: 16/10;
+    height: 560px;
     object-fit: cover;
     object-position: top left;
-    background: var(--s-secondary);
     display: block;
-    cursor: pointer;
   }
 
   .screen-card .sc-thumb-empty {
     width: 100%;
-    aspect-ratio: 16/10;
-    background: var(--s-secondary);
+    height: 560px;
+    background: #2a2826;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--s-muted);
+    color: rgba(255,255,255,0.4);
     font-size: 0.8125rem;
-    cursor: pointer;
   }
 
-  .screen-card .sc-name-overlay {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    padding: 0.5rem 0.75rem;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    color: white;
-    background: linear-gradient(transparent, rgba(0,0,0,0.6));
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .screen-card:hover .sc-name-overlay {
-    opacity: 1;
-  }
-
-  .screen-card .sc-name-overlay .sc-new {
+  .screen-card .sc-new-badge {
+    display: inline-block;
     font-size: 0.625rem;
     font-weight: 600;
     color: var(--s-gold);
@@ -364,8 +354,8 @@ export const CANVAS_CSS = `
   }
 
   @keyframes flashGold {
-    0%   { border-color: var(--s-gold); box-shadow: 0 0 0 4px rgba(245,197,66,0.35); }
-    100% { border-color: var(--s-border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    0%   { outline: 2px solid var(--s-gold); outline-offset: 3px; }
+    100% { outline: 2px solid transparent; outline-offset: 3px; }
   }
 
   /* Preview overlay */

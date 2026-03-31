@@ -48,11 +48,11 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
   <script>
     const PROJECT = "${project.name}";
     const RUNNING = ${running};
-    const CARD_W = 320;
-    const CARD_H = 240;
+    const CARD_W = 420;
+    const CARD_H = 590;
     const GAP = 60;
     const COLS = 3;
-    const OFFSET = 80;
+    const OFFSET = 60;
 
     let screens = ${screensJson};
     let currentHash = "${hash}";
@@ -216,17 +216,22 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
       card.style.top = pos.y + "px";
 
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
+      const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
       if (RUNNING) {
         card.innerHTML =
-          '<div class="sc-iframe-wrap">' +
-            '<iframe class="sc-iframe" src="' + proxyUrl + '" loading="lazy"></iframe>' +
-          '</div>' +
-          '<div class="sc-name-overlay">' + name + (animate ? ' <span class="sc-new">NEW</span>' : '') + '</div>';
+          '<div class="sc-frame-label">' + name + newBadge + '</div>' +
+          '<div class="sc-frame-content">' +
+            '<div class="sc-iframe-wrap">' +
+              '<iframe class="sc-iframe" src="' + proxyUrl + '" loading="lazy"></iframe>' +
+            '</div>' +
+          '</div>';
       } else {
         const thumbUrl = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
         card.innerHTML =
-          '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>' +
-          '<div class="sc-name-overlay">' + name + '</div>';
+          '<div class="sc-frame-label">' + name + '</div>' +
+          '<div class="sc-frame-content">' +
+            '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>' +
+          '</div>';
       }
 
       // Click → preview overlay (only if not dragging or panning)
