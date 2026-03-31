@@ -18,14 +18,28 @@ function layout(title: string, breadcrumbs: { label: string; href?: string }[], 
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>${STUDIO_CSS}</style>
 </head>
-<body>
+<body class="">
   <header class="studio-header">
     ${crumbs}
     ${opts?.headerExtra || ""}
+    <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">&#9790;</button>
   </header>
   <main class="studio-main${opts?.fullWidth ? " full-width" : ""}">
     ${body}
   </main>
+  <script>
+    function toggleDark() {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("studio-dark", isDark ? "1" : "0");
+      document.querySelector(".dark-toggle").textContent = isDark ? "\\u2600" : "\\u263E";
+    }
+    // Restore preference
+    if (localStorage.getItem("studio-dark") === "1") {
+      document.body.classList.add("dark");
+      document.querySelector(".dark-toggle").textContent = "\\u2600";
+    }
+  </script>
 </body>
 </html>`;
 }

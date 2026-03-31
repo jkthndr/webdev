@@ -228,6 +228,28 @@ export const STUDIO_CSS = `
     margin-bottom: 0.5rem;
     color: var(--s-text);
   }
+
+  /* Dark mode */
+  body.dark {
+    --s-bg: #1a1917;
+    --s-card: #262523;
+    --s-border: #3a3835;
+    --s-text: #e8e4df;
+    --s-muted: #9b9590;
+    --s-secondary: #2e2c29;
+  }
+
+  .dark-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.125rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    opacity: 0.8;
+    line-height: 1;
+  }
+  .dark-toggle:hover { opacity: 1; }
 `;
 
 export const CANVAS_CSS = `
@@ -280,7 +302,7 @@ export const CANVAS_CSS = `
     object-position: top left;
     background: var(--s-secondary);
     display: block;
-    cursor: grab;
+    cursor: pointer;
   }
 
   .screen-card .sc-thumb-empty {
@@ -292,32 +314,31 @@ export const CANVAS_CSS = `
     justify-content: center;
     color: var(--s-muted);
     font-size: 0.8125rem;
-    cursor: grab;
+    cursor: pointer;
   }
 
-  .screen-card .sc-label {
+  .screen-card .sc-name-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
     padding: 0.5rem 0.75rem;
     font-weight: 600;
     font-size: 0.8125rem;
-    border-top: 1px solid var(--s-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: grab;
+    color: white;
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+    opacity: 0;
+    transition: opacity 0.2s;
   }
 
-  .screen-card .sc-label .sc-hash {
-    font-family: 'Geist Mono', monospace;
-    font-size: 0.625rem;
-    color: var(--s-muted);
-    font-weight: 400;
+  .screen-card:hover .sc-name-overlay {
+    opacity: 1;
   }
 
-  .screen-card .sc-label .sc-new {
+  .screen-card .sc-name-overlay .sc-new {
     font-size: 0.625rem;
     font-weight: 600;
-    color: var(--s-coral);
+    color: var(--s-gold);
     text-transform: uppercase;
+    margin-left: 0.5rem;
   }
 
   @keyframes fadeSlideIn {

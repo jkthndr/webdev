@@ -21,6 +21,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
     <span class="current">canvas</span>
     <div class="header-actions">
       <a href="/studio/${project.name}" class="btn btn-ghost">Grid View</a>
+      <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">&#9790;</button>
     </div>
   </header>
 
@@ -62,29 +63,102 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
     let dragStart = null;
     let saveTimer = null;
 
+    let spaceDown = false;
+    let middleDown = false;
+    let panStart = null;
+
     // --- Init ---
     function init() {
       const world = document.getElementById("canvas-world");
+      const viewport = document.getElementById("canvas-viewport");
+
       pz = panzoom(world, {
         maxZoom: 3,
         minZoom: 0.1,
-        smoothScroll: false,
+        smoothScroll: true,
+        zoomSpeed: 0.065,
         filterKey: () => true,
         beforeMouseDown: (e) => {
-          // Allow panzoom on viewport background, not on cards
+          if (spaceDown) return true;
           return !e.target.closest(".screen-card");
-        }
+        },
+        beforeWheel: () => true,
+        zoomDoubleClickSpeed: 1,
       });
       pz.on("transform", () => { updateMinimap(); });
+
+      // Middle mouse button pan
+      viewport.addEventListener("mousedown", (e) => {
+        if (e.button === 1) {
+          e.preventDefault();
+          middleDown = true;
+          panStart = { x: e.clientX, y: e.clientY };
+          viewport.style.cursor = "grabbing";
+        }
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (middleDown && panStart) {
+          const t = pz.getTransform();
+          const dx = e.clientX - panStart.x;
+          const dy = e.clientY - panStart.y;
+          pz.moveTo(t.x + dx, t.y + dy);
+          panStart = { x: e.clientX, y: e.clientY };
+        }
+      });
+      document.addEventListener("mouseup", (e) => {
+        if (e.button === 1) {
+          middleDown = false;
+          panStart = null;
+          viewport.style.cursor = "";
+        }
+      });
+
+      // Prevent middle-click scroll behavior
+      viewport.addEventListener("auxclick", (e) => { if (e.button === 1) e.preventDefault(); });
+
+      // Space + drag to pan (Pencil-style)
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space" && !e.repeat && !document.getElementById("preview-overlay").classList.contains("visible")) {
+          spaceDown = true;
+          viewport.style.cursor = "grab";
+          e.preventDefault();
+        }
+      });
+      document.addEventListener("keyup", (e) => {
+        if (e.code === "Space") {
+          spaceDown = false;
+          viewport.style.cursor = "";
+        }
+      });
 
       loadLayoutThenRender();
       setInterval(pollForChanges, 3000);
       window.addEventListener("beforeunload", saveLayout);
+
+      // Keyboard shortcuts (Pencil-style)
       document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closePreview();
-        if (e.key === "=" || e.key === "+") zoomIn();
+        // Don't trigger shortcuts when overlay is open (except Escape)
+        const overlayOpen = document.getElementById("preview-overlay").classList.contains("visible");
+
+        if (e.key === "Escape") { closePreview(); return; }
+        if (overlayOpen) return;
+
+        // Zoom
+        if ((e.metaKey || e.ctrlKey) && (e.key === "=" || e.key === "+")) { e.preventDefault(); zoomIn(); }
+        if ((e.metaKey || e.ctrlKey) && e.key === "-") { e.preventDefault(); zoomOut_(); }
+        if (e.key === "+" || e.key === "=") zoomIn();
         if (e.key === "-") zoomOut_();
-        if (e.key === "0") fitAll();
+
+        // Fit all (1 key, like Pencil)
+        if (e.key === "1") fitAll();
+        // Zoom to 100% (0 key, like Pencil)
+        if (e.key === "0") zoomTo100();
+
+        // Select all (Ctrl/Cmd + A)
+        if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+          e.preventDefault();
+          Object.values(cardEls).forEach(c => c.classList.add("focused"));
+        }
       });
     }
 
@@ -144,23 +218,20 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
       const thumbUrl = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
       card.innerHTML =
         '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Loading...</div>\\'"/>' +
-        '<div class="sc-label">' +
-          '<span>' + name + '</span>' +
-          (animate ? '<span class="sc-new">NEW</span>' : '<span class="sc-hash">' + currentHash.slice(0,7) + '</span>') +
-        '</div>';
+        '<div class="sc-name-overlay">' + name + (animate ? ' <span class="sc-new">NEW</span>' : '') + '</div>';
 
-      // Click thumbnail → preview overlay
-      card.querySelector(".sc-thumb, .sc-thumb-empty")?.addEventListener("click", (e) => {
-        if (dragging) return;
+      // Click → preview overlay (only if not dragging or panning)
+      card.addEventListener("click", (e) => {
+        if (spaceDown || dragStart?.moved) return;
         openPreview(name);
       });
 
-      // Drag on label
-      const label = card.querySelector(".sc-label");
-      label.addEventListener("mousedown", (e) => {
+      // Drag card by holding mousedown and moving
+      card.addEventListener("mousedown", (e) => {
+        if (e.button !== 0 || spaceDown) return;
         e.stopPropagation();
         dragging = name;
-        dragStart = { x: e.clientX, y: e.clientY, ox: pos.x, oy: pos.y };
+        dragStart = { x: e.clientX, y: e.clientY, ox: pos.x, oy: pos.y, moved: false };
         card.style.zIndex = "10";
         card.style.cursor = "grabbing";
       });
@@ -178,6 +249,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
       const t = pz.getTransform();
       const dx = (e.clientX - dragStart.x) / t.scale;
       const dy = (e.clientY - dragStart.y) / t.scale;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragStart.moved = true;
       const nx = dragStart.ox + dx;
       const ny = dragStart.oy + dy;
       positions[dragging] = { x: nx, y: ny };
@@ -191,14 +263,16 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
 
     document.addEventListener("mouseup", () => {
       if (dragging) {
+        const wasDrag = dragStart?.moved;
         const card = cardEls[dragging];
         if (card) {
           card.style.zIndex = "";
           card.style.cursor = "";
         }
+        const screenName = dragging;
         dragging = null;
         dragStart = null;
-        debounceSave();
+        if (wasDrag) debounceSave();
       }
     });
 
@@ -297,6 +371,10 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
       pz.smoothZoomAbs(window.innerWidth / 2, window.innerHeight / 2, t.scale / 1.3);
     }
 
+    function zoomTo100() {
+      pz.smoothZoomAbs(window.innerWidth / 2, window.innerHeight / 2, 1);
+    }
+
     function fitAll() {
       const names = Object.keys(positions);
       if (names.length === 0) return;
@@ -380,6 +458,18 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
         ctx.lineWidth = 2;
         ctx.strokeRect(ox + vx * scale, oy + vy * scale, vw * scale, vh * scale);
       }
+    }
+
+    // --- Dark mode ---
+    function toggleDark() {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("studio-dark", isDark ? "1" : "0");
+      document.querySelector(".dark-toggle").textContent = isDark ? "\\u2600" : "\\u263E";
+    }
+    if (localStorage.getItem("studio-dark") === "1") {
+      document.body.classList.add("dark");
+      document.querySelector(".dark-toggle").textContent = "\\u2600";
     }
 
     // --- Start ---
