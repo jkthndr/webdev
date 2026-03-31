@@ -1,18 +1,14 @@
 @echo off
 cd /d C:\Users\oliver\Projects\webdev
 
-:: Kill only the previous webdev server if PID file exists
-if exist webdev.pid (
-  set /p OLD_PID=<webdev.pid
-  taskkill /f /t /pid %OLD_PID% >nul 2>&1
-  del webdev.pid
+:: Kill only the previous webdev server (by port, not by PID file)
+powershell -Command "Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"
+timeout /t 2 /nobreak >nul
+
+:: Build if dist is missing
+if not exist dist\server\index.js (
+  call npm run build
 )
 
-:: Start server and save PID
-start /b npx tsx src/server/index.ts > webdev.log 2>&1
-for /f "tokens=2" %%a in ('tasklist /fi "imagename eq node.exe" /fo list ^| findstr "PID:" ^| sort /r') do (
-  echo %%a> webdev.pid
-  goto :started
-)
-:started
-echo Webdev MCP server started (PID in webdev.pid)
+:: Start compiled server (stays in foreground so scheduled task keeps it alive)
+node dist\server\index.js
