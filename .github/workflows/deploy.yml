@@ -31,6 +31,7 @@ jobs:
           cd /d C:\Users\oliver\Projects\webdev
           powershell -Command "Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"
           ping -n 3 127.0.0.1 >nul
+          del /f webdev.log webdev.err.log 2>nul
           start "" /b cmd /c "node dist\server\index.js >webdev.log 2>webdev.err.log"
           ping -n 9 127.0.0.1 >nul
           curl.exe -sf http://localhost:4500/api/health || exit /b 1
