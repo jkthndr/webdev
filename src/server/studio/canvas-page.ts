@@ -334,13 +334,10 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     }
 
     // --- Preview Overlay ---
-    function openPreview(name) {
-      if (!RUNNING) {
-        window.location.href = "/studio/" + PROJECT + "/" + name;
-        return;
-      }
+    async function openPreview(name) {
       const overlay = document.getElementById("preview-overlay");
       const iframe = document.getElementById("preview-iframe");
+      // Always load through proxy — it auto-starts and shows a "starting" page if needed
       iframe.src = "/proxy/" + PROJECT + "/screens/" + name;
       overlay.classList.add("visible");
 

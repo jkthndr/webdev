@@ -11,7 +11,18 @@ export function createProxyRouter(pm: ProjectManager): Router {
     const port = pm.getDevServerPort(project);
 
     if (!port) {
-      res.status(502).send(`Project '${project}' has no running preview server.`);
+      // Auto-start if not already starting
+      if (!pm.isStarting(project) && pm.getProjectInfo(project)) {
+        pm.startDevServer(project).catch(() => {});
+      }
+      res.status(503).type("html").send(`<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Starting…</title>
+<style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#faf9f7;color:#555}
+.wrap{text-align:center}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#F5C542;animation:p 1.2s ease-in-out infinite;margin-right:8px}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
+</style></head><body><div class="wrap"><p><span class="dot"></span>Starting preview server…</p>
+<script>setInterval(()=>fetch(location.href).then(r=>{if(r.ok)location.reload()}),2000)</script>
+</div></body></html>`);
       return;
     }
 
