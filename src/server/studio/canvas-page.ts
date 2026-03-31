@@ -49,7 +49,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
     const PROJECT = "${project.name}";
     const RUNNING = ${running};
     const CARD_W = 420;
-    const CARD_H = 590;
+    const CARD_H = 320;
     const GAP = 60;
     const COLS = 3;
     const OFFSET = 60;
@@ -217,12 +217,14 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
 
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
       const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
+      const SCALE = CARD_W / 1280;
+      const IFRAME_H = 900;
       if (RUNNING) {
         card.innerHTML =
           '<div class="sc-frame-label">' + name + newBadge + '</div>' +
           '<div class="sc-frame-content">' +
-            '<div class="sc-iframe-wrap">' +
-              '<iframe class="sc-iframe" src="' + proxyUrl + '" loading="lazy"></iframe>' +
+            '<div class="sc-iframe-wrap" style="height:' + Math.ceil(IFRAME_H * SCALE) + 'px">' +
+              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="height:' + IFRAME_H + 'px;transform:scale(' + SCALE + ')" loading="lazy"></iframe>' +
             '</div>' +
           '</div>';
       } else {

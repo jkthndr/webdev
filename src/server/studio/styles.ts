@@ -295,10 +295,12 @@ export const CANVAS_CSS = `
     background: white;
     border-radius: 6px;
     overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 2px 16px rgba(0,0,0,0.35);
   }
 
   .screen-card:hover .sc-frame-content {
+    border-color: rgba(255,255,255,0.15);
     box-shadow: 0 4px 28px rgba(0,0,0,0.45);
   }
 
@@ -309,20 +311,21 @@ export const CANVAS_CSS = `
 
   .screen-card .sc-iframe-wrap {
     width: 100%;
-    height: 560px;
     overflow: hidden;
+    position: relative;
   }
 
   .screen-card .sc-iframe {
-    width: 100%;
-    height: 560px;
+    position: absolute;
+    top: 0; left: 0;
+    width: 1280px;
     border: none;
     pointer-events: none;
+    transform-origin: top left;
   }
 
   .screen-card .sc-thumb {
     width: 100%;
-    height: 560px;
     object-fit: cover;
     object-position: top left;
     display: block;
@@ -330,7 +333,7 @@ export const CANVAS_CSS = `
 
   .screen-card .sc-thumb-empty {
     width: 100%;
-    height: 560px;
+    min-height: 200px;
     background: #2a2826;
     display: flex;
     align-items: center;
