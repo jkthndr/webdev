@@ -26,12 +26,16 @@ jobs:
           npm run build
 
       - name: Restart server
-        shell: cmd
         run: |
           cd C:\Users\oliver\Projects\webdev
-          for /f "tokens=5" %%a in ('netstat -aon ^| findstr :4500 ^| findstr LISTENING') do taskkill /f /t /pid %%a 2>nul
-          timeout /t 2 /nobreak >nul
-          start /b node dist\server\index.js > webdev.log 2>&1
-          timeout /t 8 /nobreak >nul
-          curl -sf http://localhost:4500/api/health || exit 1
-          echo Deploy successful
+          # Kill process on port 4500
+          $procs = Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess
+          foreach ($pid in $procs) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+          Start-Sleep -Seconds 2
+          # Start server detached
+          Start-Process -FilePath "node" -ArgumentList "dist\server\index.js" -WorkingDirectory "C:\Users\oliver\Projects\webdev" -WindowStyle Hidden -RedirectStandardOutput "C:\Users\oliver\Projects\webdev\webdev.log" -RedirectStandardError "C:\Users\oliver\Projects\webdev\webdev.err.log"
+          Start-Sleep -Seconds 8
+          # Health check
+          $health = curl -sf http://localhost:4500/api/health
+          if (-not $health) { Write-Error "Health check failed"; exit 1 }
+          Write-Output "Deploy successful: $health"
