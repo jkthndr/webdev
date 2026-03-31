@@ -28,8 +28,11 @@ jobs:
             cd C:\Users\oliver\Projects\webdev
             git -c credential.helper= pull origin main
             npm install
-            taskkill /f /im node.exe 2>nul
-            start /b npx tsx src/server/index.ts > webdev.log 2>&1
+            npm run build
+            REM Kill only the process on port 4500 (not TaskQ or other services)
+            for /f "tokens=5" %%a in ('netstat -aon ^| findstr :4500 ^| findstr LISTENING') do taskkill /f /t /pid %%a 2>nul
+            timeout /t 2 /nobreak >nul
+            start /b node dist/server/index.js > webdev.log 2>&1
             timeout /t 8 /nobreak >nul
             curl -sf http://localhost:4500/api/health || exit 1
             echo Deploy successful

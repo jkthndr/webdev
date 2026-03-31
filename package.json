@@ -8,7 +8,8 @@
     "build": "tsc -p src/server/tsconfig.json",
     "dev": "tsx watch src/server/index.ts",
     "start": "node dist/server/index.js",
-    "mcp": "tsx src/server/index.ts"
+    "mcp": "tsx src/server/index.ts",
+    "test:e2e": "tsx test-e2e.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

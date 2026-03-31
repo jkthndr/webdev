@@ -10,8 +10,6 @@ import { createStudioRouter, createStudioApiRouter } from "./studio/routes.js";
 import { createProxyRouter } from "./studio/proxy.js";
 
 const pm = new ProjectManager();
-const PREVIEW_BASE_PORT = 4501;
-let nextPort = PREVIEW_BASE_PORT + pm.listProjects().length;
 
 // --- MCP Server Factory ---
 
@@ -29,7 +27,7 @@ function createMcpServerWithTools(): McpServer {
     async ({ name }) => {
       try {
         const project = await pm.openOrCreate(name);
-        const port = await pm.startDevServer(name, nextPort++);
+        const port = await pm.startDevServer(name);
         return {
           content: [{
             type: "text" as const,
