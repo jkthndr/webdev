@@ -271,7 +271,7 @@ export const CANVAS_CSS = `
 
   .screen-card {
     position: absolute;
-    width: 420px;
+    width: 640px;
     user-select: none;
   }
 
