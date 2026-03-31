@@ -39,8 +39,10 @@ export function createProxyRouter(pm: ProjectManager): Router {
           proxyRes.on("data", (chunk: Buffer) => chunks.push(chunk));
           proxyRes.on("end", () => {
             let html = Buffer.concat(chunks).toString("utf-8");
-            const baseTag = `<base href="/proxy/${project}/">`;
-            html = html.replace(/<head([^>]*)>/, `<head$1>${baseTag}`);
+            // Rewrite root-relative asset paths to go through proxy
+            const prefix = `/proxy/${project}`;
+            html = html.replace(/"\/_next\//g, `"${prefix}/_next/`);
+            html = html.replace(/'\/_next\//g, `'${prefix}/_next/`);
 
             const headers = { ...proxyRes.headers };
             delete headers["content-length"];
