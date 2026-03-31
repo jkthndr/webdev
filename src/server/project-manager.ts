@@ -194,8 +194,17 @@ export class ProjectManager {
     const dir = this.projectDir(projectName);
     const port = srv.port;
 
-    // Kill old server
-    srv.process.kill();
+    // Kill old server (process tree on Windows, signal on Unix)
+    const pid = srv.process.pid;
+    if (pid) {
+      try {
+        if (process.platform === "win32") {
+          execSync(`taskkill /f /t /pid ${pid}`, { stdio: "pipe" });
+        } else {
+          process.kill(-pid, "SIGTERM");
+        }
+      } catch {}
+    }
     this.devServers.delete(projectName);
 
     // Rebuild and restart
@@ -221,7 +230,16 @@ export class ProjectManager {
   stopDevServer(projectName: string): void {
     const srv = this.devServers.get(projectName);
     if (srv) {
-      srv.process.kill();
+      const pid = srv.process.pid;
+      if (pid) {
+        try {
+          if (process.platform === "win32") {
+            execSync(`taskkill /f /t /pid ${pid}`, { stdio: "pipe" });
+          } else {
+            process.kill(-pid, "SIGTERM");
+          }
+        } catch {}
+      }
       this.devServers.delete(projectName);
     }
   }

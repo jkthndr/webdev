@@ -66,8 +66,8 @@ export const STUDIO_CSS = `
   /* Project / screen cards */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
   }
 
   .card {
@@ -86,7 +86,7 @@ export const STUDIO_CSS = `
 
   .card-thumb {
     width: 100%;
-    aspect-ratio: 16/10;
+    aspect-ratio: 16/9;
     object-fit: cover;
     object-position: top left;
     background: var(--s-secondary);
@@ -95,7 +95,7 @@ export const STUDIO_CSS = `
 
   .card-thumb-empty {
     width: 100%;
-    aspect-ratio: 16/10;
+    aspect-ratio: 16/9;
     background: var(--s-secondary);
     display: flex;
     align-items: center;
@@ -105,18 +105,18 @@ export const STUDIO_CSS = `
   }
 
   .card-body {
-    padding: 0.875rem 1rem;
+    padding: 1rem 1.25rem;
   }
 
   .card-title {
     font-weight: 600;
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
     margin-bottom: 0.25rem;
   }
 
   .card-meta {
     color: var(--s-muted);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
   }
 
   /* Split pane layout */
