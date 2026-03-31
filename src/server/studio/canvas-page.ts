@@ -253,7 +253,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
       const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
       const SCALE = CARD_W / 1280;
-      const IFRAME_H = 2000;
+      const IFRAME_H = 1200;
       if (RUNNING) {
         card.innerHTML =
           '<div class="sc-frame-label">' + name + newBadge + '</div>' +
