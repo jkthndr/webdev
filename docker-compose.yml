@@ -1,0 +1,20 @@
+services:
+  mcp-server:
+    build: .
+    container_name: webdev-mcp
+    restart: unless-stopped
+    ports:
+      - "4500:4500"
+      - "4501-4510:4501-4510"
+    volumes:
+      - ./projects:/app/projects
+    environment:
+      - HTTP_PORT=4500
+      - NODE_ENV=production
+    mem_limit: 2048m
+    shm_size: 2gb
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4500/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

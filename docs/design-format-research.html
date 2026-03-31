@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design File Format Research — Agent-Native Design Tool</title>
+<style>
+  :root {
+    --coral: #FF6B6B;
+    --warm-orange: #E8773A;
+    --soft-gold: #F5C542;
+    --sage: #7c9070;
+    --bg: #FFFAF5;
+    --card-bg: #FFFFFF;
+    --text: #2D2A26;
+    --text-muted: #6B6560;
+    --border: #E8E0D8;
+    --code-bg: #FFF8F0;
+    --shadow: 0 2px 12px rgba(45,42,38,0.08);
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem;
+    color: var(--text);
+    border-bottom: 2px solid var(--warm-orange);
+    padding-bottom: 0.5rem;
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem;
+    color: var(--text);
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+    color: var(--warm-orange);
+  }
+
+  p { margin-bottom: 0.75rem; }
+  .subtitle { color: var(--text-muted); font-size: 1.05rem; margin-bottom: 2rem; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: transparent;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    border-radius: 8px 8px 0 0;
+  }
+  .tab-btn:hover { background: rgba(232,119,58,0.08); }
+  .tab-btn.active {
+    color: var(--warm-orange);
+    border-bottom-color: var(--warm-orange);
+    background: rgba(232,119,58,0.06);
+  }
+  .tab-content { display: none; padding: 1.5rem 0; }
+  .tab-content.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .card.highlight {
+    border-left: 4px solid var(--warm-orange);
+  }
+  .card.rec {
+    border-left: 4px solid var(--sage);
+    background: #F8FBF6;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 0.75rem 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+  }
+
+  /* Comparison table */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .comparison-table th {
+    background: #FFF0E6;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--warm-orange);
+    position: sticky;
+    top: 0;
+  }
+  .comparison-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .comparison-table tr:hover { background: rgba(245,197,66,0.06); }
+
+  /* Rating pills */
+  .rating {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .rating.excellent { background: #E8F5E1; color: #3D7A2D; }
+  .rating.good { background: #FFF8E1; color: #8A6D00; }
+  .rating.fair { background: #FFF0E6; color: #B85A1A; }
+  .rating.poor { background: #FFE8E8; color: #C14040; }
+
+  /* Pros/Cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .pros, .cons {
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .pros { background: #F0F8ED; border: 1px solid #C8E0BE; }
+  .cons { background: #FFF5F0; border: 1px solid #E8CFC0; }
+  .pros strong { color: #3D7A2D; }
+  .cons strong { color: #B85A1A; }
+  ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin-bottom: 0.35rem; }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    background: var(--card-bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .flow-arrow { color: var(--warm-orange); font-weight: bold; font-size: 1.2rem; }
+  .flow-step.active { border-color: var(--warm-orange); background: #FFF5EE; }
+
+  /* Verdict */
+  .verdict {
+    background: linear-gradient(135deg, #FFF8F0 0%, #F8FBF6 100%);
+    border: 2px solid var(--sage);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+  .verdict h2 { border-bottom-color: var(--sage); }
+
+  .muted { color: var(--text-muted); font-size: 0.9rem; }
+  .tag {
+    display: inline-block;
+    background: #FFF0E6;
+    color: var(--warm-orange);
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-right: 0.35rem;
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .pros-cons { grid-template-columns: 1fr; }
+    .comparison-table { font-size: 0.8rem; }
+    .comparison-table th, .comparison-table td { padding: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Design File Format Research</h1>
+<p class="subtitle">For an agent-native design tool where Claude Code creates, iterates, and exports production-ready web UI. Research date: 2026-03-30.</p>
+
+<!-- ========== TABS ========== -->
+<div class="tabs" id="mainTabs">
+  <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="showTab('json')">1. JSON Schema</button>
+  <button class="tab-btn" onclick="showTab('html')">2. HTML/CSS</button>
+  <button class="tab-btn" onclick="showTab('react')">3. React/TSX</button>
+  <button class="tab-btn" onclick="showTab('hybrid')">4. Hybrid</button>
+  <button class="tab-btn" onclick="showTab('existing')">5. Existing Tools</button>
+  <button class="tab-btn" onclick="showTab('comparison')">Comparison</button>
+  <button class="tab-btn" onclick="showTab('verdict')">Recommendation</button>
+</div>
+
+<!-- ========== OVERVIEW ========== -->
+<div class="tab-content active" id="overview">
+  <h2>The Core Question</h2>
+  <p>Should the design document be an <strong>intermediate format</strong> (JSON schema that gets compiled to code), or should <strong>designs BE code</strong> (the design IS React/TSX + Tailwind, rendered directly)?</p>
+
+  <h3>The Spectrum of Approaches</h3>
+  <div class="flow">
+    <div class="flow-step">Proprietary Binary<br><span class="muted">Figma, Sketch</span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Structured JSON<br><span class="muted">Excalidraw, Pencil</span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">SVG Native<br><span class="muted">Penpot</span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step active">HTML/CSS<br><span class="muted">Paper.design</span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step active">React/TSX<br><span class="muted">v0, our tool</span></div>
+  </div>
+  <p class="muted">The further right you go, the smaller the fidelity gap between design and production code. The tradeoff is structured manipulability.</p>
+
+  <h3>Key Insight from Research</h3>
+  <div class="card highlight">
+    <p>The industry is converging toward <strong>"designs as code"</strong>. Paper.design chose HTML/CSS as both medium and output. Google Stitch exports HTML/CSS/React directly. v0.dev generates React+Tailwind+shadcn as its native output. The intermediate-format approach (Figma-style) is increasingly seen as a liability because of the translation gap.</p>
+    <p>However, Pencil's <code>.pen</code> format demonstrates that a well-designed JSON schema with proper MCP tooling can give agents excellent ergonomics for structured manipulation while still being renderable. The question is whether that structured manipulation advantage outweighs the cost of maintaining a JSON-to-code compiler.</p>
+  </div>
+</div>
+
+<!-- ========== JSON SCHEMA ========== -->
+<div class="tab-content" id="json">
+  <h2>Approach 1: JSON Schema (Intermediate Format)</h2>
+
+  <h3>How It Works</h3>
+  <div class="flow">
+    <div class="flow-step">Agent writes JSON</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Schema validates</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Renderer displays</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Exporter generates code</div>
+  </div>
+
+  <h3>Reference: Excalidraw's Format</h3>
+  <p>Excalidraw uses a clean JSON structure optimized for simplicity. Each element has a type, position, dimensions, and style properties.</p>
+  <pre>{
+  "type": "excalidraw",
+  "version": 2,
+  "elements": [
+    {
+      "id": "abc123",
+      "type": "rectangle",       // rectangle | ellipse | diamond | text | arrow | line | freedraw | image | frame
+      "x": 100, "y": 50,
+      "width": 200, "height": 120,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",      // solid | hachure | cross-hatch
+      "strokeWidth": 2,
+      "roughness": 1,            // hand-drawn effect intensity
+      "opacity": 100,
+      "angle": 0,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": { "type": 3 },
+      "seed": 1234,              // deterministic randomization
+      "version": 1,
+      "versionNonce": 5678       // conflict detection
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": 20,
+    "zoom": { "value": 1 },
+    "theme": "light"
+  },
+  "files": {}                    // FileId -> BinaryFileData for images
+}</pre>
+  <p class="muted">Key features: soft-delete via <code>isDeleted</code>, arrow bindings via <code>startBinding/endBinding</code>, text containers via <code>containerId</code>. Round-trip embedding in PNG (iTXt chunks) and SVG (metadata comments).</p>
+
+  <h3>Reference: Pencil's .pen Format</h3>
+  <p>Pencil's format is the most sophisticated JSON schema studied. It's a full design system format with variables, themes, components/instances, flexbox layout, and rich graphics.</p>
+  <pre>{
+  "version": "2.9",
+  "themes": { "device": ["phone", "tablet", "desktop"] },
+  "variables": {
+    "primary-color": { "type": "color", "value": "#FF6B6B" },
+    "spacing-sm":    { "type": "number", "value": 8 }
+  },
+  "children": [
+    {
+      "id": "frame1",
+      "type": "frame",           // frame | group | rectangle | ellipse | line | polygon | path | text | icon_font | ref
+      "name": "Login Screen",
+      "layout": "vertical",      // none | vertical | horizontal
+      "width": 390, "height": "fit_content(844)",
+      "gap": 16,
+      "padding": [24, 24, 24, 24],
+      "justifyContent": "center",
+      "alignItems": "center",
+      "fill": "#FFFFFF",
+      "cornerRadius": 12,
+      "children": [
+        {
+          "id": "title1",
+          "type": "text",
+          "content": "Welcome Back",
+          "fontSize": 28,
+          "fontWeight": "700",
+          "fill": "$primary-color",   // variable reference with $ prefix
+          "textGrowth": "fixed-width",
+          "width": "fill_container"
+        },
+        {
+          "id": "btn1",
+          "type": "ref",             // component instance
+          "ref": "ButtonComp",       // references reusable component by ID
+          "descendants": {
+            "label": { "content": "Sign In" }
+          }
+        }
+      ]
+    }
+  ]
+}</pre>
+  <p class="muted">Key features: <code>ref</code> nodes for component instances with deep descendant overrides, <code>$variable</code> binding syntax, theme-aware variables, <code>fill_container</code> / <code>fit_content</code> dynamic sizing, slot system for component customization. Encrypted on disk, only accessible via MCP tools.</p>
+
+  <h3>Reference: Figma's Node Model</h3>
+  <p>Figma uses a mixin-based property system with 38 scene node types. Key properties organized by category:</p>
+  <pre>// Figma Node Type Hierarchy
+BaseNode = DocumentNode | PageNode | SceneNode
+
+SceneNode types (38): FrameNode, RectangleNode, TextNode, ComponentNode,
+  InstanceNode, EllipseNode, LineNode, VectorNode, GroupNode, SectionNode,
+  BooleanOperationNode, StarNode, PolygonNode, SliceNode, ...
+
+// Properties via Mixins (composition over inheritance)
+GeometryMixin:  x, y, width, height, rotation, absoluteBoundingBox, absoluteTransform
+LayoutMixin:    layoutMode, itemSpacing, padding*, primaryAxisAlign*, counterAxisAlign*,
+                layoutSizingHorizontal, layoutSizingVertical, layoutGrow
+StyleMixin:     fills[], strokes[], effects[], opacity, blendMode
+CornerMixin:    cornerRadius, topLeftRadius, ...cornerSmoothing
+TextMixin:      characters, fontName, fontSize, fontWeight, textAlign
+ChildrenMixin:  children[], findAll(), findOne(), findChildren()
+ComponentMixin: componentPropertyDefinitions, addComponentProperty()
+
+// Notable: getCSSAsync() returns computed CSS for any node</pre>
+  <p class="muted">Figma's REST API returns the full document as JSON. Its Plugin API uses TypeScript typings. The mixin pattern means not all nodes share all properties -- FrameNode has ChildrenMixin, RectangleNode does not.</p>
+
+  <h3>Hypothetical Schema for Our Tool</h3>
+  <p>If we went the JSON route, a schema optimized for AI agent ergonomics might look like:</p>
+  <pre>{
+  "version": "1.0",
+  "designSystem": {
+    "colors": { "primary": "#FF6B6B", "surface": "#FFFAF5", "text": "#2D2A26" },
+    "typography": { "heading": { "family": "Inter", "weight": 700 }, "body": { "family": "Inter", "weight": 400 } },
+    "spacing": { "xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32 },
+    "radii": { "sm": 6, "md": 12, "lg": 16 }
+  },
+  "screens": [
+    {
+      "id": "screen-login",
+      "name": "Login",
+      "viewport": { "width": 390, "height": 844 },
+      "root": {
+        "id": "root",
+        "type": "frame",
+        "layout": { "direction": "column", "gap": "$spacing.md", "padding": "$spacing.lg", "align": "center", "justify": "center" },
+        "size": { "width": "fill", "height": "fill" },
+        "style": { "background": "$colors.surface", "borderRadius": "$radii.lg" },
+        "children": [
+          {
+            "id": "heading",
+            "type": "text",
+            "content": "Welcome Back",
+            "typography": "$typography.heading",
+            "style": { "fontSize": 28, "color": "$colors.text" }
+          },
+          {
+            "id": "email-field",
+            "type": "component",
+            "componentRef": "Input",
+            "props": { "label": "Email", "placeholder": "you@example.com", "type": "email" }
+          },
+          {
+            "id": "submit-btn",
+            "type": "component",
+            "componentRef": "Button",
+            "props": { "label": "Sign In", "variant": "primary", "fullWidth": true }
+          }
+        ]
+      }
+    }
+  ]
+}</pre>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <strong>Pros</strong>
+      <ul>
+        <li>Highly structured -- agent can query/modify any node by path</li>
+        <li>Batch operations are natural (update all buttons, restyle all cards)</li>
+        <li>Clean diffs in git (JSON is line-diffable)</li>
+        <li>Design system tokens are first-class (variables, themes)</li>
+        <li>Schema validation catches errors before rendering</li>
+        <li>Framework-agnostic: can compile to React, Vue, HTML, etc.</li>
+        <li>Pencil proves this works well with MCP tooling</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <strong>Cons</strong>
+      <ul>
+        <li>Must build and maintain a JSON-to-code compiler</li>
+        <li>Fidelity gap: compiled output never matches hand-written code exactly</li>
+        <li>Must build a custom renderer for visual preview</li>
+        <li>Two sources of truth: the schema AND the generated code</li>
+        <li>Agent must learn a custom DSL (not transferable knowledge)</li>
+        <li>Schema evolves independently of web standards (maintenance burden)</li>
+        <li>Real-world CSS edge cases are hard to model in a schema</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== HTML/CSS ========== -->
+<div class="tab-content" id="html">
+  <h2>Approach 2: HTML/CSS (Paper.design's Model)</h2>
+
+  <h3>How It Works</h3>
+  <div class="flow">
+    <div class="flow-step">Agent writes HTML/CSS</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Browser renders directly</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Export = the HTML itself</div>
+  </div>
+
+  <h3>Paper.design's Philosophy</h3>
+  <div class="card highlight">
+    <p><em>"If the canvas is built on the same standards as the product -- HTML, CSS, DOM -- then you're not drawing a metaphor of a UI. You're working in the medium."</em></p>
+    <p class="muted">-- Paper.design founding philosophy</p>
+  </div>
+  <p>Paper.design chose HTML/CSS as both the design medium and the output format. Key architectural decisions:</p>
+  <ul>
+    <li>The canvas speaks HTML/CSS natively -- layout uses real Flexbox (and planned CSS Grid)</li>
+    <li>Visual effects are GPU-rendered but map to CSS properties</li>
+    <li>24 MCP tools give agents full bidirectional read/write access</li>
+    <li>Agents can convert designs to React/Tailwind and commit to GitHub</li>
+    <li>Can import and use actual React components on the canvas</li>
+  </ul>
+
+  <h3>What the Agent Works With</h3>
+  <pre>&lt;!-- Agent writes/modifies this directly --&gt;
+&lt;div style="display: flex; flex-direction: column; gap: 16px;
+            padding: 24px; background: #FFFAF5; border-radius: 12px;
+            max-width: 390px; margin: 0 auto;"&gt;
+  &lt;h1 style="font-family: Inter, sans-serif; font-size: 28px;
+             font-weight: 700; color: #2D2A26; margin: 0;"&gt;
+    Welcome Back
+  &lt;/h1&gt;
+  &lt;div style="display: flex; flex-direction: column; gap: 8px;"&gt;
+    &lt;label style="font-size: 14px; color: #6B6560;"&gt;Email&lt;/label&gt;
+    &lt;input type="email" placeholder="you@example.com"
+           style="padding: 12px; border: 1px solid #E8E0D8;
+                  border-radius: 8px; font-size: 16px;" /&gt;
+  &lt;/div&gt;
+  &lt;button style="padding: 14px; background: #FF6B6B; color: white;
+                 border: none; border-radius: 8px; font-size: 16px;
+                 font-weight: 600; cursor: pointer; width: 100%;"&gt;
+    Sign In
+  &lt;/button&gt;
+&lt;/div&gt;</pre>
+
+  <h3>Agent Ergonomics Challenge</h3>
+  <p>The main problem: HTML is <strong>verbose and unstructured</strong> for programmatic manipulation. To change all button colors, the agent must:</p>
+  <pre>// Agent needs to: find all buttons, parse their inline styles, update the color
+// There's no structured way to do "update all elements where role=button"
+// unless you add a query layer on top
+
+// Contrast with JSON:
+// nodes.filter(n => n.type === "button").forEach(n => n.style.background = "#E8773A")</pre>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <strong>Pros</strong>
+      <ul>
+        <li>Zero fidelity gap -- what you see IS the output</li>
+        <li>No renderer to build (browser is the renderer)</li>
+        <li>No exporter to build (HTML is the export)</li>
+        <li>Agents already know HTML/CSS well</li>
+        <li>Git-diffable (though diffs can be noisy)</li>
+        <li>Paper.design validates this works commercially</li>
+        <li>Can convert to JSX/React as a post-processing step</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <strong>Cons</strong>
+      <ul>
+        <li>Verbose: inline styles are repetitive and token-heavy</li>
+        <li>No structured node tree for programmatic manipulation</li>
+        <li>Batch operations require DOM parsing (regex on HTML is fragile)</li>
+        <li>No design system tokens as first-class concept</li>
+        <li>No component abstraction (copy-paste, not reuse)</li>
+        <li>Hard to enforce consistency across screens</li>
+        <li>HTML diffs are noisy (attribute order, whitespace)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== REACT/TSX ========== -->
+<div class="tab-content" id="react">
+  <h2>Approach 3: React/TSX ("Designs ARE Code")</h2>
+
+  <h3>How It Works</h3>
+  <div class="flow">
+    <div class="flow-step">Agent writes TSX + Tailwind</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Dev server renders</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Screenshot for preview</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Export = the TSX itself</div>
+  </div>
+
+  <h3>v0.dev Validates This Approach</h3>
+  <p>Vercel's v0 generates React + Tailwind + shadcn/ui directly from prompts. The output IS production code. There is no intermediate format -- the model writes TSX, and that TSX is what ships. This has become the dominant paradigm for AI-generated UI in 2025-2026.</p>
+
+  <h3>What the Agent Works With</h3>
+  <pre>// LoginScreen.tsx -- this IS the design AND the production code
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+
+export function LoginScreen() {
+  return (
+    &lt;div className="flex flex-col gap-4 p-6 bg-[#FFFAF5] rounded-xl max-w-[390px] mx-auto"&gt;
+      &lt;h1 className="text-[28px] font-bold text-[#2D2A26]"&gt;
+        Welcome Back
+      &lt;/h1&gt;
+      &lt;div className="flex flex-col gap-2"&gt;
+        &lt;Label htmlFor="email" className="text-sm text-[#6B6560]"&gt;
+          Email
+        &lt;/Label&gt;
+        &lt;Input
+          id="email"
+          type="email"
+          placeholder="you@example.com"
+          className="border-[#E8E0D8]"
+        /&gt;
+      &lt;/div&gt;
+      &lt;Button className="w-full bg-[#FF6B6B] hover:bg-[#FF5252] text-white"&gt;
+        Sign In
+      &lt;/Button&gt;
+    &lt;/div&gt;
+  )
+}</pre>
+
+  <h3>Why This Works for AI Agents</h3>
+  <div class="card highlight">
+    <p><strong>Claude Code already writes React/TSX + Tailwind as its primary output mode.</strong> The agent doesn't need to learn a custom DSL, custom schema, or custom tooling. It uses the same skills it uses for every other coding task. The design system is shadcn/ui -- which the agent already knows deeply.</p>
+  </div>
+
+  <h3>Structured Operations via AST</h3>
+  <p>The "no structured manipulation" objection is partially mitigated by the fact that TSX is parseable. The agent can:</p>
+  <pre>// Batch restyle: agent can find-and-replace Tailwind classes
+// "Change all bg-[#FF6B6B] to bg-[#E8773A]" -> simple text replacement
+
+// Structured via AST parsing (if needed):
+// - Parse TSX with @babel/parser
+// - Walk the AST to find all &lt;Button&gt; elements
+// - Modify their className prop
+// - Serialize back to TSX
+
+// But in practice, the agent just... edits the file. It understands the structure.</pre>
+
+  <h3>Rendering Pipeline</h3>
+  <pre>// Option A: Running dev server + Playwright screenshot
+// 1. Agent writes/modifies .tsx files
+// 2. Next.js dev server hot-reloads
+// 3. Playwright navigates to the route and screenshots
+// 4. Agent sees the screenshot, iterates
+
+// Option B: Isolated component rendering
+// 1. Agent writes a component to a preview route
+// 2. e.g. /preview/login-screen renders just that component
+// 3. Screenshot via headless browser
+
+// Option C: Static rendering (no server needed)
+// 1. Use react-dom/server to renderToStaticMarkup
+// 2. Inject into an HTML template with Tailwind CDN
+// 3. Screenshot the static HTML</pre>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <strong>Pros</strong>
+      <ul>
+        <li><strong>ZERO fidelity gap</strong> -- the design literally IS the production code</li>
+        <li>No translation, no compiler, no exporter to build or maintain</li>
+        <li>Agent uses existing skills (React, Tailwind, shadcn) -- no custom DSL</li>
+        <li>shadcn/ui gives you a real component system with variants and slots</li>
+        <li>Git-diffable, code-reviewable, CI-testable</li>
+        <li>v0.dev proves this model works at scale commercially</li>
+        <li>Design tokens via Tailwind config (colors, spacing, typography)</li>
+        <li>Component reuse is native (just import and use)</li>
+        <li>Can add interactivity directly (hover states, animations, transitions)</li>
+        <li>Entire ecosystem of tooling already exists</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <strong>Cons</strong>
+      <ul>
+        <li>Needs a running dev server or static renderer for visual preview</li>
+        <li>Batch operations less natural than JSON (but AST parsing helps)</li>
+        <li>Multi-file management (components, layouts, pages) adds complexity</li>
+        <li>Heavier setup than a single JSON file</li>
+        <li>Tailwind class strings can get long and verbose</li>
+        <li>Agent needs to manage imports and file structure</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== HYBRID ========== -->
+<div class="tab-content" id="hybrid">
+  <h2>Approach 4: Hybrid (JSON Schema + Code Renderer)</h2>
+
+  <h3>How It Works</h3>
+  <div class="flow">
+    <div class="flow-step">Agent writes JSON</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Compiler generates TSX</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Dev server renders</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Export = compiled TSX</div>
+  </div>
+
+  <h3>Builder.io as Reference</h3>
+  <p>Builder.io uses this exact approach. Their internal format is a JSON block tree:</p>
+  <pre>{
+  "@type": "@builder.io/sdk:Element",
+  "id": "builder-abc123",
+  "tagName": "div",
+  "layerName": "Login Card",
+  "responsiveStyles": {
+    "large": { "display": "flex", "flexDirection": "column", "gap": "16px", "padding": "24px" },
+    "medium": { "padding": "16px" },
+    "small": { "padding": "12px" }
+  },
+  "children": [
+    {
+      "@type": "@builder.io/sdk:Element",
+      "component": { "name": "Text", "options": { "text": "Welcome Back" } },
+      "responsiveStyles": { "large": { "fontSize": "28px", "fontWeight": "700" } }
+    },
+    {
+      "@type": "@builder.io/sdk:Element",
+      "component": { "name": "Button", "options": { "text": "Sign In" } },
+      "responsiveStyles": { "large": { "width": "100%" } }
+    }
+  ],
+  "bindings": {},
+  "actions": {},
+  "repeat": null
+}</pre>
+  <p>This JSON compiles to React, Vue, Angular, Svelte, or plain HTML depending on the target framework. The visual editor works with the JSON; the output is framework code.</p>
+
+  <h3>Pencil as Reference</h3>
+  <p>Pencil's <code>.pen</code> format is essentially this approach too: a rich JSON schema with a visual renderer. The difference is Pencil renders to its own canvas rather than compiling to framework code.</p>
+
+  <h3>The JSON-to-React Compiler Challenge</h3>
+  <pre>// You must handle ALL of these:
+
+// 1. Layout mapping
+{ layout: "vertical", gap: 16, padding: 24 }
+// -> className="flex flex-col gap-4 p-6"
+
+// 2. Design token resolution
+{ fill: "$primary-color" }
+// -> className="bg-primary"  (if mapped to Tailwind config)
+// -> style={{ background: tokens.primary }}  (if runtime)
+
+// 3. Component mapping
+{ type: "component", componentRef: "Button", props: { variant: "primary" } }
+// -> &lt;Button variant="primary"&gt;...&lt;/Button&gt;
+
+// 4. Responsive styles
+{ responsiveStyles: { large: { fontSize: "28px" }, small: { fontSize: "20px" } } }
+// -> className="text-xl md:text-[28px]"
+
+// 5. Edge cases: animations, gradients, mesh gradients, SVG paths, image fills...
+// Each adds compiler complexity</pre>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <strong>Pros</strong>
+      <ul>
+        <li>Best of both: structured JSON for manipulation, real code for output</li>
+        <li>Excellent batch operations (JSON is trivially queryable)</li>
+        <li>Framework-agnostic (compile to React, Vue, HTML, etc.)</li>
+        <li>Clean separation of concerns</li>
+        <li>Pencil and Builder.io prove it works commercially</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <strong>Cons</strong>
+      <ul>
+        <li><strong>Must build and maintain the JSON-to-code compiler</strong> -- this is the #1 cost</li>
+        <li>Compiler is a permanent fidelity gap -- compiled code is never as clean as hand-written</li>
+        <li>Two representations to keep in sync (schema version + compiler version)</li>
+        <li>Agent learns a custom DSL that doesn't transfer to other work</li>
+        <li>Every new CSS feature or component pattern requires compiler updates</li>
+        <li>Builder.io has a large team maintaining their compiler; we don't</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ========== EXISTING TOOLS ========== -->
+<div class="tab-content" id="existing">
+  <h2>How Existing Tools Handle This</h2>
+
+  <h3>Figma</h3>
+  <div class="card">
+    <p><span class="tag">Proprietary Binary</span> <span class="tag">REST API returns JSON</span> <span class="tag">Plugin API with TypeScript</span></p>
+    <p>Figma stores designs in a proprietary binary format internally. The REST API exposes the document as a JSON tree of typed nodes (38 SceneNode types). Properties are organized via mixins (GeometryMixin, LayoutMixin, StyleMixin, etc.).</p>
+    <p><strong>Agent access:</strong> Figma MCP gives agents read access to the node tree, design tokens, and layout constraints. However, Figma MCP has only 3 tools and provides read-only access. Developers report 85-90% styling inaccuracy when converting Figma designs to code.</p>
+    <p><strong>Key lesson:</strong> Figma's format is optimized for visual editing, not code generation. The translation gap is its biggest weakness for AI workflows.</p>
+  </div>
+
+  <h3>Paper.design</h3>
+  <div class="card">
+    <p><span class="tag">HTML/CSS Native</span> <span class="tag">24 MCP Tools</span> <span class="tag">Bidirectional Agent Access</span></p>
+    <p>The canvas IS HTML/CSS. Designs use real Flexbox, real CSS. The 24-tool MCP server gives agents full read/write access. <code>get_jsx</code> returns JSX output for any node. Export quality is inherently better than Figma MCP because there's no proprietary format to translate from.</p>
+    <p><strong>Key lesson:</strong> Using the production medium (HTML/CSS) as the design medium eliminates the translation gap entirely. Paper proves this works for both human designers and AI agents.</p>
+  </div>
+
+  <h3>Pencil (.pen)</h3>
+  <div class="card">
+    <p><span class="tag">Encrypted JSON Schema</span> <span class="tag">Rich MCP Tooling</span> <span class="tag">Component System</span></p>
+    <p>Pencil uses a rich JSON schema (v2.9) with: typed nodes (frame, text, rectangle, ellipse, path, icon_font, ref), flexbox layout, design variables with <code>$</code> binding, theme-aware values, component instances via <code>ref</code> with deep descendant overrides, slot system, and image fills.</p>
+    <p>MCP tools include <code>batch_get</code> (search/read nodes), <code>batch_design</code> (insert/copy/update/replace/move/delete in batch), <code>get_screenshot</code>, <code>snapshot_layout</code>. The batch operations syntax is a mini-DSL: <code>card=I(parent, {...})</code>, <code>U(card+"/title", {...})</code>.</p>
+    <p><strong>Key lesson:</strong> A well-designed schema with purpose-built MCP tools gives excellent agent ergonomics. The batch operation syntax is compact and powerful. BUT: the format is encrypted/proprietary and requires Pencil's renderer for preview -- you can't just open it in a browser.</p>
+  </div>
+
+  <h3>Penpot</h3>
+  <div class="card">
+    <p><span class="tag">SVG Native</span> <span class="tag">Open Source</span> <span class="tag">Clojure/ClojureScript</span></p>
+    <p>Penpot stores designs as SVG -- every shape IS an SVG node with Penpot metadata augmentation. A "Shape" is the core entity, corresponding to one SVG element. Properties include: geometry (selrect, x, y, w, h), transforms (2D matrix), constraints, interactions, fills/strokes/shadows/blur, and text-specific attributes.</p>
+    <p>Penpot files export as compressed archives containing SVG + JSON. SVG import is bidirectional: Penpot exports reconstruct perfectly, third-party SVGs get best-effort conversion.</p>
+    <p><strong>Key lesson:</strong> Using an open standard (SVG) as the native format gives interoperability and eliminates vendor lock-in. However, SVG is not ideal for web UI design (no flexbox, no responsive layout).</p>
+  </div>
+
+  <h3>Google Stitch</h3>
+  <div class="card">
+    <p><span class="tag">Cloud AI Canvas</span> <span class="tag">DESIGN.md</span> <span class="tag">Exports HTML/CSS/React</span></p>
+    <p>Stitch takes a unique approach with <strong>DESIGN.md</strong> -- an agent-friendly markdown file that captures design rules (colors, typography, spacing, component patterns). When you submit a prompt, Stitch passes both the prompt and DESIGN.md to Gemini as context. The model uses the design rules to constrain its output.</p>
+    <p>DESIGN.md format is simple markdown with specific values:</p>
+    <pre>## Colors
+- Primary: #1A73E8
+- Background: #FFFFFF
+## Typography
+- Font Family: Inter, sans-serif
+- Heading 1: 32px, 700 weight
+## Spacing
+- Base unit: 8px
+## Components
+- Button border radius: 8px
+- Card shadow: 0 1px 3px rgba(0,0,0,0.12)</pre>
+    <p>Stitch exports to Figma, Google AI Studio, Jules, or downloadable HTML/CSS/React code.</p>
+    <p><strong>Key lesson:</strong> DESIGN.md as a design system contract is a clever idea. It's human-readable, agent-parseable, git-versionable, and works across tools. It separates design tokens from design implementation.</p>
+  </div>
+
+  <h3>v0.dev</h3>
+  <div class="card">
+    <p><span class="tag">React + Tailwind + shadcn/ui</span> <span class="tag">Code-First</span> <span class="tag">No Intermediate Format</span></p>
+    <p>v0 generates React/TSX + Tailwind + shadcn/ui directly from natural language prompts. There is no intermediate format. The AI model writes production code. Output can be copied, installed via CLI into any Next.js project, or iterated on with follow-up prompts.</p>
+    <p><strong>Key lesson:</strong> The most commercially successful AI design tool uses NO intermediate format. The design IS the code. This is the strongest evidence that "designs as code" works at scale.</p>
+  </div>
+
+  <h3>Excalidraw</h3>
+  <div class="card">
+    <p><span class="tag">Plaintext JSON</span> <span class="tag">Simple Schema</span> <span class="tag">MCP Available</span></p>
+    <p>Simple JSON format with elements array. Each element: type, position, dimensions, style properties. Features: soft-delete, arrow bindings, text containers, deterministic seeding for hand-drawn rendering. Round-trip embedding in PNG/SVG. MCP server available for agent manipulation.</p>
+    <p><strong>Key lesson:</strong> Excalidraw's format is optimized for whiteboarding/diagramming, not UI design. Too low-level for our use case (no components, no layout system, no design tokens). But its simplicity and JSON-first approach are instructive.</p>
+  </div>
+</div>
+
+<!-- ========== COMPARISON ========== -->
+<div class="tab-content" id="comparison">
+  <h2>Structured Comparison</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Criterion</th>
+        <th>JSON Schema</th>
+        <th>HTML/CSS</th>
+        <th>React/TSX</th>
+        <th>Hybrid</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Agent Ergonomics</strong><br><span class="muted">How easy for AI to create/modify?</span></td>
+        <td><span class="rating good">Good</span><br>Custom DSL to learn, but structured operations are clean</td>
+        <td><span class="rating good">Good</span><br>Agents know HTML, but it's verbose with inline styles</td>
+        <td><span class="rating excellent">Excellent</span><br>Agents already write React+Tailwind daily -- zero new learning</td>
+        <td><span class="rating good">Good</span><br>JSON part is structured, but agents must learn the schema</td>
+      </tr>
+      <tr>
+        <td><strong>Batch Operations</strong><br><span class="muted">Bulk restyle, bulk move, bulk query?</span></td>
+        <td><span class="rating excellent">Excellent</span><br>JSON is trivially queryable/filterable</td>
+        <td><span class="rating poor">Poor</span><br>Requires DOM parsing, fragile string manipulation</td>
+        <td><span class="rating good">Good</span><br>Find-replace on classes works; AST for complex ops</td>
+        <td><span class="rating excellent">Excellent</span><br>Same as JSON, with compiled code output</td>
+      </tr>
+      <tr>
+        <td><strong>Fidelity Gap</strong><br><span class="muted">Drift between design and production?</span></td>
+        <td><span class="rating poor">Poor</span><br>Must compile to code -- always introduces drift</td>
+        <td><span class="rating good">Good</span><br>HTML is the output, but needs JSX conversion for React apps</td>
+        <td><span class="rating excellent">Excellent</span><br>ZERO gap -- the design IS the production code</td>
+        <td><span class="rating fair">Fair</span><br>Compiler quality determines gap; never zero</td>
+      </tr>
+      <tr>
+        <td><strong>Versioning/Diffing</strong><br><span class="muted">Git-trackable, reviewable diffs?</span></td>
+        <td><span class="rating excellent">Excellent</span><br>Clean JSON diffs, semantic changes visible</td>
+        <td><span class="rating fair">Fair</span><br>HTML diffs are noisy (attribute order, whitespace)</td>
+        <td><span class="rating good">Good</span><br>TSX diffs are readable; Tailwind classes can be noisy</td>
+        <td><span class="rating excellent">Excellent</span><br>JSON diffs are clean; but two files to track</td>
+      </tr>
+      <tr>
+        <td><strong>Implementation Complexity</strong><br><span class="muted">How hard to build?</span></td>
+        <td><span class="rating poor">Hard</span><br>Schema + Validator + Renderer + Exporter</td>
+        <td><span class="rating excellent">Easy</span><br>Browser renders; minimal tooling needed</td>
+        <td><span class="rating good">Medium</span><br>Need dev server or static renderer; existing tooling helps</td>
+        <td><span class="rating poor">Hardest</span><br>Schema + Validator + Compiler + Renderer</td>
+      </tr>
+      <tr>
+        <td><strong>Design System Support</strong><br><span class="muted">Tokens, variables, themes?</span></td>
+        <td><span class="rating excellent">Excellent</span><br>First-class variables, themes, component refs</td>
+        <td><span class="rating fair">Fair</span><br>CSS custom properties, but no structured system</td>
+        <td><span class="rating excellent">Excellent</span><br>Tailwind config for tokens; shadcn for components</td>
+        <td><span class="rating excellent">Excellent</span><br>JSON tokens + compiled token usage</td>
+      </tr>
+      <tr>
+        <td><strong>Component Reuse</strong><br><span class="muted">Can designs reference shared components?</span></td>
+        <td><span class="rating excellent">Excellent</span><br>ref/instance system (Pencil model)</td>
+        <td><span class="rating poor">Poor</span><br>Copy-paste only; no native abstraction</td>
+        <td><span class="rating excellent">Excellent</span><br>React imports -- native component system</td>
+        <td><span class="rating excellent">Excellent</span><br>JSON refs compile to component imports</td>
+      </tr>
+      <tr>
+        <td><strong>Existing Ecosystem</strong><br><span class="muted">Tooling, libraries, community?</span></td>
+        <td><span class="rating fair">Fair</span><br>Custom format = custom everything</td>
+        <td><span class="rating good">Good</span><br>Browser DevTools, HTML validators</td>
+        <td><span class="rating excellent">Excellent</span><br>React, Tailwind, shadcn, Next.js, Playwright, ESLint...</td>
+        <td><span class="rating fair">Fair</span><br>Custom compiler; can leverage existing for output</td>
+      </tr>
+      <tr>
+        <td><strong>Maintenance Burden</strong><br><span class="muted">Ongoing cost to evolve?</span></td>
+        <td><span class="rating fair">Medium</span><br>Schema evolves with web standards; renderer updates</td>
+        <td><span class="rating excellent">Low</span><br>HTML/CSS evolves with the web itself</td>
+        <td><span class="rating excellent">Low</span><br>React/Tailwind/shadcn maintained by their communities</td>
+        <td><span class="rating poor">High</span><br>Schema + compiler must both track web evolution</td>
+      </tr>
+      <tr>
+        <td><strong>Commercial Validation</strong><br><span class="muted">Who uses this approach?</span></td>
+        <td>Excalidraw, Pencil</td>
+        <td>Paper.design</td>
+        <td>v0.dev, Bolt.new, Lovable</td>
+        <td>Builder.io</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ========== VERDICT ========== -->
+<div class="tab-content" id="verdict">
+  <div class="verdict">
+    <h2>Recommendation: React/TSX with a Thin Schema Layer</h2>
+
+    <h3>Primary format: React/TSX + Tailwind + shadcn/ui</h3>
+    <p>The design document should BE React code. The agent writes TSX files using Tailwind CSS and shadcn/ui components. The rendering is done by a dev server (or static renderer). The export is the TSX itself.</p>
+
+    <h3>Why React/TSX Wins</h3>
+    <div class="card rec">
+      <ol style="padding-left: 1.5rem;">
+        <li><strong>Zero fidelity gap</strong> -- the single most important criterion. The mockup literally IS the production code. No translation, no drift, no "it looked different in the design tool."</li>
+        <li><strong>Agent already knows it</strong> -- Claude Code writes React/Tailwind/shadcn every day. No custom DSL to learn, no new schema to memorize. This matters enormously for agent quality.</li>
+        <li><strong>Proven at scale</strong> -- v0.dev, Bolt.new, and Lovable collectively prove this model works commercially. They all generate React+Tailwind directly.</li>
+        <li><strong>Nothing to build</strong> -- no schema, no validator, no renderer, no compiler, no exporter. All the tooling already exists. Focus engineering effort on the agent experience, not format plumbing.</li>
+        <li><strong>Full design system</strong> -- Tailwind config provides design tokens (colors, spacing, typography, breakpoints). shadcn/ui provides a complete component library with variants. This is a better design system than any custom JSON schema.</li>
+        <li><strong>Ecosystem leverage</strong> -- ESLint, Prettier, TypeScript type-checking, Playwright for screenshots, Storybook for component isolation, Git for versioning. All free.</li>
+      </ol>
+    </div>
+
+    <h3>Add a Thin Metadata Layer (Not a Full Schema)</h3>
+    <p>To address the "batch operations" weakness, add a lightweight metadata file alongside the TSX -- not a full intermediate format, but a project manifest:</p>
+    <pre>// design.config.json -- project manifest, NOT the design itself
+{
+  "project": "MyApp",
+  "screens": [
+    { "id": "login", "file": "screens/LoginScreen.tsx", "viewport": "mobile" },
+    { "id": "dashboard", "file": "screens/Dashboard.tsx", "viewport": "desktop" },
+    { "id": "settings", "file": "screens/Settings.tsx", "viewport": "mobile" }
+  ],
+  "designSystem": {
+    "tailwindConfig": "tailwind.config.ts",
+    "components": "components/ui/",
+    "tokens": {
+      "colors": { "primary": "coral-500", "surface": "warmgray-50" },
+      "fonts": { "sans": "Inter" }
+    }
+  },
+  "exportSettings": {
+    "framework": "nextjs",
+    "styling": "tailwind",
+    "componentLibrary": "shadcn"
+  }
+}</pre>
+    <p>This manifest gives the agent structured access to project metadata without duplicating the actual design content in a second format.</p>
+
+    <h3>Borrow DESIGN.md from Stitch</h3>
+    <p>Also include a <code>DESIGN.md</code> file (inspired by Google Stitch) as a human+agent-readable design system contract:</p>
+    <pre># DESIGN.md
+
+## Colors
+- Primary: coral-500 (#FF6B6B) -- buttons, links, accents
+- Surface: warmgray-50 (#FFFAF5) -- page backgrounds
+- Text Primary: warmgray-900 (#2D2A26)
+- Text Muted: warmgray-500 (#6B6560)
+
+## Typography
+- Font: Inter, system-ui fallback
+- H1: 28px / 700 weight
+- Body: 16px / 400 weight
+- Caption: 12px / 400 weight
+
+## Spacing
+- Base: 4px grid
+- Component gap: 16px (gap-4)
+- Section padding: 24px (p-6)
+- Page margin: 32px (p-8)
+
+## Components
+- Buttons: rounded-lg, font-semibold
+- Cards: rounded-xl, shadow-sm, border border-warmgray-200
+- Inputs: rounded-lg, border border-warmgray-300
+
+## Principles
+- Warm palette only -- no blue/purple
+- Light/pastel theme, soft shadows
+- Rounded corners everywhere (min 6px)</pre>
+
+    <h3>Architecture Summary</h3>
+    <div class="flow">
+      <div class="flow-step active">DESIGN.md<br><span class="muted">Design rules</span></div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-step active">design.config.json<br><span class="muted">Project manifest</span></div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-step active">*.tsx files<br><span class="muted">The actual designs</span></div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">Dev server renders</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">Screenshot for preview</div>
+    </div>
+
+    <h3>Handling Batch Operations</h3>
+    <p>The main weakness of the code-first approach. Mitigations:</p>
+    <table class="comparison-table">
+      <tr>
+        <th>Operation</th>
+        <th>How It Works in React/TSX</th>
+      </tr>
+      <tr>
+        <td>Restyle all buttons</td>
+        <td>All buttons use <code>&lt;Button&gt;</code> from shadcn -- update the component definition once. Or find-replace the Tailwind class.</td>
+      </tr>
+      <tr>
+        <td>Change primary color</td>
+        <td>Update <code>tailwind.config.ts</code> -- one line change propagates everywhere via utility classes.</td>
+      </tr>
+      <tr>
+        <td>Change font</td>
+        <td>Update <code>tailwind.config.ts</code> font family -- propagates via <code>font-sans</code> class.</td>
+      </tr>
+      <tr>
+        <td>Add a field to every form</td>
+        <td>Agent uses grep to find all form components, edits each. More work than JSON batch, but agent handles it.</td>
+      </tr>
+      <tr>
+        <td>Query: "which screens use the Card component?"</td>
+        <td><code>grep -r "import.*Card" screens/</code> -- standard code search.</td>
+      </tr>
+      <tr>
+        <td>Move a section across screens</td>
+        <td>Cut-paste the JSX block. Components are self-contained.</td>
+      </tr>
+    </table>
+
+    <h3>What Not to Build</h3>
+    <div class="card" style="border-left: 4px solid var(--coral);">
+      <ul>
+        <li><strong>Do not build a JSON-to-React compiler.</strong> This is the biggest trap. Builder.io has a large engineering team maintaining theirs. The compiler is never done -- every new CSS feature, every new component pattern, every edge case requires compiler work.</li>
+        <li><strong>Do not build a custom renderer.</strong> The browser is the renderer. A Next.js dev server or static HTML is the preview.</li>
+        <li><strong>Do not build a custom schema language.</strong> TypeScript IS the schema. TSX IS the format. Tailwind config IS the design tokens.</li>
+        <li><strong>Do not encrypt/obfuscate the format.</strong> Pencil's encrypted .pen files require custom tooling for every operation. TSX files are readable by any editor, diffable by any tool, parseable by any AST library.</li>
+      </ul>
+    </div>
+
+    <h3>Implementation Path</h3>
+    <table class="comparison-table">
+      <tr><th>Phase</th><th>What</th><th>Effort</th></tr>
+      <tr>
+        <td>1. Core</td>
+        <td>Agent writes TSX + Tailwind to a project directory. Screenshot via Playwright. Iterate based on visual feedback.</td>
+        <td><span class="rating excellent">Low</span></td>
+      </tr>
+      <tr>
+        <td>2. Design System</td>
+        <td>Scaffold a project with tailwind.config.ts, shadcn/ui components, and DESIGN.md. Agent reads DESIGN.md for every design task.</td>
+        <td><span class="rating excellent">Low</span></td>
+      </tr>
+      <tr>
+        <td>3. Preview Pipeline</td>
+        <td>Set up preview routes (e.g., <code>/preview/[screen]</code>) that render individual screen components. Playwright screenshots each.</td>
+        <td><span class="rating good">Medium</span></td>
+      </tr>
+      <tr>
+        <td>4. Project Manifest</td>
+        <td>Add design.config.json for screen inventory, viewport info, and export settings. Agent reads this to understand project structure.</td>
+        <td><span class="rating excellent">Low</span></td>
+      </tr>
+      <tr>
+        <td>5. Component Library</td>
+        <td>Agent builds reusable components in <code>components/</code>, uses them across screens. Same as normal React development.</td>
+        <td><span class="rating excellent">Low</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>Key Takeaway</h2>
+  <div class="card highlight">
+    <p style="font-size: 1.1rem;"><strong>The best design format for an AI agent is the format the agent already produces.</strong></p>
+    <p>Claude Code writes React/TSX + Tailwind + shadcn/ui. Making the design format match the agent's native output eliminates an entire class of problems: no schema to design, no compiler to build, no renderer to maintain, no fidelity gap to debug. The agent does what it already does best, and the output is directly usable.</p>
+    <p>The intermediate-format approach (JSON schema) made sense when the primary user was a human designer who needed visual manipulation tools. For an agent-native tool where the primary creator IS an AI that thinks in code, the code-first approach is strictly superior.</p>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Find the button that matches
+  const tabs = document.querySelectorAll('.tab-btn');
+  const names = ['overview','json','html','react','hybrid','existing','comparison','verdict'];
+  const idx = names.indexOf(id);
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+}
+</script>
+
+<p class="muted" style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+  Sources consulted during this research:
+  <a href="https://docs.excalidraw.com/docs/codebase/json-schema">Excalidraw JSON Schema</a> |
+  <a href="https://developers.figma.com/docs/plugins/api/node-properties/">Figma Plugin API</a> |
+  <a href="https://paper.design/blog/a-real-space-to-design-in-the-age-of-agents">Paper.design Blog</a> |
+  <a href="https://help.penpot.app/technical-guide/developer/data-model/">Penpot Data Model</a> |
+  <a href="https://stitch.withgoogle.com/">Google Stitch</a> |
+  <a href="https://www.mindstudio.ai/blog/what-is-google-stitch-design-md-file">DESIGN.md Format</a> |
+  <a href="https://sfailabs.com/guides/figma-mcp-vs-paper">Figma MCP vs Paper</a> |
+  <a href="https://github.com/BuilderIO/builder/blob/main/packages/sdks/src/types/builder-block.ts">Builder.io Block Types</a> |
+  <a href="https://deepwiki.com/excalidraw/excalidraw/6.2-json-serialization">Excalidraw Serialization</a> |
+  <a href="https://deepwiki.com/excalidraw/excalidraw-mcp/7.2-excalidraw-element-format">Excalidraw MCP Format</a> |
+  <a href="https://v0.dev/faq">v0.dev</a> |
+  <a href="https://github.com/google-labs-code/stitch-skills/tree/main/skills/design-md">Stitch Skills</a>
+</p>
+
+</body>
+</html>

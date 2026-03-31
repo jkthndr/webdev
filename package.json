@@ -1,0 +1,25 @@
+{
+  "name": "webdev-design-tool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent-native design tool — MCP server for creating production-ready web UI designs",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p src/server/tsconfig.json",
+    "dev": "tsx watch src/server/index.ts",
+    "start": "node dist/server/index.js",
+    "mcp": "tsx src/server/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^5.1.0",
+    "playwright": "^1.58.2",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

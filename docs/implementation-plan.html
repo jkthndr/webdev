@@ -1,0 +1,2832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent-Native Design Tool — Implementation Plan (Revised)</title>
+<style>
+  :root {
+    --coral: #FF6B6B;
+    --orange: #E8773A;
+    --gold: #F5C542;
+    --sage: #7c9070;
+    --bg: #FAF8F5;
+    --card: #FFFFFF;
+    --text: #2D2A26;
+    --text-muted: #6B6560;
+    --border: #E8E4DF;
+    --shadow: 0 2px 12px rgba(45,42,38,0.06);
+    --shadow-hover: 0 4px 20px rgba(45,42,38,0.10);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    --sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* -- Header -- */
+  .header {
+    background: linear-gradient(135deg, #FFF5F3 0%, #FFF9F0 50%, #F5F8F2 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 0 0 0;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .header h1 span { color: var(--coral); }
+  .header .subtitle {
+    font-size: 16px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .badge-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge.coral { background: #FFE8E8; color: #C04040; }
+  .badge.orange { background: #FFF0E0; color: #B85A20; }
+  .badge.gold { background: #FFF8E0; color: #A08020; }
+  .badge.sage { background: #EEF3EB; color: #5A6E50; }
+
+  /* -- Executive Summary -- */
+  .exec-summary {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--coral);
+  }
+  .summary-card h2 {
+    font-size: 20px;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .summary-card p {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+  .summary-card .highlight {
+    color: var(--coral);
+    font-weight: 600;
+  }
+  .summary-card .rec-box {
+    margin-top: 16px;
+    padding: 14px 18px;
+    background: #FFF5F3;
+    border-radius: var(--radius-sm);
+    border: 1px solid #FFD4CC;
+  }
+  .summary-card .rec-box strong { color: var(--coral); }
+
+  /* -- Review Banner -- */
+  .review-banner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+  .review-banner-inner {
+    background: linear-gradient(135deg, #FFF9F0 0%, #F5F8F2 100%);
+    border: 2px solid var(--sage);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+  }
+  .review-banner-inner h3 {
+    font-size: 16px;
+    color: var(--sage);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .review-banner-inner .concern-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .review-banner-inner .concern-item {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.7);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--sage);
+    line-height: 1.5;
+  }
+  .review-banner-inner .concern-item strong {
+    color: var(--text);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .review-banner-inner .concern-item .resolution {
+    color: var(--sage);
+    font-weight: 500;
+  }
+
+  /* -- Tabs -- */
+  .tabs-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px 48px;
+  }
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tab-btn {
+    padding: 10px 18px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .tab-btn:hover {
+    background: #F5F2EE;
+    color: var(--text);
+  }
+  .tab-btn.active {
+    background: var(--coral);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255,107,107,0.25);
+  }
+  .tab-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .tab-panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* -- Cards -- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    transition: box-shadow 0.2s ease;
+  }
+  .card:hover { box-shadow: var(--shadow-hover); }
+  .card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card p, .card li {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  .card ul { padding-left: 20px; margin-top: 8px; }
+  .card li { margin-bottom: 4px; }
+
+  /* -- Collapsible -- */
+  .collapsible-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 0;
+  }
+  .collapsible-header .chevron {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.25s ease;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .collapsible-header.open .chevron { transform: rotate(180deg); }
+  .collapsible-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+  }
+  .collapsible-body.open {
+    max-height: 2000px;
+    padding-top: 16px;
+  }
+
+  /* -- Score bars -- */
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .score-label {
+    width: 120px;
+    font-weight: 500;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .score-bar {
+    flex: 1;
+    height: 8px;
+    background: #F0EDE9;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .score-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+  .score-value {
+    width: 36px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+
+  /* -- Pros / Cons -- */
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .pros-cons .col h4 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .pros-cons .pros h4 { color: var(--sage); }
+  .pros-cons .cons h4 { color: var(--coral); }
+  .pros-cons li { font-size: 13px; margin-bottom: 4px; }
+
+  /* -- Landscape tabbed cards -- */
+  .landscape-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .landscape-tab {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--sans);
+    color: var(--text-muted);
+  }
+  .landscape-tab:hover { border-color: var(--orange); color: var(--orange); }
+  .landscape-tab.active {
+    background: var(--orange);
+    color: #fff;
+    border-color: var(--orange);
+  }
+  .landscape-panel { display: none; }
+  .landscape-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+  /* -- Recommended badge -- */
+  .rec-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #FFE8E8;
+    color: var(--coral);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+  }
+
+  /* -- Tables -- */
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: var(--card);
+  }
+  thead th {
+    text-align: left;
+    padding: 14px 16px;
+    background: #F8F6F3;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:first-child { border-radius: var(--radius) 0 0 0; }
+  thead th:last-child { border-radius: 0 var(--radius) 0 0; }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #F0EDE9;
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FDFCFB; }
+  td.tool-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--coral);
+    white-space: nowrap;
+  }
+  td .check { color: var(--sage); font-weight: 700; }
+  td .dash { color: #CCC; }
+
+  /* -- Architecture SVG -- */
+  .arch-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .arch-container svg {
+    display: block;
+    margin: 0 auto;
+  }
+  .arch-detail {
+    margin-top: 16px;
+    padding: 16px 20px;
+    background: #FFF9F5;
+    border: 1px solid #F0E8E0;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    min-height: 60px;
+    transition: all 0.3s ease;
+  }
+  .arch-detail h4 {
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .arch-node {
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+  .arch-node:hover { filter: brightness(0.95); }
+
+  /* -- Invariant Card -- */
+  .invariant-card {
+    background: linear-gradient(135deg, #FFF5F3 0%, #FFF9F0 100%);
+    border: 2px solid var(--coral);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .invariant-card h3 {
+    font-size: 18px;
+    color: var(--coral);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .invariant-card .invariant-rule {
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 600;
+    line-height: 1.7;
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.8);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--coral);
+  }
+  .invariant-card p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  /* -- Timeline -- */
+  .timeline {
+    display: flex;
+    gap: 0;
+    margin: 24px 0;
+    position: relative;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 38px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    z-index: 0;
+  }
+  .timeline-phase {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 0 12px;
+  }
+  .timeline-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin: 26px auto 12px;
+    border: 3px solid var(--card);
+    box-shadow: 0 0 0 2px var(--border);
+    position: relative;
+    z-index: 2;
+  }
+  .timeline-phase:nth-child(1) .timeline-dot { background: var(--sage); box-shadow: 0 0 0 2px var(--sage); }
+  .timeline-phase:nth-child(2) .timeline-dot { background: var(--coral); box-shadow: 0 0 0 2px var(--coral); }
+  .timeline-phase:nth-child(3) .timeline-dot { background: var(--orange); box-shadow: 0 0 0 2px var(--orange); }
+  .timeline-phase:nth-child(4) .timeline-dot { background: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+  .timeline-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .timeline-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .timeline-bar {
+    position: absolute;
+    top: 38px;
+    left: 0;
+    height: 4px;
+    border-radius: 2px;
+    z-index: 1;
+  }
+  .timeline-phase:nth-child(1) .timeline-bar { background: var(--sage); width: 100%; }
+  .timeline-phase:nth-child(2) .timeline-bar { background: var(--coral); width: 100%; }
+  .timeline-phase:nth-child(3) .timeline-bar { background: var(--orange); width: 100%; }
+  .timeline-phase:nth-child(4) .timeline-bar { background: var(--gold); width: 100%; }
+
+  .phase-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .phase-card.spikes { border-left-color: var(--sage); }
+  .phase-card.mvp { border-left-color: var(--coral); }
+  .phase-card.v1 { border-left-color: var(--orange); }
+  .phase-card.future { border-left-color: var(--gold); }
+  .phase-card h4 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .phase-card .scope-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .phase-card.spikes .scope-tag { background: #EEF3EB; color: #5A6E50; }
+  .phase-card.mvp .scope-tag { background: #FFE8E8; color: #C04040; }
+  .phase-card.v1 .scope-tag { background: #FFF0E0; color: #B85A20; }
+  .phase-card.future .scope-tag { background: #FFF8E0; color: #A08020; }
+
+  /* -- Spike cards -- */
+  .spike-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .spike-card {
+    background: #FFF9F5;
+    border: 1px solid #F0E8E0;
+    border-radius: var(--radius-sm);
+    padding: 16px;
+  }
+  .spike-card h5 {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .spike-card .spike-duration {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--sage);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .spike-card p, .spike-card li {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .spike-card ul { padding-left: 16px; margin-top: 6px; }
+  .spike-card li { margin-bottom: 3px; }
+
+  /* -- Tech stack -- */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .tech-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    transition: all 0.2s ease;
+  }
+  .tech-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+  .tech-card .tech-name {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .tech-card .tech-role {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 8px;
+  }
+  .tech-card .tech-why {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* -- Hosting -- */
+  .hosting-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .hosting-stat {
+    background: #FFF9F5;
+    border: 1px solid #F0E8E0;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .hosting-stat .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--coral);
+  }
+  .hosting-stat .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 2px;
+  }
+  .port-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+  }
+  .port-num {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--orange);
+    width: 60px;
+  }
+  .port-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* -- Risk matrix -- */
+  .risk-card {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    gap: 16px;
+    align-items: start;
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .risk-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .risk-icon.high { background: #FFE8E8; color: var(--coral); }
+  .risk-icon.med { background: #FFF0E0; color: var(--orange); }
+  .risk-icon.low { background: #EEF3EB; color: var(--sage); }
+  .risk-sev {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .risk-sev.high { background: #FFE8E8; color: #C04040; }
+  .risk-sev.med { background: #FFF0E0; color: #B85A20; }
+  .risk-sev.low { background: #EEF3EB; color: #5A6E50; }
+
+  /* -- Build sequence -- */
+  .build-step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .build-step::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 40px;
+    bottom: -4px;
+    width: 2px;
+    background: var(--border);
+  }
+  .build-step:last-child::before { display: none; }
+  .build-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .build-content {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 8px;
+  }
+  .build-content h4 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .build-content p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .build-content .deps {
+    margin-top: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--orange);
+  }
+
+  /* -- References -- */
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .ref-card {
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+  }
+  .ref-card .ref-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .ref-card .ref-url {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--orange);
+    word-break: break-all;
+  }
+  .ref-card .ref-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* -- Code blocks -- */
+  code, .code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: #F5F2EE;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--coral);
+  }
+  pre {
+    background: #2D2A26;
+    color: #F0EDE9;
+    padding: 16px 20px;
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* -- Section headers -- */
+  .section-header {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-header .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* -- Operational specs -- */
+  .ops-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .ops-card {
+    background: #FFF9F5;
+    border: 1px solid #F0E8E0;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+  }
+  .ops-card h4 {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .ops-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .ops-card code {
+    font-size: 11px;
+  }
+
+  /* -- Review log -- */
+  .review-item {
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .review-item h4 {
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .review-item .original-concern {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    padding: 8px 12px;
+    background: #FFF5F3;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--coral);
+    margin-bottom: 8px;
+  }
+  .review-item .resolution-text {
+    font-size: 13px;
+    color: var(--sage);
+    line-height: 1.6;
+    padding: 8px 12px;
+    background: #EEF3EB;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--sage);
+  }
+
+  /* -- Responsive -- */
+  @media (max-width: 768px) {
+    .header-inner, .exec-summary, .tabs-container, .review-banner { padding-left: 16px; padding-right: 16px; }
+    .header h1 { font-size: 24px; }
+    .tab-btn { padding: 8px 12px; font-size: 12px; }
+    .pros-cons { grid-template-columns: 1fr; }
+    .hosting-grid { grid-template-columns: 1fr; }
+    .tech-grid { grid-template-columns: 1fr; }
+    .timeline { flex-direction: column; gap: 8px; }
+    .timeline::before { display: none; }
+    .spike-grid { grid-template-columns: 1fr; }
+    .review-banner-inner .concern-grid { grid-template-columns: 1fr; }
+    .ops-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <h1>Agent-Native Design Tool <span>Implementation Plan</span></h1>
+    <p class="subtitle">Open-source, self-hosted alternative to Pencil &mdash; where designs ARE production code</p>
+    <div class="badge-row">
+      <span class="badge coral">Option C: Designs Are Code</span>
+      <span class="badge orange">2-3 Week MVP</span>
+      <span class="badge gold">7 MCP Tools (MVP)</span>
+      <span class="badge sage">React + Playwright + shadcn/ui</span>
+    </div>
+  </div>
+  <!-- Tab nav sits inside the header visually -->
+  <div style="max-width:1200px;margin:0 auto;padding:0 32px;">
+    <div class="tab-nav" id="tabNav">
+      <button class="tab-btn active" data-tab="landscape">Landscape</button>
+      <button class="tab-btn" data-tab="options">Options</button>
+      <button class="tab-btn" data-tab="architecture">Architecture</button>
+      <button class="tab-btn" data-tab="mcp-tools">MCP Tools</button>
+      <button class="tab-btn" data-tab="build-seq">Build Sequence</button>
+      <button class="tab-btn" data-tab="tech-stack">Tech Stack</button>
+      <button class="tab-btn" data-tab="hosting">Hosting</button>
+      <button class="tab-btn" data-tab="phases">Phases</button>
+      <button class="tab-btn" data-tab="risks">Risks</button>
+      <button class="tab-btn" data-tab="references">References</button>
+      <button class="tab-btn" data-tab="review-log">Review Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="exec-summary">
+  <div class="summary-card">
+    <h2>Executive Summary</h2>
+    <p>This tool makes Claude Code a <span class="highlight">first-class design agent</span>. The agent writes real React/TSX components using shadcn/ui and Tailwind CSS, a Next.js dev server renders them, Playwright captures screenshots for human review, and the TSX source IS the production deliverable &mdash; zero translation gap.</p>
+    <p>After evaluating 5 competing approaches (extending Penpot, building from scratch, wrapping Stitch, hybrid approaches), <span class="highlight">Option C: "Designs ARE Code"</span> wins decisively: 10/10 fidelity, 2-3 week MVP, minimal maintenance, zero vendor lock-in.</p>
+    <div class="rec-box">
+      <strong>Recommended:</strong> Build a 7-tool MVP MCP server (expanding to 11+ in later phases) that manages design projects as Next.js apps. Validate with 3 spikes before building. Deploy on the HP laptop (<code>jake-dev-win-hp</code> / <code>100.102.138.90</code>) via Docker with GitHub Actions CI/CD. Strictly code-first &mdash; no independent design schema.
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW NOTES BANNER -->
+<div class="review-banner" style="margin-bottom:24px;">
+  <div class="review-banner-inner">
+    <h3>
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="var(--sage)"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 102 0V7zm-1 8a1 1 0 100-2 1 1 0 000 2z"/></svg>
+      Revised After Third-Party Review &mdash; March 2026
+    </h3>
+    <p style="font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:8px">
+      This plan was independently reviewed and revised to address structural risks before build begins. The reviewer validated the product direction as strong while identifying scope and architecture concerns. All feedback has been incorporated below.
+    </p>
+    <div class="concern-grid">
+      <div class="concern-item">
+        <strong>Dual-architecture risk</strong>
+        Node-centric MCP tools implied a parallel schema alongside code-first.
+        <span class="resolution">Resolved: Locked "code-first, no schema" as architectural invariant. Removed node tree / batch_modify / write_html tools.</span>
+      </div>
+      <div class="concern-item">
+        <strong>Scope creep (16 tools)</strong>
+        Too many partially-working tools instead of a few excellent ones.
+        <span class="resolution">Resolved: Cut MVP to 7 core tools. Remaining tools phased into V1.1 and V2+.</span>
+      </div>
+      <div class="concern-item">
+        <strong>react-shadcn export is high-risk</strong>
+        Converting arbitrary HTML/TSX into idiomatic shadcn components is brittle.
+        <span class="resolution">Resolved: Deferred to V2+. In code-first, export is a no-op (TSX IS the deliverable).</span>
+      </div>
+      <div class="concern-item">
+        <strong>Missing operational specs</strong>
+        Under-specified: deterministic rendering, checkpoint cleanup, concurrency.
+        <span class="resolution">Resolved: Added operational specs section covering font pinning, checkpoint TTL, single-session constraint, and deterministic rendering.</span>
+      </div>
+      <div class="concern-item">
+        <strong>No validation before build</strong>
+        Architecture assumptions untested: fidelity, editability, determinism.
+        <span class="resolution">Resolved: Added Phase 0.5 with 3 validation spikes (3-5 days) before MVP build.</span>
+      </div>
+      <div class="concern-item">
+        <strong>Security model under-specified</strong>
+        Agent writes/renders arbitrary code without isolation specs.
+        <span class="resolution">Acknowledged: Docker containerization provides base isolation. V1 single-session constraint limits blast radius. Full sandbox model is a V2 concern.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB PANELS -->
+<div class="tabs-container">
+
+  <!-- LANDSCAPE -->
+  <div class="tab-panel active" id="panel-landscape">
+    <div class="section-header">
+      <div class="dot" style="background:var(--orange)"></div>
+      Competitive Landscape
+    </div>
+
+    <div class="landscape-tabs" id="landscapeTabs">
+      <button class="landscape-tab active" data-ltab="pencil">Pencil</button>
+      <button class="landscape-tab" data-ltab="stitch">Stitch</button>
+      <button class="landscape-tab" data-ltab="paper">Paper</button>
+      <button class="landscape-tab" data-ltab="penpot">Penpot</button>
+      <button class="landscape-tab" data-ltab="openpencil">OpenPencil</button>
+    </div>
+
+    <div class="landscape-panel active" id="lpanel-pencil">
+      <div class="card">
+        <h3>Pencil <span class="badge coral">Commercial MCP Tool</span></h3>
+        <p>13 MCP tools with a powerful batch DSL for designing in .pen files. Currently the market leader for agent-driven design via Figma-like canvases.</p>
+        <div style="margin-top:16px">
+          <div class="score-row">
+            <span class="score-label">Tools</span>
+            <div class="score-bar"><div class="score-fill" style="width:76%;background:var(--coral)"></div></div>
+            <span class="score-value">13</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Batch Ops</span>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--sage)"></div></div>
+            <span class="score-value">9/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Code Export</span>
+            <div class="score-bar"><div class="score-fill" style="width:60%;background:var(--orange)"></div></div>
+            <span class="score-value">6/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity Gap</span>
+            <div class="score-bar"><div class="score-fill" style="width:40%;background:var(--gold)"></div></div>
+            <span class="score-value">4/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Strengths</h4>
+            <ul>
+              <li>Batch DSL is the strongest feature &mdash; multiple ops in one call</li>
+              <li>Pattern-based node querying</li>
+              <li>Variable system for design tokens</li>
+              <li>Screenshot capture built in</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Gaps</h4>
+            <ul>
+              <li>No versioning / checkpoints</li>
+              <li>No responsive preview</li>
+              <li>No accessibility linting</li>
+              <li>No component-mapped export</li>
+              <li>No human approval flow</li>
+              <li>Commercial license &mdash; not self-hostable</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landscape-panel" id="lpanel-stitch">
+      <div class="card">
+        <h3>Google Stitch <span class="badge gold">Google Labs</span></h3>
+        <p>12 tools focused on AI-first generation. Prompt-to-screen pipeline. Outputs HTML/CSS, not component-mapped React.</p>
+        <div style="margin-top:16px">
+          <div class="score-row">
+            <span class="score-label">Tools</span>
+            <div class="score-bar"><div class="score-fill" style="width:70%;background:var(--coral)"></div></div>
+            <span class="score-value">12</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Generation</span>
+            <div class="score-bar"><div class="score-fill" style="width:85%;background:var(--sage)"></div></div>
+            <span class="score-value">8.5/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Code Export</span>
+            <div class="score-bar"><div class="score-fill" style="width:50%;background:var(--orange)"></div></div>
+            <span class="score-value">5/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Vendor Risk</span>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--coral)"></div></div>
+            <span class="score-value">9/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Strengths</h4>
+            <ul>
+              <li>Excellent prompt-to-screen generation</li>
+              <li>Screen listing and management</li>
+              <li>Image export (get_image)</li>
+              <li>Low initial effort to integrate</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Gaps</h4>
+            <ul>
+              <li>Google Labs could kill it at any time</li>
+              <li>HTML/CSS output, not component-mapped</li>
+              <li>No design tokens</li>
+              <li>No versioning / checkpoints</li>
+              <li>No self-hosting option</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landscape-panel" id="lpanel-paper">
+      <div class="card">
+        <h3>Paper <span class="badge sage">Open Source</span></h3>
+        <p>24 tools &mdash; the most comprehensive toolset. Bidirectional HTML/CSS editing with get_jsx export. Right concept but requires a GUI.</p>
+        <div style="margin-top:16px">
+          <div class="score-row">
+            <span class="score-label">Tools</span>
+            <div class="score-bar"><div class="score-fill" style="width:100%;background:var(--coral)"></div></div>
+            <span class="score-value">24</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Flexibility</span>
+            <div class="score-bar"><div class="score-fill" style="width:80%;background:var(--sage)"></div></div>
+            <span class="score-value">8/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Code Export</span>
+            <div class="score-bar"><div class="score-fill" style="width:70%;background:var(--orange)"></div></div>
+            <span class="score-value">7/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Headless</span>
+            <div class="score-bar"><div class="score-fill" style="width:20%;background:var(--gold)"></div></div>
+            <span class="score-value">2/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Strengths</h4>
+            <ul>
+              <li>Most tools of any competitor</li>
+              <li>HTML/CSS is zero-gap format</li>
+              <li>JSX export path exists</li>
+              <li>Computed style introspection</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Gaps</h4>
+            <ul>
+              <li>Requires GUI &mdash; not headless</li>
+              <li>Verbose HTML operations</li>
+              <li>Weak structured batch operations</li>
+              <li>No versioning / checkpoints</li>
+              <li>No responsive preview</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landscape-panel" id="lpanel-penpot">
+      <div class="card">
+        <h3>Penpot <span class="badge sage">Open Source</span></h3>
+        <p>Viable path via zcube MCP (76+ tools). SVG-native, already deployed on Mac Mini. But heavy infrastructure and human-first design.</p>
+        <div style="margin-top:16px">
+          <div class="score-row">
+            <span class="score-label">Tools (zcube)</span>
+            <div class="score-bar"><div class="score-fill" style="width:100%;background:var(--coral)"></div></div>
+            <span class="score-value">76+</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity</span>
+            <div class="score-bar"><div class="score-fill" style="width:50%;background:var(--orange)"></div></div>
+            <span class="score-value">5/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Resource Use</span>
+            <div class="score-bar"><div class="score-fill" style="width:85%;background:var(--coral)"></div></div>
+            <span class="score-value">Heavy</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Stability</span>
+            <div class="score-bar"><div class="score-fill" style="width:40%;background:var(--gold)"></div></div>
+            <span class="score-value">4/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Strengths</h4>
+            <ul>
+              <li>Full design tool feature set</li>
+              <li>SVG-native &mdash; great for vector work</li>
+              <li>Self-hostable, open source</li>
+              <li>Already deployed on your infrastructure</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Gaps</h4>
+            <ul>
+              <li>6 Docker containers, 4GB+ RAM</li>
+              <li>JVM memory issues</li>
+              <li>Unstable internal API</li>
+              <li>Human-first design &mdash; not agent-native</li>
+              <li>Does not achieve zero fidelity gap</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="landscape-panel" id="lpanel-openpencil">
+      <div class="card">
+        <h3>OpenPencil <span class="badge sage">MIT License &bull; 1.9k Stars</span></h3>
+        <p>MIT-licensed OSS competitor solving the EXACT same problem. Concurrent agent teams, batch DSL, MCP server, multi-platform export. The closest reference implementation to study.</p>
+        <div style="margin-top:16px">
+          <div class="score-row">
+            <span class="score-label">Relevance</span>
+            <div class="score-bar"><div class="score-fill" style="width:95%;background:var(--sage)"></div></div>
+            <span class="score-value">9.5/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Architecture</span>
+            <div class="score-bar"><div class="score-fill" style="width:85%;background:var(--sage)"></div></div>
+            <span class="score-value">8.5/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Maturity</span>
+            <div class="score-bar"><div class="score-fill" style="width:45%;background:var(--orange)"></div></div>
+            <span class="score-value">4.5/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Worth Studying</h4>
+            <ul>
+              <li>Concurrent agent team pattern</li>
+              <li>Batch DSL design</li>
+              <li>Multi-platform export approach</li>
+              <li>MIT license &mdash; can borrow patterns freely</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Why Not Just Use It</h4>
+            <ul>
+              <li>Different architecture (not "designs are code")</li>
+              <li>Still has a design-to-code translation step</li>
+              <li>Less mature than commercial Pencil</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="tab-panel" id="panel-options">
+    <div class="section-header">
+      <div class="dot" style="background:var(--coral)"></div>
+      Options Evaluation
+    </div>
+
+    <!-- Option A -->
+    <div class="card" id="optA">
+      <div class="collapsible-header" onclick="toggleCollapse(this)">
+        <h3>Option A &mdash; Extend Existing OSS Tool (Penpot/tldraw + MCP)</h3>
+        <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+      </div>
+      <div class="collapsible-body">
+        <div style="margin-bottom:16px">
+          <div class="score-row">
+            <span class="score-label">Effort</span>
+            <div class="score-bar"><div class="score-fill" style="width:50%;background:var(--orange)"></div></div>
+            <span class="score-value">3-4 wk</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity</span>
+            <div class="score-bar"><div class="score-fill" style="width:60%;background:var(--gold)"></div></div>
+            <span class="score-value">5-7/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Maintenance</span>
+            <div class="score-bar"><div class="score-fill" style="width:75%;background:var(--coral)"></div></div>
+            <span class="score-value">High</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Vendor Lock-in</span>
+            <div class="score-bar"><div class="score-fill" style="width:20%;background:var(--sage)"></div></div>
+            <span class="score-value">Low</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Mock=Prod</span>
+            <div class="score-bar"><div class="score-fill" style="width:60%;background:var(--orange)"></div></div>
+            <span class="score-value">6/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Leverages existing design tool ecosystem</li>
+              <li>Self-hostable (Penpot, tldraw OSS)</li>
+              <li>Lower initial effort than scratch build</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Always tracking upstream changes</li>
+              <li>Limited by the tool's rendering engine</li>
+              <li>Translation gap: design format to React</li>
+              <li>Heavy infrastructure (Penpot = 6 containers)</li>
+              <li>tldraw has commercial license issues</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option B -->
+    <div class="card" id="optB">
+      <div class="collapsible-header" onclick="toggleCollapse(this)">
+        <h3>Option B &mdash; Custom Design Engine from Scratch</h3>
+        <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+      </div>
+      <div class="collapsible-body">
+        <div style="margin-bottom:16px">
+          <div class="score-row">
+            <span class="score-label">Effort</span>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--coral)"></div></div>
+            <span class="score-value">8-12 wk</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity</span>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--sage)"></div></div>
+            <span class="score-value">Up to 9</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Maintenance</span>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--coral)"></div></div>
+            <span class="score-value">V. High</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Vendor Lock-in</span>
+            <div class="score-bar"><div class="score-fill" style="width:5%;background:var(--sage)"></div></div>
+            <span class="score-value">None</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Mock=Prod</span>
+            <div class="score-bar"><div class="score-fill" style="width:70%;background:var(--orange)"></div></div>
+            <span class="score-value">7/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Full control over everything</li>
+              <li>No upstream dependencies</li>
+              <li>Can optimize for agent use case</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Building a design tool is extremely hard</li>
+              <li>8-12 weeks is optimistic</li>
+              <li>Still has custom format to code step</li>
+              <li>Massive ongoing maintenance burden</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option C -- RECOMMENDED -->
+    <div class="card" id="optC" style="border:2px solid var(--coral)">
+      <div class="collapsible-header open" onclick="toggleCollapse(this)">
+        <h3>Option C &mdash; "Designs ARE Code" <span class="rec-badge">Recommended</span></h3>
+        <svg class="chevron" viewBox="0 0 20 20" fill="currentColor" style="transform:rotate(180deg)"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+      </div>
+      <div class="collapsible-body open">
+        <div style="margin-bottom:16px">
+          <div class="score-row">
+            <span class="score-label">Effort</span>
+            <div class="score-bar"><div class="score-fill" style="width:30%;background:var(--sage)"></div></div>
+            <span class="score-value">2-3 wk</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity</span>
+            <div class="score-bar"><div class="score-fill" style="width:100%;background:var(--sage)"></div></div>
+            <span class="score-value">10/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Maintenance</span>
+            <div class="score-bar"><div class="score-fill" style="width:20%;background:var(--sage)"></div></div>
+            <span class="score-value">Low</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Vendor Lock-in</span>
+            <div class="score-bar"><div class="score-fill" style="width:5%;background:var(--sage)"></div></div>
+            <span class="score-value">None</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Mock=Prod</span>
+            <div class="score-bar"><div class="score-fill" style="width:100%;background:var(--sage)"></div></div>
+            <span class="score-value">10/10</span>
+          </div>
+        </div>
+        <p style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:12px">
+          <strong>The key insight:</strong> The design format IS React/TSX + Tailwind + shadcn/ui. There is no translation step. The agent writes real components, the dev server renders them, Playwright screenshots them, and the source files ARE the production deliverable. There is no independent visual schema, no design document compiler, and no separate node model. All "node operations" are AST operations over code.
+        </p>
+        <p style="font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">
+          This is proven at scale by v0.dev. The agent already knows React. shadcn/ui provides a comprehensive component library. Tailwind provides the styling system. Next.js provides the rendering pipeline. The commitment to code-first is strict and non-negotiable &mdash; no shadow schemas, no intermediate formats, no design-to-code translation layers.
+        </p>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Why It Wins</h4>
+            <ul>
+              <li>10/10 fidelity &mdash; mockup IS production code</li>
+              <li>Agent already knows React/TSX</li>
+              <li>Leverages battle-tested tools (Next.js, Playwright, shadcn)</li>
+              <li>Lowest effort AND lowest maintenance</li>
+              <li>v0.dev proves this at scale</li>
+              <li>Zero vendor lock-in</li>
+              <li>Export is "already done" &mdash; no compilation step</li>
+              <li>No dual-architecture risk &mdash; one source of truth</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Considerations</h4>
+            <ul>
+              <li>Playwright needs ~700MB for Chromium</li>
+              <li>HMR must be reliable for render loop</li>
+              <li>Agent must write valid JSX (lint tool mitigates)</li>
+              <li>Component coverage limited to shadcn MVP set</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option D -->
+    <div class="card" id="optD">
+      <div class="collapsible-header" onclick="toggleCollapse(this)">
+        <h3>Option D &mdash; Wrap Google Stitch + Escape Hatch</h3>
+        <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+      </div>
+      <div class="collapsible-body">
+        <div style="margin-bottom:16px">
+          <div class="score-row">
+            <span class="score-label">Effort</span>
+            <div class="score-bar"><div class="score-fill" style="width:12%;background:var(--sage)"></div></div>
+            <span class="score-value">1 wk</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity</span>
+            <div class="score-bar"><div class="score-fill" style="width:70%;background:var(--orange)"></div></div>
+            <span class="score-value">7/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Maintenance</span>
+            <div class="score-bar"><div class="score-fill" style="width:50%;background:var(--orange)"></div></div>
+            <span class="score-value">Low&rarr;Hi</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Vendor Lock-in</span>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--coral)"></div></div>
+            <span class="score-value">HIGH</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Mock=Prod</span>
+            <div class="score-bar"><div class="score-fill" style="width:60%;background:var(--orange)"></div></div>
+            <span class="score-value">6/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Fastest to prototype (1 week)</li>
+              <li>Stitch generates good-looking UI</li>
+              <li>Low initial maintenance</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Google Labs could kill it at any time</li>
+              <li>HTML/CSS output needs React conversion</li>
+              <li>Not self-hostable</li>
+              <li>No design token control</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option E -->
+    <div class="card" id="optE">
+      <div class="collapsible-header" onclick="toggleCollapse(this)">
+        <h3>Option E &mdash; Hybrid (Stitch for Generation + Custom for Refinement)</h3>
+        <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+      </div>
+      <div class="collapsible-body">
+        <div style="margin-bottom:16px">
+          <div class="score-row">
+            <span class="score-label">Effort</span>
+            <div class="score-bar"><div class="score-fill" style="width:50%;background:var(--orange)"></div></div>
+            <span class="score-value">3-4 wk</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Fidelity</span>
+            <div class="score-bar"><div class="score-fill" style="width:80%;background:var(--sage)"></div></div>
+            <span class="score-value">8/10</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Maintenance</span>
+            <div class="score-bar"><div class="score-fill" style="width:65%;background:var(--orange)"></div></div>
+            <span class="score-value">Med-Hi</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Vendor Lock-in</span>
+            <div class="score-bar"><div class="score-fill" style="width:50%;background:var(--orange)"></div></div>
+            <span class="score-value">Medium</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">Mock=Prod</span>
+            <div class="score-bar"><div class="score-fill" style="width:70%;background:var(--orange)"></div></div>
+            <span class="score-value">7/10</span>
+          </div>
+        </div>
+        <div class="pros-cons">
+          <div class="col pros">
+            <h4>Pros</h4>
+            <ul>
+              <li>Best of both worlds in theory</li>
+              <li>Stitch for initial generation</li>
+              <li>Custom system for refinement</li>
+            </ul>
+          </div>
+          <div class="col cons">
+            <h4>Cons</h4>
+            <ul>
+              <li>Two systems to maintain</li>
+              <li>Partial Stitch dependency</li>
+              <li>Same effort as Option A but with vendor risk</li>
+              <li>Complexity of bridging two paradigms</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="tab-panel" id="panel-architecture">
+    <div class="section-header">
+      <div class="dot" style="background:var(--sage)"></div>
+      System Architecture
+    </div>
+
+    <!-- Architectural Invariants -->
+    <div class="invariant-card">
+      <h3>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="var(--coral)"><path fill-rule="evenodd" d="M10 1a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 4.346a1 1 0 01-.025.846A3.955 3.955 0 0114.5 14a3.955 3.955 0 01-3.427-1.997 1 1 0 01-.025-.846l1.738-4.346-.786-.393V14a1 1 0 01-2 0V6.418l-.786.393 1.738 4.346a1 1 0 01-.025.846A3.955 3.955 0 017.5 14a3.955 3.955 0 01-3.427-1.997 1 1 0 01-.025-.846l1.738-4.346-1.233-.617a1 1 0 01.894-1.789l1.599.8L11 3.323V2a1 1 0 011-1z"/></svg>
+        Architectural Invariants
+      </h3>
+      <div class="invariant-rule">
+        Source of truth is TSX/React + Tailwind + shadcn/ui. No independent visual schema. No design document compiler. Node operations are AST operations over code.
+      </div>
+      <p>This is a strict, non-negotiable commitment locked after third-party review. The system will never build a parallel node model, batch_modify DSL over a shadow schema, or write_html injection layer. Every design operation is a code operation. Every code operation produces a real, renderable React component. Violations of this invariant are architectural bugs.</p>
+    </div>
+
+    <div class="arch-container">
+      <svg viewBox="0 0 900 480" width="900" height="480" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',system-ui,sans-serif">
+        <!-- Background regions -->
+        <rect x="260" y="10" width="420" height="460" rx="16" fill="#FFF9F5" stroke="#F0E8E0" stroke-width="1.5"/>
+        <text x="280" y="36" font-size="11" fill="#B8A090" font-weight="600" letter-spacing="0.5">DESIGN MCP SERVER (Node.js, 7 MVP tools)</text>
+
+        <!-- Claude Code (left) -->
+        <g class="arch-node" data-detail="claude" onclick="showArchDetail(this)">
+          <rect x="20" y="100" width="180" height="70" rx="12" fill="#FF6B6B" stroke="#E05050" stroke-width="1.5"/>
+          <text x="110" y="130" text-anchor="middle" font-size="14" fill="#fff" font-weight="700">Claude Code</text>
+          <text x="110" y="148" text-anchor="middle" font-size="11" fill="#FFD4CC">(AI Agent)</text>
+        </g>
+
+        <!-- Human (right) -->
+        <g class="arch-node" data-detail="human" onclick="showArchDetail(this)">
+          <rect x="720" y="100" width="160" height="70" rx="12" fill="#F5C542" stroke="#D4A832" stroke-width="1.5"/>
+          <text x="800" y="130" text-anchor="middle" font-size="14" fill="#5A4A10" font-weight="700">Human</text>
+          <text x="800" y="148" text-anchor="middle" font-size="11" fill="#8A7A30">(Reviews in browser)</text>
+        </g>
+
+        <!-- MCP connection arrow -->
+        <line x1="200" y1="135" x2="280" y2="135" stroke="#FF6B6B" stroke-width="2" marker-end="url(#arrowCoral)"/>
+        <text x="230" y="128" font-size="10" fill="#C04040" font-weight="600">MCP</text>
+
+        <!-- HTTP connection arrow -->
+        <line x1="720" y1="135" x2="660" y2="135" stroke="#F5C542" stroke-width="2" marker-end="url(#arrowGold)"/>
+        <text x="678" y="128" font-size="10" fill="#A08020" font-weight="600">HTTP</text>
+
+        <!-- Project Manager -->
+        <g class="arch-node" data-detail="project-mgr" onclick="showArchDetail(this)">
+          <rect x="290" y="70" width="150" height="50" rx="10" fill="#fff" stroke="#E8E4DF" stroke-width="1.5"/>
+          <text x="365" y="92" text-anchor="middle" font-size="12" fill="#2D2A26" font-weight="600">Project Manager</text>
+          <text x="365" y="107" text-anchor="middle" font-size="10" fill="#6B6560">open/create/list</text>
+        </g>
+
+        <!-- Screen Editor -->
+        <g class="arch-node" data-detail="screen-editor" onclick="showArchDetail(this)">
+          <rect x="290" y="145" width="150" height="50" rx="10" fill="#fff" stroke="#E8E4DF" stroke-width="1.5"/>
+          <text x="365" y="167" text-anchor="middle" font-size="12" fill="#2D2A26" font-weight="600">Screen Editor</text>
+          <text x="365" y="182" text-anchor="middle" font-size="10" fill="#6B6560">AST code operations</text>
+        </g>
+
+        <!-- .tsx Files (center) -->
+        <g class="arch-node" data-detail="tsx" onclick="showArchDetail(this)">
+          <rect x="480" y="100" width="160" height="60" rx="10" fill="#FFF0E0" stroke="#E8773A" stroke-width="2"/>
+          <text x="560" y="126" text-anchor="middle" font-size="13" fill="#B85A20" font-weight="700">.tsx Files</text>
+          <text x="560" y="143" text-anchor="middle" font-size="10" fill="#B85A20">(src/) The Designs</text>
+        </g>
+
+        <!-- Arrows from PM and Editor to TSX -->
+        <line x1="440" y1="95" x2="480" y2="118" stroke="#E8E4DF" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+        <line x1="440" y1="170" x2="480" y2="143" stroke="#E8E4DF" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+        <!-- Checkpoint System -->
+        <g class="arch-node" data-detail="checkpoint" onclick="showArchDetail(this)">
+          <rect x="290" y="225" width="150" height="50" rx="10" fill="#fff" stroke="#E8E4DF" stroke-width="1.5"/>
+          <text x="365" y="247" text-anchor="middle" font-size="12" fill="#2D2A26" font-weight="600">Checkpoint System</text>
+          <text x="365" y="262" text-anchor="middle" font-size="10" fill="#6B6560">git-based versioning</text>
+        </g>
+
+        <!-- Next.js Dev Server -->
+        <g class="arch-node" data-detail="nextjs" onclick="showArchDetail(this)">
+          <rect x="480" y="210" width="160" height="60" rx="10" fill="#EEF3EB" stroke="#7c9070" stroke-width="2"/>
+          <text x="560" y="236" text-anchor="middle" font-size="13" fill="#5A6E50" font-weight="700">Next.js Dev Srv</text>
+          <text x="560" y="253" text-anchor="middle" font-size="10" fill="#5A6E50">renders components</text>
+        </g>
+
+        <!-- TSX to Next.js arrow -->
+        <line x1="560" y1="160" x2="560" y2="210" stroke="#7c9070" stroke-width="1.5" marker-end="url(#arrowSage)"/>
+
+        <!-- Next.js to Human arrow (preview) -->
+        <path d="M640,240 Q700,240 750,185" fill="none" stroke="#F5C542" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowGold)"/>
+        <text x="700" y="225" font-size="10" fill="#A08020" font-weight="600">preview</text>
+
+        <!-- Screenshot Service -->
+        <g class="arch-node" data-detail="screenshot" onclick="showArchDetail(this)">
+          <rect x="290" y="315" width="150" height="50" rx="10" fill="#fff" stroke="#E8E4DF" stroke-width="1.5"/>
+          <text x="365" y="337" text-anchor="middle" font-size="12" fill="#2D2A26" font-weight="600">Screenshot Service</text>
+          <text x="365" y="352" text-anchor="middle" font-size="10" fill="#6B6560">renders to PNG</text>
+        </g>
+
+        <!-- Playwright -->
+        <g class="arch-node" data-detail="playwright" onclick="showArchDetail(this)">
+          <rect x="480" y="315" width="160" height="60" rx="10" fill="#FFE8E8" stroke="#FF6B6B" stroke-width="2"/>
+          <text x="560" y="341" text-anchor="middle" font-size="13" fill="#C04040" font-weight="700">Playwright</text>
+          <text x="560" y="358" text-anchor="middle" font-size="10" fill="#C04040">headless Chromium</text>
+        </g>
+
+        <!-- Next.js to Playwright arrow -->
+        <line x1="560" y1="270" x2="560" y2="315" stroke="#FF6B6B" stroke-width="1.5" marker-end="url(#arrowCoral)"/>
+
+        <!-- Screenshot to Playwright arrow -->
+        <line x1="440" y1="340" x2="480" y2="340" stroke="#E8E4DF" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+        <!-- Export -->
+        <g class="arch-node" data-detail="export" onclick="showArchDetail(this)">
+          <rect x="480" y="410" width="160" height="50" rx="10" fill="#FFF8E0" stroke="#F5C542" stroke-width="1.5"/>
+          <text x="560" y="432" text-anchor="middle" font-size="13" fill="#A08020" font-weight="700">Export = Source</text>
+          <text x="560" y="447" text-anchor="middle" font-size="10" fill="#A08020">.tsx IS the deliverable</text>
+        </g>
+
+        <!-- Playwright to screenshot back to Claude -->
+        <path d="M480,355 Q200,380 110,175" fill="none" stroke="#FF6B6B" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrowCoral)"/>
+        <text x="180" y="310" font-size="10" fill="#C04040" font-weight="600">PNG response</text>
+
+        <!-- Arrow defs -->
+        <defs>
+          <marker id="arrowCoral" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6" fill="#FF6B6B"/>
+          </marker>
+          <marker id="arrowGold" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6" fill="#F5C542"/>
+          </marker>
+          <marker id="arrowSage" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6" fill="#7c9070"/>
+          </marker>
+          <marker id="arrowGray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6" fill="#E8E4DF"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <div class="arch-detail" id="archDetail">
+        <h4>Click any component above to see details</h4>
+        <p>Each node in the architecture diagram is interactive. Click to learn about its role, technology, and how it connects to the rest of the system.</p>
+      </div>
+    </div>
+
+    <!-- Recommendation box -->
+    <div class="card" style="margin-top:16px;border-left:4px solid var(--coral)">
+      <h3>Why This Architecture Wins</h3>
+      <p>The critical insight is eliminating the "design-to-code" translation step entirely. In every other tool (Pencil, Paper, Stitch, Penpot), the design lives in a proprietary format that must be compiled or converted to production code. That conversion is where fidelity is lost.</p>
+      <p style="margin-top:8px">By making the <strong>design format identical to the production format</strong> (React/TSX + Tailwind + shadcn/ui), the "export" operation is a no-op. The screenshot you approve IS rendered from the code you ship. There is no shadow schema, no node tree, no intermediate representation &mdash; just code.</p>
+    </div>
+  </div>
+
+  <!-- MCP TOOLS -->
+  <div class="tab-panel" id="panel-mcp-tools">
+    <div class="section-header">
+      <div class="dot" style="background:var(--coral)"></div>
+      MCP Tool Inventory &mdash; Phased Approach
+    </div>
+
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:20px;line-height:1.7">After review, the tool surface was cut from 16 to 7 for MVP to prioritize quality over breadth. Tools are phased into MVP (7), V1.1 (3-4), and V2+ (2-3).</p>
+
+    <!-- MVP Tools -->
+    <h3 style="font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <span class="badge coral" style="font-size:12px">MVP &mdash; 7 Tools</span> Ship First, Ship Right
+    </h3>
+
+    <div class="table-wrapper" style="margin-bottom:24px">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Our Tool</th>
+            <th>Description</th>
+            <th>Pencil</th>
+            <th>Paper</th>
+            <th>Stitch</th>
+            <th>Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td class="tool-name">open_project</td>
+            <td>Open an existing design project or create a new one (scaffolds Next.js + shadcn/ui app)</td>
+            <td><span class="check">open_document</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">create_project</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td class="tool-name">create_screen</td>
+            <td>Scaffold a new TSX screen component + route in the project</td>
+            <td><span class="check">batch_design</span></td>
+            <td><span class="check">create_artboard</span></td>
+            <td><span class="check">generate_screen</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td class="tool-name">edit_screen_code</td>
+            <td>Patch/modify screen code via AST-level operations. The agent edits real TSX &mdash; no intermediate format.</td>
+            <td><span class="check">batch_design</span></td>
+            <td><span class="check">write_html</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td class="tool-name">render_screenshot</td>
+            <td>Render screen to PNG via Playwright with viewport param (desktop, tablet, mobile)</td>
+            <td><span class="check">get_screenshot</span></td>
+            <td><span class="check">get_screenshot</span></td>
+            <td><span class="check">get_image</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td class="tool-name">list_screens</td>
+            <td>List all screens in a project with metadata</td>
+            <td><span class="check">batch_get</span></td>
+            <td><span class="check">get_basic_info</span></td>
+            <td><span class="check">list_screens</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td class="tool-name">checkpoint</td>
+            <td>Save current state (git commit) for safe experimentation</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td class="tool-name">restore_checkpoint</td>
+            <td>Rollback to a saved state (git reset to checkpoint)</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge coral" style="font-size:10px">MVP</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- V1.1 Tools -->
+    <h3 style="font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <span class="badge orange" style="font-size:12px">V1.1 &mdash; 3-4 Tools</span> Quality of Life
+    </h3>
+
+    <div class="table-wrapper" style="margin-bottom:24px">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tool</th>
+            <th>Description</th>
+            <th>Pencil</th>
+            <th>Paper</th>
+            <th>Stitch</th>
+            <th>Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>8</td>
+            <td class="tool-name">lint_design</td>
+            <td>Accessibility, token, and layout consistency checks</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge orange" style="font-size:10px">V1.1</span></td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td class="tool-name">bulk_style_replace</td>
+            <td>Find/replace styles across all components in a project</td>
+            <td><span class="check">replace_all</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge orange" style="font-size:10px">V1.1</span></td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td class="tool-name">get_design_tokens</td>
+            <td>Read current design token set (colors, spacing, typography from Tailwind config)</td>
+            <td><span class="check">get_variables</span></td>
+            <td><span class="check">get_computed</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge orange" style="font-size:10px">V1.1</span></td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td class="tool-name">set_design_tokens</td>
+            <td>Update design tokens (writes Tailwind config + CSS variables)</td>
+            <td><span class="check">set_variables</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge orange" style="font-size:10px">V1.1</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- V2+ Tools -->
+    <h3 style="font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+      <span class="badge gold" style="font-size:12px">V2+ &mdash; Deferred</span> After Core is Solid
+    </h3>
+
+    <div class="table-wrapper" style="margin-bottom:24px">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tool</th>
+            <th>Description</th>
+            <th>Pencil</th>
+            <th>Paper</th>
+            <th>Stitch</th>
+            <th>Phase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>12</td>
+            <td class="tool-name">export_code</td>
+            <td>Format transformations (react-shadcn mapping, clean exports). Deferred because in code-first, export is nearly a no-op.</td>
+            <td><span class="check">export_nodes</span></td>
+            <td><span class="check">get_jsx</span></td>
+            <td><span class="check">get_html</span></td>
+            <td><span class="badge gold" style="font-size:10px">V2+</span></td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td class="tool-name">write_html</td>
+            <td>Raw HTML injection for escape-hatch scenarios. Deferred to avoid dual-architecture drift.</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">write_html</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="badge gold" style="font-size:10px">V2+</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+      <div class="card" style="border-left:4px solid var(--sage)">
+        <h3 style="font-size:15px">Our Unique Advantages</h3>
+        <ul>
+          <li><strong>checkpoint / restore_checkpoint</strong> &mdash; No competitor offers safe experimentation via versioning</li>
+          <li><strong>edit_screen_code</strong> &mdash; AST-level code operations, not a parallel design schema</li>
+          <li><strong>Responsive viewport</strong> in render_screenshot &mdash; test mobile, tablet, desktop</li>
+          <li><strong>Zero export gap</strong> &mdash; the TSX you render IS the deliverable</li>
+          <li><strong>7 tools, not 24+</strong> &mdash; Fewer tokens per operation, higher reliability</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--orange)">
+        <h3 style="font-size:15px">Design Decisions (Post-Review)</h3>
+        <ul>
+          <li><strong>7 MVP tools, not 16</strong> &mdash; Quality over breadth. Reviewed down from 16.</li>
+          <li><strong>No node tree or batch_modify</strong> &mdash; Eliminated to prevent dual-architecture drift.</li>
+          <li><strong>AST operations over code</strong> &mdash; edit_screen_code works on TSX directly, not a shadow model.</li>
+          <li><strong>TSX as sole source of truth</strong> &mdash; No design.config.json, no DESIGN.md as runtime contracts.</li>
+          <li><strong>Git for versioning</strong> &mdash; Leverages existing tool, no custom persistence layer.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUILD SEQUENCE -->
+  <div class="tab-panel" id="panel-build-seq">
+    <div class="section-header">
+      <div class="dot" style="background:var(--orange)"></div>
+      Build Sequence &mdash; Dependency Order
+    </div>
+
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:20px;line-height:1.7">Components must be built in this order. Validation spikes come first to de-risk assumptions before committing to the full build.</p>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--sage)">1</div>
+      <div class="build-content">
+        <h4>Validation Spikes (Fidelity, Editability, Determinism)</h4>
+        <p>Run 3 short spikes to validate core assumptions before building. Fidelity: TSX to Playwright screenshot across 10 components. Editability: agent creates screen, modifies 3 components, checkpoints, makes bad edit, restores. Determinism: same TSX input produces identical screenshots across runs in Docker.</p>
+        <div class="deps">Day 1-5 &bull; No dependencies &bull; GATE: must pass before proceeding</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--coral)">2</div>
+      <div class="build-content">
+        <h4>Project Template Scaffold</h4>
+        <p>Create the Next.js + shadcn/ui + Tailwind CSS template that <code>open_project</code> will clone for each new design project. Bundle Geist Sans/Mono fonts. This is the foundation everything else renders into.</p>
+        <div class="deps">Day 5-7 &bull; Depends on: spike results</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--coral)">3</div>
+      <div class="build-content">
+        <h4>MCP Server Skeleton (7 tools, stdio transport)</h4>
+        <p>Initialize the MCP server using <code>@modelcontextprotocol/sdk</code>. Register all 7 MVP tools. Set up TypeScript project, stdio transport first, HTTP later. No tools implemented yet &mdash; just the shell with type-safe tool definitions.</p>
+        <div class="deps">Day 5-7 &bull; Parallel with step 2</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--coral)">4</div>
+      <div class="build-content">
+        <h4>Playwright Screenshot Pipeline</h4>
+        <p>Launch persistent Playwright browser, navigate to dev server URL, capture viewport screenshot. Support width/height params for responsive testing. Deterministic rendering: fixed viewport, preloaded fonts, networkidle wait strategy.</p>
+        <div class="deps">Day 7-9 &bull; Depends on: step 2 (needs a project to render)</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--orange)">5</div>
+      <div class="build-content">
+        <h4>Git-Based Checkpoint System</h4>
+        <p><code>checkpoint</code> = git commit with message. <code>restore_checkpoint</code> = git reset to commit. Auto-cleanup checkpoints older than 7 days (configurable TTL). Agent can safely experiment.</p>
+        <div class="deps">Day 9-10 &bull; Depends on: step 2</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--orange)">6</div>
+      <div class="build-content">
+        <h4>Preview Server (Tailscale-Accessible)</h4>
+        <p>Expose the Next.js dev server over Tailscale so Oliver can review live in a browser. Return the accessible URL.</p>
+        <div class="deps">Day 10-11 &bull; Depends on: step 2</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--gold)">7</div>
+      <div class="build-content">
+        <h4>Docker Containerization</h4>
+        <p>Dockerfile with pinned Geist fonts, Playwright Chromium, and all dependencies. Docker Compose for MCP server + preview. Resource limits and health checks. Deterministic rendering environment.</p>
+        <div class="deps">Day 11-13 &bull; Depends on: steps 3-6</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--gold)">8</div>
+      <div class="build-content">
+        <h4>Claude Code Skill + Integration Testing</h4>
+        <p>Write SKILL.md so Claude Code knows how to use the design tool. Full integration test of the entire pipeline: create project, add screen, edit, screenshot, checkpoint, restore, preview.</p>
+        <div class="deps">Day 13-16 &bull; Depends on: all above</div>
+      </div>
+    </div>
+
+    <div class="build-step">
+      <div class="build-num" style="background:var(--sage)">9</div>
+      <div class="build-content">
+        <h4>Deploy Pipeline + Runbook Entry</h4>
+        <p>Create <code>.github/workflows/deploy.yml</code> (GitHub Actions + Tailscale SSH, matching SmithBuilder/HolaCan pattern). Add entry to <code>Ops/runbook.md</code> with: service name, ports (4500/4501), health check URL, SSH restart commands, Docker Compose path, Git remote reference. Add to the full system health check loop.</p>
+        <div class="deps">Day 16-17 &bull; Depends on: Docker containerization</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="tab-panel" id="panel-tech-stack">
+    <div class="section-header">
+      <div class="dot" style="background:var(--gold)"></div>
+      Tech Stack
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-role">Runtime</div>
+        <div class="tech-name">Node.js 22</div>
+        <div class="tech-why">Already installed on HP laptop. LTS with stable ESM support. Required for Next.js and Playwright.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">MCP Server</div>
+        <div class="tech-name">@modelcontextprotocol/sdk</div>
+        <div class="tech-why">Official MCP SDK. TypeScript-first. Supports both stdio (local) and HTTP (remote over Tailscale) transports.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Design Projects</div>
+        <div class="tech-name">Next.js 16</div>
+        <div class="tech-why">Each design project is a Next.js app. Provides the dev server that renders components. Turbopack for fast HMR.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Component Library</div>
+        <div class="tech-name">shadcn/ui</div>
+        <div class="tech-why">Copy-paste components that are real React code. No runtime dependency. Agent knows them well. Extensive set.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Styling</div>
+        <div class="tech-name">Tailwind CSS</div>
+        <div class="tech-why">Utility-first CSS that agents write fluently. Design tokens map to Tailwind config. Zero build overhead.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Screenshot Engine</div>
+        <div class="tech-name">Playwright</div>
+        <div class="tech-why">Headless Chromium. ~200-500ms warm render. Full CSS Grid/Flexbox/Tailwind support. Docker-friendly. 700MB memory.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Versioning</div>
+        <div class="tech-name">Git</div>
+        <div class="tech-why">Checkpoint = commit, restore = reset. No custom persistence layer needed. Battle-tested. Agent knows git.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Server Language</div>
+        <div class="tech-name">TypeScript</div>
+        <div class="tech-why">Type safety for MCP tool definitions. Same language as design projects. Single toolchain.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Network</div>
+        <div class="tech-name">Tailscale</div>
+        <div class="tech-why">Already connecting HP laptop and Dell laptop. Preview URLs accessible via Tailscale. 1-5ms latency.</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-role">Containerization</div>
+        <div class="tech-name">Docker Compose</div>
+        <div class="tech-why">Consistent deployment. Auto-restart on failure. Resource limits. Single compose file for all services. Pinned fonts for determinism.</div>
+      </div>
+    </div>
+
+    <!-- What we're NOT using -->
+    <div class="card" style="margin-top:20px;border-left:4px solid var(--coral)">
+      <h3 style="font-size:15px">Eliminated Technologies</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+        <div>
+          <p style="font-size:13px"><strong style="color:var(--coral)">Satori</strong> &mdash; Flexbox only. No CSS Grid. Broken Tailwind. Cannot render shadcn components. Only viable for simple OG images.</p>
+        </div>
+        <div>
+          <p style="font-size:13px"><strong style="color:var(--coral)">Canvas (Konva/Fabric.js)</strong> &mdash; No CSS layout engine. Would need to build everything from scratch. Not suitable for component-based design.</p>
+        </div>
+        <div>
+          <p style="font-size:13px"><strong style="color:var(--coral)">tldraw</strong> &mdash; Commercial license. Browser-dependent. Hand-drawn aesthetic (4/10 fidelity for production UI).</p>
+        </div>
+        <div>
+          <p style="font-size:13px"><strong style="color:var(--coral)">Excalidraw</strong> &mdash; Hand-drawn aesthetic. 2/10 fidelity for production UI. Dead end for agent-native design.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOSTING -->
+  <div class="tab-panel" id="panel-hosting">
+    <div class="section-header">
+      <div class="dot" style="background:var(--sage)"></div>
+      Hosting &amp; Operational Specs
+    </div>
+
+    <div class="card">
+      <h3>Target Machine: jake-dev-win-hp</h3>
+      <p>Tailscale hostname: <code>jake-dev-win-hp</code> &bull; Tailscale IP: <code>100.102.138.90</code> &bull; SSH: <code>ssh -i ~/.ssh/hp_laptop_key oliver@100.102.138.90</code></p>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:6px"><strong>Note:</strong> This machine also runs the GitHub Actions Android build runner (<code>hp-android</code>) and TaskQ (port 3090). See resource contention section below.</p>
+    </div>
+
+    <div class="hosting-grid">
+      <div class="hosting-stat">
+        <div class="value">32 GB</div>
+        <div class="label">RAM Available</div>
+      </div>
+      <div class="hosting-stat">
+        <div class="value">3.7 TB</div>
+        <div class="label">Disk Space</div>
+      </div>
+      <div class="hosting-stat">
+        <div class="value">~1 GB</div>
+        <div class="label">Total Memory Usage</div>
+      </div>
+      <div class="hosting-stat">
+        <div class="value">1-5 ms</div>
+        <div class="label">Tailscale Latency</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h3 style="font-size:16px;margin-bottom:12px">Port Allocation</h3>
+      <div class="port-row">
+        <div class="port-num">4500</div>
+        <div>
+          <strong style="font-size:14px">MCP Server</strong>
+          <div class="port-desc">HTTP transport for remote Claude Code connections. Also supports stdio for local use.</div>
+        </div>
+      </div>
+      <div class="port-row">
+        <div class="port-num">4501</div>
+        <div>
+          <strong style="font-size:14px">Preview Server</strong>
+          <div class="port-desc">Next.js dev server. Accessible via Tailscale for Oliver to review live designs in browser.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h3 style="font-size:16px;margin-bottom:12px">Memory Breakdown</h3>
+      <div style="display:flex;gap:4px;height:32px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:8px">
+        <div style="flex:7;background:var(--coral);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600">Chromium ~700MB</div>
+        <div style="flex:2;background:var(--orange);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600">Dev Srv ~200MB</div>
+        <div style="flex:1;background:var(--gold);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:600">MCP</div>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted)">~1GB total out of 32GB available. Chromium is the biggest consumer &mdash; mitigated by persistent browser context (single launch, reuse across screenshots).</p>
+    </div>
+
+    <!-- Operational Specs -->
+    <div style="margin-top:24px">
+      <h3 style="font-size:18px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--orange)"></div>
+        Operational Specifications
+      </h3>
+
+      <div class="ops-grid">
+        <div class="ops-card">
+          <h4>Font Pinning</h4>
+          <p>Bundle <code>Geist Sans</code> and <code>Geist Mono</code> directly in the Docker image. No external font loading at runtime. This ensures deterministic text rendering and consistent screenshot output across environments. Fonts are loaded via <code>next/font/local</code> in the project template.</p>
+        </div>
+        <div class="ops-card">
+          <h4>Checkpoint TTL</h4>
+          <p>Auto-cleanup git checkpoints older than <code>7 days</code> (configurable via <code>CHECKPOINT_TTL_DAYS</code> environment variable). A background cron job runs daily to prune stale commits. Prevents unbounded disk usage across long-running projects.</p>
+        </div>
+        <div class="ops-card">
+          <h4>Single-Session Constraint</h4>
+          <p>V1 supports <strong>one agent session per project at a time</strong>. No concurrent agent access to the same project directory. This sidesteps git merge conflicts and file-locking complexity. Multi-session support is a V2+ concern after studying OpenPencil's patterns.</p>
+        </div>
+        <div class="ops-card">
+          <h4>Deterministic Rendering</h4>
+          <p>Fixed viewport dimensions per device class. Preloaded fonts (no FOUT/FOIT). <code>networkidle</code> wait strategy before screenshot capture. No external asset loading at screenshot time. Validated by Spike 3 before build begins.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h3 style="font-size:15px">Docker Compose Services</h3>
+      <pre><code>services:
+  mcp-server:
+    build: ./packages/mcp-server
+    ports:
+      - "4500:4500"
+    volumes:
+      - ./projects:/app/projects
+    environment:
+      - TRANSPORT=http
+      - PREVIEW_PORT=4501
+      - CHECKPOINT_TTL_DAYS=7
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4500/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  preview:
+    build: ./packages/preview
+    ports:
+      - "4501:4501"
+    volumes:
+      - ./projects:/app/projects
+    depends_on:
+      - mcp-server
+    restart: unless-stopped
+    mem_limit: 1536m
+    shm_size: 2gb</code></pre>
+    </div>
+
+    <!-- Health Check -->
+    <div class="card" style="border-left:4px solid var(--sage);margin-top:16px">
+      <h3 style="font-size:15px">Health Check</h3>
+      <p style="font-size:13px;color:var(--text-muted)">Matches the pattern used by all other Docker apps in the runbook:</p>
+      <pre><code>curl -sf http://100.102.138.90:4500/api/health</code></pre>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:8px">Returns <code>{"status":"ok","screens":N,"projects":N}</code>. Add to the runbook health check loop alongside existing services.</p>
+    </div>
+
+    <!-- Deployment Pipeline -->
+    <div class="card" style="border-left:4px solid var(--orange);margin-top:16px">
+      <h3 style="font-size:15px">Deployment Pipeline</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px">Follows the established GitHub Actions + SSH pattern used by SmithBuilder, HolaCan, and Coral Money Manager:</p>
+      <ol style="font-size:13px;color:var(--text-muted);padding-left:20px;line-height:1.8">
+        <li>Push to <code>main</code> triggers <code>.github/workflows/deploy.yml</code></li>
+        <li>Workflow connects via Tailscale VPN</li>
+        <li>SSH into HP laptop: <code>ssh -i key oliver@100.102.138.90</code></li>
+        <li><code>cd ~/webdev && git pull origin main</code></li>
+        <li><code>docker compose up -d --build</code></li>
+        <li>Health check: <code>curl -sf http://localhost:4500/api/health</code></li>
+        <li>Post result to Discord (optional, via webhook)</li>
+      </ol>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:8px"><strong>Branching:</strong> Work on <code>dev</code>, PR to <code>main</code>, merge triggers deploy. Same as SmithBuilder and HolaCan.</p>
+    </div>
+
+    <!-- Resource Contention -->
+    <div class="card" style="border-left:4px solid var(--coral);margin-top:16px">
+      <h3 style="font-size:15px">Resource Contention: Android Build Runner</h3>
+      <p style="font-size:13px;color:var(--text-muted)">The HP laptop runs a GitHub Actions runner (<code>hp-android</code>) for Android builds. Gradle builds are memory-intensive (~4-6GB). Mitigations:</p>
+      <ul style="font-size:13px;color:var(--text-muted);padding-left:20px;line-height:1.8;margin-top:8px">
+        <li><code>mem_limit: 1536m</code> on the preview container caps Chromium memory</li>
+        <li>Android builds are infrequent (manual trigger or push to main with <code>[build]</code> tag)</li>
+        <li>Playwright uses a persistent browser context — no cold starts during builds</li>
+        <li>If contention occurs: pause the design tool containers during Android builds, or schedule builds off-hours</li>
+        <li>32GB RAM total: ~6GB Android build + ~1.5GB design tool + ~1GB TaskQ + OS = ~10GB peak. Plenty of headroom.</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--sage)">
+      <h3 style="font-size:15px">Dual Transport</h3>
+      <ul>
+        <li><strong>stdio</strong> &mdash; When Claude Code runs on the HP laptop itself. Zero network latency. Configured in <code>.claude/settings.json</code>.</li>
+        <li><strong>HTTP (port 4500)</strong> &mdash; When Claude Code runs on the Dell laptop or any remote machine. Accessed via Tailscale at <code>http://jake-dev-win-hp.tail3b2a94.ts.net:4500</code> or <code>http://100.102.138.90:4500</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- PHASES -->
+  <div class="tab-panel" id="panel-phases">
+    <div class="section-header">
+      <div class="dot" style="background:var(--coral)"></div>
+      Phase Breakdown
+    </div>
+
+    <!-- Timeline visualization -->
+    <div class="timeline">
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">Phase 0.5</div>
+        <div class="timeline-sub">3-5 days</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">MVP</div>
+        <div class="timeline-sub">2-3 weeks</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">V1.1</div>
+        <div class="timeline-sub">+2-3 weeks</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="timeline-bar"></div>
+        <div class="timeline-dot"></div>
+        <div class="timeline-label">V2+</div>
+        <div class="timeline-sub">Ongoing</div>
+      </div>
+    </div>
+
+    <!-- Phase 0.5 Spikes -->
+    <div class="phase-card spikes">
+      <h4><span class="scope-tag">Phase 0.5 &mdash; 3-5 Days</span> Validation Spikes</h4>
+      <p style="font-size:14px;color:var(--text);margin-bottom:12px">Three short spikes to validate core assumptions before committing to the full build. Each spike is 1-2 days. If any spike fails, the architecture is reconsidered before proceeding.</p>
+
+      <div class="spike-grid">
+        <div class="spike-card">
+          <h5>Spike 1 &mdash; Fidelity</h5>
+          <div class="spike-duration">1-2 days</div>
+          <p>TSX to Playwright screenshot loop across 10 representative screens. Verify screenshots match rendered components pixel-accurately.</p>
+          <ul>
+            <li>shadcn Button</li>
+            <li>Card</li>
+            <li>Input</li>
+            <li>Dialog</li>
+            <li>Table</li>
+            <li>Tabs</li>
+            <li>Form</li>
+            <li>Select</li>
+            <li>Navigation</li>
+            <li>Full dashboard layout</li>
+          </ul>
+        </div>
+        <div class="spike-card">
+          <h5>Spike 2 &mdash; Editability</h5>
+          <div class="spike-duration">1-2 days</div>
+          <p>Can the agent reliably make targeted multi-file TSX updates? Test the full round-trip:</p>
+          <ul>
+            <li>Create a screen</li>
+            <li>Modify 3 components</li>
+            <li>Checkpoint the state</li>
+            <li>Make a bad edit</li>
+            <li>Restore from checkpoint</li>
+            <li>Verify round-trip is clean</li>
+          </ul>
+        </div>
+        <div class="spike-card">
+          <h5>Spike 3 &mdash; Determinism</h5>
+          <div class="spike-duration">1-2 days</div>
+          <p>Same TSX input produces identical screenshots across multiple runs in Docker on Windows host.</p>
+          <ul>
+            <li>Pin fonts in Dockerfile (Geist)</li>
+            <li>Test font rendering consistency</li>
+            <li>Validate asset loading timing</li>
+            <li>Verify viewport accuracy</li>
+            <li>Compare pixel diffs across runs</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MVP -->
+    <div class="phase-card mvp">
+      <h4><span class="scope-tag">MVP &mdash; Weeks 1-3</span> Core Design Loop (7 Tools)</h4>
+      <p style="font-size:14px;color:var(--text);margin-bottom:12px">The minimum viable product delivers the complete agent design loop: open project, create screens, edit code, screenshot, iterate, checkpoint/restore. Strictly code-first &mdash; no design schema.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <h4 style="font-size:13px;font-weight:600;color:var(--coral);margin-bottom:6px">7 Core Tools</h4>
+          <ul style="font-size:13px;color:var(--text-muted);padding-left:18px">
+            <li>open_project</li>
+            <li>create_screen</li>
+            <li>edit_screen_code</li>
+            <li>render_screenshot</li>
+            <li>list_screens</li>
+            <li>checkpoint</li>
+            <li>restore_checkpoint</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-size:13px;font-weight:600;color:var(--coral);margin-bottom:6px">Infrastructure</h4>
+          <ul style="font-size:13px;color:var(--text-muted);padding-left:18px">
+            <li>MCP server (stdio + HTTP transport)</li>
+            <li>Project template (Next.js + shadcn + pinned fonts)</li>
+            <li>Playwright screenshot pipeline (deterministic)</li>
+            <li>Preview server over Tailscale</li>
+            <li>Git-based checkpoint system with TTL</li>
+            <li>Docker deployment on HP laptop</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- V1.1 -->
+    <div class="phase-card v1">
+      <h4><span class="scope-tag">V1.1 &mdash; Weeks 4-6</span> Quality of Life</h4>
+      <p style="font-size:14px;color:var(--text);margin-bottom:12px">Add design system management, linting, and bulk operations. Polish the developer experience.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <h4 style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px">3-4 Additional Tools</h4>
+          <ul style="font-size:13px;color:var(--text-muted);padding-left:18px">
+            <li>lint_design (a11y + token + layout checks)</li>
+            <li>bulk_style_replace (find/replace across components)</li>
+            <li>get_design_tokens / set_design_tokens</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px">Developer Experience</h4>
+          <ul style="font-size:13px;color:var(--text-muted);padding-left:18px">
+            <li>Multi-project support</li>
+            <li>Claude Code skill (SKILL.md)</li>
+            <li>Docker auto-restart + health checks + deploy pipeline</li>
+            <li>Design token presets (warm palette, shadcn defaults)</li>
+            <li>Error recovery on broken JSX</li>
+            <li>GitHub Actions deploy workflow (SSH + Tailscale, matching existing apps)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- V2+ -->
+    <div class="phase-card future">
+      <h4><span class="scope-tag">V2+</span> Extended Vision</h4>
+      <p style="font-size:14px;color:var(--text);margin-bottom:12px">Export transformations, multi-session support, and productization. Only after core pipeline is solid.</p>
+      <ul style="font-size:13px;color:var(--text-muted);padding-left:18px">
+        <li>export_code format transformations (react-shadcn mapping) &mdash; deferred due to high complexity</li>
+        <li>write_html escape hatch &mdash; deferred to prevent dual-architecture drift</li>
+        <li>Multi-session support &mdash; study OpenPencil's concurrent agent team pattern first</li>
+        <li>Interactive preview &mdash; human can click through the live app, not just view screenshots</li>
+        <li>Component library expansion beyond shadcn MVP set</li>
+        <li>Design system import/export (Figma tokens format)</li>
+        <li>Potential productization on smithbuilder.app</li>
+        <li>A/B variant generation &mdash; agent creates multiple design options for comparison</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- RISKS -->
+  <div class="tab-panel" id="panel-risks">
+    <div class="section-header">
+      <div class="dot" style="background:var(--coral)"></div>
+      Risk Assessment
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon high">1</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">Dual-Architecture Drift</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">Risk of accidentally building a shadow schema or node model alongside the code-first pipeline. This was the reviewer's primary concern &mdash; the original 16-tool set implied parallel internal representations (get_node_tree, batch_modify).</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Locked "code-first, no schema" as architectural invariant. Removed all node-centric tools from MVP. Code review explicitly watches for this pattern. Any tool that introduces a non-TSX representation is an architectural bug.</p>
+      </div>
+      <span class="risk-sev high">High Impact</span>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon high">2</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">Deterministic Rendering</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">Fonts, timing, and asset loading can cause screenshot flakiness. If the same TSX produces different screenshots across runs, the agent's visual feedback loop breaks.</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Spike 3 validates this before build begins. Docker image pins all fonts (Geist Sans/Mono). networkidle wait strategy. No external asset loading at screenshot time. Fixed viewport dimensions.</p>
+      </div>
+      <span class="risk-sev high">High Impact</span>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon high">3</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">Agent Code Quality</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">The agent writes TSX &mdash; if it writes broken JSX, invalid imports, or runtime errors, the render fails and the screenshot pipeline stalls.</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> lint_design tool (V1.1) validates before render. Error boundaries catch runtime failures. Dev server error overlay captured in screenshot so agent sees the error. Checkpoint/restore enables recovery.</p>
+      </div>
+      <span class="risk-sev high">High Impact</span>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon med">4</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">Playwright Resource Usage</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">Chromium is memory-hungry (~700MB). On the 32GB HP laptop this is fine, but could be an issue on smaller machines.</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Persistent browser context &mdash; launch once, reuse for all screenshots. Single Chromium instance, not one per screenshot.</p>
+      </div>
+      <span class="risk-sev med">Medium</span>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon med">5</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">HMR Reliability</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">Next.js hot module replacement must be fast and reliable for the screenshot pipeline. If HMR breaks or stalls, screenshots show stale content.</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Turbopack (default in Next.js 16) is significantly faster than Webpack HMR. Add health checks and page-reload fallback if HMR times out.</p>
+      </div>
+      <span class="risk-sev med">Medium</span>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon low">6</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">shadcn/ui Coverage</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">The MVP component set may not cover all design needs. Some screens may require components not yet in shadcn/ui.</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Agent can write custom components alongside shadcn. V1.1 adds component library browsing to see what's available. Custom registry in future.</p>
+      </div>
+      <span class="risk-sev low">Low</span>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-icon low">7</div>
+      <div>
+        <h4 style="font-size:15px;margin-bottom:4px">Network Latency</h4>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">MCP server on HP laptop, Claude Code on Dell laptop. Tailscale adds network hop for every tool call.</p>
+        <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Tailscale adds only 1-5ms. Negligible vs. screenshot render time (200-500ms). Can also run via stdio locally.</p>
+      </div>
+      <span class="risk-sev low">Low</span>
+    </div>
+
+    <!-- Risk matrix visual -->
+    <div class="card" style="margin-top:16px">
+      <h3 style="font-size:15px;margin-bottom:16px">Severity / Likelihood Matrix</h3>
+      <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;grid-template-rows:auto 1fr 1fr 1fr;gap:2px;font-size:12px;max-width:500px">
+        <div></div>
+        <div style="text-align:center;padding:8px;font-weight:600;color:var(--text-muted)">Low Likelihood</div>
+        <div style="text-align:center;padding:8px;font-weight:600;color:var(--text-muted)">Medium</div>
+        <div style="text-align:center;padding:8px;font-weight:600;color:var(--text-muted)">High</div>
+
+        <div style="padding:8px;font-weight:600;color:var(--text-muted);writing-mode:horizontal-tb">High<br>Impact</div>
+        <div style="background:#FFF0E0;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#B85A20">2. Determinism</div>
+        <div style="background:#FFE8E8;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#C04040">1. Dual-Arch<br>3. Agent Code</div>
+        <div style="background:#FFE8E8;padding:12px;border-radius:6px;text-align:center"></div>
+
+        <div style="padding:8px;font-weight:600;color:var(--text-muted)">Medium</div>
+        <div style="background:#EEF3EB;padding:12px;border-radius:6px;text-align:center"></div>
+        <div style="background:#FFF0E0;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#B85A20">4. Playwright<br>5. HMR</div>
+        <div style="background:#FFE8E8;padding:12px;border-radius:6px;text-align:center"></div>
+
+        <div style="padding:8px;font-weight:600;color:var(--text-muted)">Low</div>
+        <div style="background:#EEF3EB;padding:12px;border-radius:6px;text-align:center;font-weight:600;color:#5A6E50">6. shadcn<br>7. Network</div>
+        <div style="background:#EEF3EB;padding:12px;border-radius:6px;text-align:center"></div>
+        <div style="background:#FFF0E0;padding:12px;border-radius:6px;text-align:center"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFERENCES -->
+  <div class="tab-panel" id="panel-references">
+    <div class="section-header">
+      <div class="dot" style="background:var(--gold)"></div>
+      References
+    </div>
+
+    <div class="ref-grid">
+      <div class="ref-card">
+        <div class="ref-name">Pencil (Commercial)</div>
+        <div class="ref-url">https://pencil.li</div>
+        <div class="ref-note">Leading MCP design tool. 13 tools. Batch DSL is the key innovation to study.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Paper Design</div>
+        <div class="ref-url">https://paper.design</div>
+        <div class="ref-note">24 MCP tools. HTML/CSS bidirectional editing. Requires GUI.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Google Stitch</div>
+        <div class="ref-url">https://stitch.withgoogle.com</div>
+        <div class="ref-note">Google Labs. 12 tools. Prompt-to-screen. HTML/CSS output.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">OpenPencil (MIT)</div>
+        <div class="ref-url">https://github.com/open-pencil/open-pencil</div>
+        <div class="ref-note">1.9k stars. Concurrent agent teams, batch DSL. Closest reference implementation.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Penpot (OSS)</div>
+        <div class="ref-url">https://penpot.app</div>
+        <div class="ref-note">SVG-native design tool. zcube MCP has 76+ tools. Heavy infrastructure.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">v0.dev by Vercel</div>
+        <div class="ref-url">https://v0.dev</div>
+        <div class="ref-note">Proves "designs are code" at scale. Agent generates React + shadcn/ui.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">MCP SDK</div>
+        <div class="ref-url">https://github.com/modelcontextprotocol/sdk</div>
+        <div class="ref-note">Official TypeScript SDK for building MCP servers.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Playwright</div>
+        <div class="ref-url">https://playwright.dev</div>
+        <div class="ref-note">Headless browser automation. Screenshot pipeline engine.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">shadcn/ui</div>
+        <div class="ref-url">https://ui.shadcn.com</div>
+        <div class="ref-note">Component library. Copy-paste React components built on Radix + Tailwind.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Satori (Eliminated)</div>
+        <div class="ref-url">https://github.com/vercel/satori</div>
+        <div class="ref-note">HTML/CSS to SVG. Flexbox only, no grid, broken Tailwind. Only for OG images.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">tldraw (Eliminated)</div>
+        <div class="ref-url">https://tldraw.com</div>
+        <div class="ref-note">Commercial license. Browser-dependent. 4/10 fidelity for production UI.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-name">Prior Research</div>
+        <div class="ref-url">C:\Users\olive\Projects\webdev\docs\</div>
+        <div class="ref-note">rendering-comparison.html, mcp-tool-inventory.html, design-format-research.html</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEW LOG -->
+  <div class="tab-panel" id="panel-review-log">
+    <div class="section-header">
+      <div class="dot" style="background:var(--sage)"></div>
+      Review Log &mdash; Audit Trail
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--sage);margin-bottom:20px">
+      <h3 style="font-size:16px">Third-Party Review Summary</h3>
+      <p><strong>Date:</strong> March 2026</p>
+      <p><strong>Reviewer:</strong> Independent architecture reviewer</p>
+      <p><strong>Verdict:</strong> Direction is strong and well-researched. Biggest risk is accidental dual-architecture. Cut scope to ship faster and de-risk.</p>
+      <p style="margin-top:8px"><strong>Overall Assessment:</strong> The product thesis (agent-native, code-first design tool) was validated. The reviewer's concerns focused on execution risk, not strategic direction. All 7 concerns have been addressed in this revised plan.</p>
+    </div>
+
+    <h3 style="font-size:16px;margin-bottom:16px">Concerns and Resolutions</h3>
+
+    <div class="review-item">
+      <h4>1. Strategy Conflict: "No Intermediate Format" vs Node-Centric MCP</h4>
+      <div class="original-concern">
+        The docs recommend React/TSX as source of truth (good), but proposed MCP tools (get_node_tree, batch_modify, write_html, export_code) imply a parallel internal design model. Risk: you unintentionally build both a code-first system and a schema/translation system.
+      </div>
+      <div class="resolution-text">
+        Resolved: Locked "code-first, no schema" as an architectural invariant. Removed all node-centric tools from MVP. The edit_screen_code tool operates on TSX via AST, not a shadow model. write_html deferred to V2+. export_code deferred to V2+ (in code-first, export is a no-op).
+      </div>
+    </div>
+
+    <div class="review-item">
+      <h4>2. react-shadcn Export Is High-Risk</h4>
+      <div class="original-concern">
+        Converting arbitrary HTML/TSX into idiomatic shadcn/ui components is a hard semantic mapping problem. Risk: export quality becomes inconsistent and brittle, especially with nested layouts and variant inference.
+      </div>
+      <div class="resolution-text">
+        Resolved: Deferred export_code to V2+. In the code-first architecture, the agent writes shadcn/ui components directly. There is no conversion step. The TSX IS the deliverable. This concern is eliminated by the architecture itself.
+      </div>
+    </div>
+
+    <div class="review-item">
+      <h4>3. Scope Creep in v1 MCP Surface</h4>
+      <div class="original-concern">
+        The proposed 16-tool set is good directionally, but too large for a first reliable release. Risk: many partially-working tools instead of a few excellent ones.
+      </div>
+      <div class="resolution-text">
+        Resolved: Cut MVP from 16 tools to 7. Phased remaining tools into V1.1 (lint_design, bulk_style_replace, design tokens) and V2+ (export_code, write_html). Each phase gates on the previous being solid.
+      </div>
+    </div>
+
+    <div class="review-item">
+      <h4>4. Evidence Quality Is Mixed</h4>
+      <div class="original-concern">
+        A lot of sources are community/blog posts; some are likely lower-confidence than official docs/specs. Risk: architecture choices made on noisy data.
+      </div>
+      <div class="resolution-text">
+        Acknowledged: Validation spikes (Phase 0.5) test core assumptions with real code before committing to the build. Fidelity, editability, and determinism are all validated empirically, not based on blog posts.
+      </div>
+    </div>
+
+    <div class="review-item">
+      <h4>5. Security Model Is Under-Specified</h4>
+      <div class="original-concern">
+        If the agent can write/render arbitrary code for previews, you need strict execution isolation and resource controls. Risk: unsafe code execution, runaway resource usage, and unclear trust boundaries.
+      </div>
+      <div class="resolution-text">
+        Partially addressed: Docker containerization provides base isolation. Single-session constraint limits blast radius. Resource limits in Docker Compose. Full sandbox model (process-level isolation, CPU/memory caps per render) is documented as a V2 concern.
+      </div>
+    </div>
+
+    <div class="review-item">
+      <h4>6. Mobile Goal Is Underdelivered</h4>
+      <div class="original-concern">
+        Docs discuss responsive web screenshots, but "web/mobile UI designs" can imply native stacks. Risk: expectation mismatch unless scope is explicitly "mobile web first".
+      </div>
+      <div class="resolution-text">
+        Resolved: Scope is explicitly responsive web only for V1. The render_screenshot tool supports viewport parameters for mobile/tablet/desktop widths. Native mobile (React Native, Flutter) is a V2+ consideration only.
+      </div>
+    </div>
+
+    <div class="review-item">
+      <h4>7. Missing Operational Concerns</h4>
+      <div class="original-concern">
+        The docs under-spec: data/version migrations, checkpoint retention/cleanup, concurrent agent sessions, deterministic rendering (fonts, asset loading, timing). These become painful once used across many projects.
+      </div>
+      <div class="resolution-text">
+        Resolved: Added Operational Specifications section covering font pinning (Geist Sans/Mono bundled in Docker), checkpoint TTL (7-day auto-cleanup), single-session constraint (one agent per project in V1), and deterministic rendering (fixed viewport, preloaded fonts, networkidle wait). Each spec is validated by the corresponding spike.
+      </div>
+    </div>
+  </div>
+
+</div><!-- end tabs-container -->
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:12px;border-top:1px solid var(--border)">
+  Agent-Native Design Tool &mdash; Implementation Plan v1.1 (Revised) &mdash; March 2026
+  <br>Prepared for Oliver Smith &bull; smithbuilder.app &bull; Revised after third-party review
+</div>
+
+<!-- JAVASCRIPT -->
+<script>
+  // -- Tab Navigation --
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      // Deactivate all
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      // Activate clicked
+      btn.classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+    });
+  });
+
+  // -- Landscape Tabs --
+  document.querySelectorAll('.landscape-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.ltab;
+      document.querySelectorAll('.landscape-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.landscape-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('lpanel-' + tab).classList.add('active');
+    });
+  });
+
+  // -- Collapsible Cards --
+  function toggleCollapse(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  // -- Architecture Detail --
+  const archDetails = {
+    'claude': {
+      title: 'Claude Code (AI Agent)',
+      desc: 'The primary user of the system. Claude Code connects to the MCP server and uses the 7 MVP tools to create, modify, and iterate on designs. It writes real React/TSX code, requests screenshots for visual verification, and iterates based on human feedback.'
+    },
+    'human': {
+      title: 'Human Reviewer (Oliver)',
+      desc: 'Reviews designs via live preview URLs served over Tailscale, or by viewing Playwright screenshots shared in the conversation. Provides feedback that Claude Code uses to iterate. The human never touches code directly.'
+    },
+    'project-mgr': {
+      title: 'Project Manager',
+      desc: 'Creates and manages design projects. Each project is a full Next.js app with shadcn/ui, Tailwind CSS, and pinned Geist fonts pre-configured. Handles open_project and list_screens. Projects live in the ./projects/ directory.'
+    },
+    'screen-editor': {
+      title: 'Screen Editor (AST Operations)',
+      desc: 'Handles create_screen and edit_screen_code. All operations are AST-level edits over real TSX code. There is no intermediate schema, no node tree, no design document language. The code IS the design. This is the architectural invariant in action.'
+    },
+    'tsx': {
+      title: '.tsx Files (The Designs)',
+      desc: 'The heart of the system. Each screen is a real React/TSX component using shadcn/ui and Tailwind CSS. These files ARE the design AND the production code. No translation step. No fidelity gap. Located in each project\'s src/ directory.'
+    },
+    'checkpoint': {
+      title: 'Checkpoint System (Git-based)',
+      desc: 'Uses git commits for versioning. checkpoint = git commit with a descriptive message. restore_checkpoint = git reset to a specific commit. Auto-cleanup of checkpoints older than 7 days (configurable TTL). Enables the agent to safely experiment.'
+    },
+    'nextjs': {
+      title: 'Next.js Dev Server',
+      desc: 'Renders the TSX components in a real browser environment with full CSS support (Grid, Flexbox, Tailwind). Uses Turbopack for fast HMR. Serves on port 4501 for preview. This is what Playwright screenshots and what Oliver sees.'
+    },
+    'screenshot': {
+      title: 'Screenshot Service',
+      desc: 'Manages the Playwright browser instance and screenshot pipeline. Navigates to the dev server URL, waits for networkidle, captures the viewport at the requested dimensions (desktop, tablet, mobile). Returns PNG data via MCP response. Deterministic: pinned fonts, fixed viewport, no external assets.'
+    },
+    'playwright': {
+      title: 'Playwright (Headless Chromium)',
+      desc: 'The rendering engine. Launches a single persistent Chromium instance (~700MB memory). Captures screenshots in ~200-500ms warm. Full CSS support including Grid, Flexbox, and all Tailwind utilities. Docker-compatible with pinned font rendering.'
+    },
+    'export': {
+      title: 'Export = Source Code',
+      desc: 'In the code-first architecture, the .tsx files ARE the production code. There is no export transformation in MVP. The export_code tool (V2+) will handle format-specific cleanup, but the core code is identical to what was rendered and approved.'
+    }
+  };
+
+  function showArchDetail(node) {
+    const key = node.dataset.detail;
+    const detail = archDetails[key];
+    if (!detail) return;
+    const el = document.getElementById('archDetail');
+    el.innerHTML = '<h4>' + detail.title + '</h4><p>' + detail.desc + '</p>';
+    el.style.borderColor = 'var(--coral)';
+    el.style.background = '#FFF5F3';
+
+    // Highlight the clicked node
+    document.querySelectorAll('.arch-node').forEach(n => n.style.opacity = '0.5');
+    node.style.opacity = '1';
+  }
+
+  // Reset arch node opacity when clicking elsewhere
+  document.querySelector('.arch-container').addEventListener('click', (e) => {
+    if (!e.target.closest('.arch-node')) {
+      document.querySelectorAll('.arch-node').forEach(n => n.style.opacity = '1');
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,184 @@
+import { execSync, spawn, ChildProcess } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+
+export interface ProjectInfo {
+  id: string;
+  name: string;
+  dir: string;
+  screens: string[];
+  createdAt: string;
+}
+
+const PROJECTS_DIR = path.resolve(process.cwd(), "projects");
+const TEMPLATE_DIR = path.resolve(import.meta.dirname, "../template");
+
+export class ProjectManager {
+  private devServers = new Map<string, { process: ChildProcess; port: number }>();
+
+  constructor() {
+    fs.mkdirSync(PROJECTS_DIR, { recursive: true });
+  }
+
+  private projectDir(name: string): string {
+    return path.join(PROJECTS_DIR, name);
+  }
+
+  listProjects(): ProjectInfo[] {
+    if (!fs.existsSync(PROJECTS_DIR)) return [];
+    return fs.readdirSync(PROJECTS_DIR)
+      .filter((d) => fs.existsSync(path.join(PROJECTS_DIR, d, "package.json")))
+      .map((d) => this.getProjectInfo(d))
+      .filter((p): p is ProjectInfo => p !== null);
+  }
+
+  getProjectInfo(name: string): ProjectInfo | null {
+    const dir = this.projectDir(name);
+    if (!fs.existsSync(dir)) return null;
+    const screens = this.listScreens(name);
+    const stat = fs.statSync(dir);
+    return {
+      id: name,
+      name,
+      dir,
+      screens,
+      createdAt: stat.birthtime.toISOString(),
+    };
+  }
+
+  async openOrCreate(name: string): Promise<ProjectInfo> {
+    const dir = this.projectDir(name);
+    if (fs.existsSync(path.join(dir, "package.json"))) {
+      return this.getProjectInfo(name)!;
+    }
+    // Clone template
+    fs.cpSync(TEMPLATE_DIR, dir, { recursive: true });
+
+    // Initialize git
+    execSync("git init", { cwd: dir, stdio: "pipe" });
+    execSync("git add -A", { cwd: dir, stdio: "pipe" });
+    execSync('git commit -m "Initial project scaffold"', { cwd: dir, stdio: "pipe" });
+
+    // Install dependencies
+    execSync("npm install", { cwd: dir, stdio: "pipe", timeout: 120000 });
+
+    return this.getProjectInfo(name)!;
+  }
+
+  listScreens(name: string): string[] {
+    const screensDir = path.join(this.projectDir(name), "src/app/screens");
+    if (!fs.existsSync(screensDir)) return [];
+    return fs.readdirSync(screensDir)
+      .filter((d) => fs.existsSync(path.join(screensDir, d, "page.tsx")));
+  }
+
+  createScreen(projectName: string, screenName: string, code?: string): string {
+    const dir = this.projectDir(projectName);
+    const screenDir = path.join(dir, "src/app/screens", screenName);
+    fs.mkdirSync(screenDir, { recursive: true });
+
+    const defaultCode = `export default function ${pascal(screenName)}Screen() {
+  return (
+    <div className="min-h-screen p-8">
+      <h1 className="text-3xl font-bold">${screenName}</h1>
+      <p className="text-muted-foreground mt-2">New screen — ready for design.</p>
+    </div>
+  );
+}
+`;
+    const filePath = path.join(screenDir, "page.tsx");
+    fs.writeFileSync(filePath, code || defaultCode);
+    return filePath;
+  }
+
+  readScreenCode(projectName: string, screenName: string): string | null {
+    const filePath = path.join(this.projectDir(projectName), "src/app/screens", screenName, "page.tsx");
+    if (!fs.existsSync(filePath)) return null;
+    return fs.readFileSync(filePath, "utf-8");
+  }
+
+  editScreenCode(projectName: string, screenName: string, code: string): string {
+    const filePath = path.join(this.projectDir(projectName), "src/app/screens", screenName, "page.tsx");
+    fs.writeFileSync(filePath, code);
+    return filePath;
+  }
+
+  checkpoint(projectName: string, message: string): string {
+    const dir = this.projectDir(projectName);
+    execSync("git add -A", { cwd: dir, stdio: "pipe" });
+    try {
+      execSync(`git commit -m "${message.replace(/"/g, '\\"')}"`, { cwd: dir, stdio: "pipe" });
+    } catch {
+      // Nothing to commit
+      return execSync("git rev-parse HEAD", { cwd: dir, encoding: "utf-8" }).trim();
+    }
+    return execSync("git rev-parse HEAD", { cwd: dir, encoding: "utf-8" }).trim();
+  }
+
+  restoreCheckpoint(projectName: string, hash: string): void {
+    const dir = this.projectDir(projectName);
+    execSync(`git reset --hard ${hash}`, { cwd: dir, stdio: "pipe" });
+  }
+
+  getCheckpoints(projectName: string): { hash: string; message: string; date: string }[] {
+    const dir = this.projectDir(projectName);
+    try {
+      const log = execSync('git log --pretty=format:"%H|%s|%ci"', { cwd: dir, encoding: "utf-8" });
+      return log.split("\n").filter(Boolean).map((line) => {
+        const [hash, message, date] = line.split("|");
+        return { hash, message, date };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async startDevServer(projectName: string, port: number): Promise<number> {
+    const existing = this.devServers.get(projectName);
+    if (existing) return existing.port;
+
+    const dir = this.projectDir(projectName);
+
+    // Build first for production-mode serving (deterministic screenshots)
+    execSync("npx next build", { cwd: dir, stdio: "pipe", timeout: 120000 });
+
+    const proc = spawn("npx", ["next", "start", "--port", String(port)], {
+      cwd: dir, stdio: "pipe", shell: true,
+    });
+
+    // Wait for server ready
+    const start = Date.now();
+    while (Date.now() - start < 30000) {
+      try {
+        const res = await fetch(`http://localhost:${port}`);
+        if (res.ok) break;
+      } catch {}
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    this.devServers.set(projectName, { process: proc, port });
+    return port;
+  }
+
+  stopDevServer(projectName: string): void {
+    const srv = this.devServers.get(projectName);
+    if (srv) {
+      srv.process.kill();
+      this.devServers.delete(projectName);
+    }
+  }
+
+  getDevServerPort(projectName: string): number | null {
+    return this.devServers.get(projectName)?.port ?? null;
+  }
+
+  stopAll(): void {
+    for (const [name] of this.devServers) {
+      this.stopDevServer(name);
+    }
+  }
+}
+
+function pascal(s: string): string {
+  return s.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
+}

@@ -1,0 +1,33 @@
+name: Deploy to HP Laptop
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 100.102.138.90
+          username: oliver
+          key: ${{ secrets.HP_LAPTOP_SSH_KEY }}
+          script: |
+            cd ~/Projects/webdev
+            git pull origin main
+            docker compose up -d --build
+            sleep 10
+            curl -sf http://localhost:4500/api/health || exit 1
+            echo "Deploy successful"

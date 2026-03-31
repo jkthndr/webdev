@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Headless Rendering Options — Comparison Matrix</title>
+<style>
+  :root {
+    --coral: #FF6B6B;
+    --orange: #E8773A;
+    --gold: #F5C542;
+    --sage: #7c9070;
+    --bg: #FFF9F5;
+    --card-bg: #FFFFFF;
+    --text: #2D2A26;
+    --text-muted: #6B6560;
+    --border: #E8E2DC;
+    --shadow: 0 2px 12px rgba(45,42,38,0.08);
+    --radius: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--text);
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--orange);
+    border-bottom-color: var(--orange);
+    font-weight: 600;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Matrix Table */
+  .matrix-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    background: var(--card-bg);
+    margin-bottom: 2rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  thead th {
+    background: #F5F0EB;
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+
+  thead th:first-child { border-top-left-radius: var(--radius); }
+  thead th:last-child { border-top-right-radius: var(--radius); }
+
+  tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr:hover { background: #FFF5EE; }
+
+  .criterion-label {
+    font-weight: 600;
+    color: var(--text);
+    min-width: 140px;
+  }
+
+  /* Score badges */
+  .score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: white;
+  }
+
+  .score-high { background: var(--sage); }
+  .score-mid { background: var(--gold); color: var(--text); }
+  .score-low { background: var(--coral); }
+
+  /* Detail cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    border-left: 4px solid var(--border);
+    transition: transform 0.15s;
+  }
+
+  .card:hover { transform: translateY(-2px); }
+  .card.recommended { border-left-color: var(--sage); }
+  .card.good { border-left-color: var(--gold); }
+  .card.limited { border-left-color: var(--coral); }
+
+  .card h3 {
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card .tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 99px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .tag-rec { background: #e8f0e4; color: var(--sage); }
+  .tag-alt { background: #fef3d6; color: #b8860b; }
+  .tag-skip { background: #ffe0e0; color: #c33; }
+
+  .card p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 0.75rem; }
+
+  .card ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .card li {
+    padding: 0.3rem 0;
+    font-size: 0.85rem;
+    padding-left: 1.2rem;
+    position: relative;
+  }
+
+  .card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.65rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .card li.pro::before { background: var(--sage); }
+  .card li.con::before { background: var(--coral); }
+  .card li.note::before { background: var(--gold); }
+
+  /* Recommendation banner */
+  .recommendation {
+    background: linear-gradient(135deg, #f0ebe5 0%, #fff9f5 100%);
+    border: 2px solid var(--sage);
+    border-radius: var(--radius);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .recommendation h2 {
+    color: var(--sage);
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .recommendation p {
+    color: var(--text);
+    font-size: 0.92rem;
+  }
+
+  .rec-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .rec-step {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .rec-arrow { color: var(--sage); font-weight: 700; font-size: 1.1rem; }
+
+  /* Collapsible sections */
+  details {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  summary {
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+  }
+
+  summary:hover { background: #FFF5EE; }
+
+  summary::marker { color: var(--orange); }
+
+  details .inner {
+    padding: 0 1.25rem 1.25rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+  }
+
+  details .inner code {
+    background: #F5F0EB;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  details .inner pre {
+    background: #2D2A26;
+    color: #f0ebe5;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    margin: 0.75rem 0;
+    line-height: 1.5;
+  }
+
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-row:last-child { border-bottom: none; }
+  .data-label { font-weight: 500; color: var(--text); }
+  .data-value { color: var(--text-muted); text-align: right; }
+
+  .sources {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .sources a { color: var(--orange); text-decoration: none; }
+  .sources a:hover { text-decoration: underline; }
+  .sources li { margin-bottom: 0.3rem; }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .card-grid { grid-template-columns: 1fr; }
+    .rec-flow { flex-direction: column; align-items: flex-start; }
+    .rec-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Headless Rendering Options for Agent-Native Design Tool</h1>
+<p class="subtitle">Research completed March 2026 — Comparison of 5 rendering approaches for AI agent screenshot generation</p>
+
+<!-- Recommendation Banner -->
+<div class="recommendation">
+  <h2>Recommendation: React SSR + Persistent Playwright (Option 5)</h2>
+  <p>
+    Render real React/Tailwind/shadcn components on a local dev server. Keep a persistent Playwright browser instance alive. On each render request, use <code>page.setContent()</code> or navigate to the component preview route. Screenshot with <code>page.screenshot()</code>. The rendered component IS the export artifact — zero fidelity gap between mockup and production code.
+  </p>
+  <div class="rec-flow">
+    <span class="rec-step">Agent writes JSX + Tailwind</span>
+    <span class="rec-arrow">&rarr;</span>
+    <span class="rec-step">React SSR renders to HTML</span>
+    <span class="rec-arrow">&rarr;</span>
+    <span class="rec-step">Playwright screenshots page</span>
+    <span class="rec-arrow">&rarr;</span>
+    <span class="rec-step">Human reviews PNG</span>
+    <span class="rec-arrow">&rarr;</span>
+    <span class="rec-step">Same JSX exports as production code</span>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('matrix')">Comparison Matrix</button>
+  <button class="tab-btn" onclick="showTab('details')">Detailed Analysis</button>
+  <button class="tab-btn" onclick="showTab('benchmarks')">Benchmarks &amp; Numbers</button>
+  <button class="tab-btn" onclick="showTab('docker')">Docker / Windows Setup</button>
+  <button class="tab-btn" onclick="showTab('sources')">Sources</button>
+</div>
+
+<!-- TAB: Matrix -->
+<div id="tab-matrix" class="tab-content active">
+  <div class="matrix-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Criterion</th>
+          <th>1. Playwright / Puppeteer</th>
+          <th>2. Satori (@vercel/og)</th>
+          <th>3. Canvas Renderers</th>
+          <th>4. Paper.design Approach</th>
+          <th>5. React SSR + Playwright</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="criterion-label">Fidelity</td>
+          <td><span class="score score-high">10</span> Full browser engine</td>
+          <td><span class="score score-low">4</span> Flexbox only, limited CSS</td>
+          <td><span class="score score-low">3</span> No CSS layout engine</td>
+          <td><span class="score score-high">10</span> IS the browser</td>
+          <td><span class="score score-high">10</span> IS the browser</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Tailwind CSS</td>
+          <td><span class="score score-high">10</span> Full support</td>
+          <td><span class="score score-low">3</span> Experimental, broken config</td>
+          <td><span class="score score-low">1</span> N/A</td>
+          <td><span class="score score-high">10</span> Native Tailwind</td>
+          <td><span class="score score-high">10</span> Full support</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">shadcn/ui</td>
+          <td><span class="score score-high">10</span> Full support</td>
+          <td><span class="score score-low">1</span> Cannot render Radix</td>
+          <td><span class="score score-low">1</span> Cannot render React</td>
+          <td><span class="score score-high">9</span> React components</td>
+          <td><span class="score score-high">10</span> Full support</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Speed (warm)</td>
+          <td><span class="score score-high">8</span> ~100-300ms per screenshot</td>
+          <td><span class="score score-high">9</span> ~100-300ms SVG+PNG</td>
+          <td><span class="score score-mid">6</span> Variable, client-side</td>
+          <td><span class="score score-mid">7</span> Depends on Paper server</td>
+          <td><span class="score score-high">8</span> ~100-300ms (warm context)</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Speed (cold)</td>
+          <td><span class="score score-mid">5</span> 1-8s browser launch</td>
+          <td><span class="score score-high">8</span> No browser needed</td>
+          <td><span class="score score-mid">7</span> No browser needed</td>
+          <td><span class="score score-mid">5</span> Requires running app</td>
+          <td><span class="score score-mid">5</span> 1-8s first launch</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Memory Usage</td>
+          <td><span class="score score-mid">5</span> ~700MB headless Chromium</td>
+          <td><span class="score score-high">9</span> ~50-100MB Node process</td>
+          <td><span class="score score-high">9</span> ~50MB</td>
+          <td><span class="score score-mid">5</span> Full browser + app</td>
+          <td><span class="score score-mid">5</span> ~700MB + dev server</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Persistent Context</td>
+          <td><span class="score score-high">9</span> Keep browser alive</td>
+          <td><span class="score score-high">10</span> Stateless</td>
+          <td><span class="score score-mid">6</span> Requires browser for complex CSS</td>
+          <td><span class="score score-mid">7</span> Tied to Paper app</td>
+          <td><span class="score score-high">9</span> Keep browser + server alive</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Docker on Windows</td>
+          <td><span class="score score-high">9</span> Official images, well-tested</td>
+          <td><span class="score score-high">10</span> Pure Node.js, trivial</td>
+          <td><span class="score score-high">8</span> Pure Node.js (Konva)</td>
+          <td><span class="score score-low">2</span> Requires Paper GUI</td>
+          <td><span class="score score-high">9</span> Official PW images</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Agent Iteration Speed</td>
+          <td><span class="score score-high">8</span> Fast with warm context</td>
+          <td><span class="score score-mid">5</span> Rebuild JSX each time</td>
+          <td><span class="score score-low">3</span> Manual layout</td>
+          <td><span class="score score-mid">7</span> MCP tools exist</td>
+          <td><span class="score score-high">9</span> Modify file, screenshot</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Mockup = Production</td>
+          <td><span class="score score-mid">6</span> Screenshots only</td>
+          <td><span class="score score-low">2</span> JSX != real components</td>
+          <td><span class="score score-low">1</span> Canvas != code</td>
+          <td><span class="score score-high">8</span> HTML/CSS export</td>
+          <td><span class="score score-high">10</span> Components ARE the code</td>
+        </tr>
+        <tr>
+          <td class="criterion-label">Setup Complexity</td>
+          <td><span class="score score-high">8</span> npm install, done</td>
+          <td><span class="score score-high">9</span> Lightweight dep</td>
+          <td><span class="score score-mid">6</span> Manual layout code</td>
+          <td><span class="score score-low">3</span> External service dep</td>
+          <td><span class="score score-mid">6</span> Dev server + Playwright</td>
+        </tr>
+        <tr style="background: #f5f0eb;">
+          <td class="criterion-label" style="font-weight: 700; color: var(--orange);">TOTAL (weighted)</td>
+          <td style="font-weight:700; color: var(--sage);">78/100</td>
+          <td style="font-weight:700;">51/100</td>
+          <td style="font-weight:700;">41/100</td>
+          <td style="font-weight:700;">63/100</td>
+          <td style="font-weight:700; color: var(--sage);">81/100</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.5rem;">
+    Weights: Fidelity 15%, Tailwind 12%, shadcn 12%, Speed(warm) 10%, Speed(cold) 5%, Memory 5%, Persistent 8%, Docker 8%, Agent Iteration 10%, Mockup=Production 15%, Setup 5%. Scores based on research findings, not synthetic benchmarks.
+  </p>
+</div>
+
+<!-- TAB: Details -->
+<div id="tab-details" class="tab-content">
+  <div class="card-grid">
+
+    <!-- Card 1: Playwright -->
+    <div class="card recommended">
+      <h3>1. Playwright / Puppeteer <span class="tag tag-rec">Strong</span></h3>
+      <p>Runs a real headless Chromium browser. Whatever CSS works in Chrome works here. The gold standard for screenshot fidelity.</p>
+      <ul>
+        <li class="pro">Full CSS support: flexbox, grid, animations, transforms, shadows, fonts</li>
+        <li class="pro">Full Tailwind and shadcn/ui rendering — it's a real browser</li>
+        <li class="pro">Persistent BrowserContext keeps sessions alive for rapid iteration</li>
+        <li class="pro">Official Docker images (Ubuntu-based, v1.58.2 current)</li>
+        <li class="pro"><code>page.setContent(html)</code> bypasses network — fastest path for HTML injection</li>
+        <li class="con">~700MB base memory for headless Chromium</li>
+        <li class="con">Cold start 1-8 seconds (but persistent context solves this)</li>
+        <li class="con">Recent versions (1.57+) switched to "Chrome for Testing" — higher memory than old Chromium</li>
+        <li class="note">Reuse page instance; recreate every 50-100 renders to prevent leaks</li>
+        <li class="note">Screenshots can be returned as buffers (no disk I/O needed)</li>
+      </ul>
+    </div>
+
+    <!-- Card 2: Satori -->
+    <div class="card limited">
+      <h3>2. Satori / @vercel/og <span class="tag tag-skip">Not viable</span></h3>
+      <p>Converts JSX + inline CSS to SVG, then to PNG via resvg. Designed for OG cards (1200x630), not full-page layouts.</p>
+      <ul>
+        <li class="pro">No browser dependency — pure Node.js</li>
+        <li class="pro">Very lightweight: ~50-100MB memory</li>
+        <li class="pro">~100-300ms per render</li>
+        <li class="con"><strong>Only flexbox</strong> — no display:grid, no display:block, no display:inline</li>
+        <li class="con">Tailwind support is "experimental" and broken: no custom config, no plugins, no arbitrary values</li>
+        <li class="con">Cannot render React components (Radix/shadcn) — only simple JSX</li>
+        <li class="con">Every element needs explicit width/height — no auto-sizing like a browser</li>
+        <li class="con">500KB max bundle size for content</li>
+        <li class="con">No variable fonts, no RTL, no advanced typography</li>
+        <li class="note">Takumi (Rust-based alternative) is 2-10x faster with better CSS, but same fundamental limitations</li>
+      </ul>
+    </div>
+
+    <!-- Card 3: Canvas -->
+    <div class="card limited">
+      <h3>3. Canvas Renderers <span class="tag tag-skip">Not viable</span></h3>
+      <p>html2canvas, Konva, Fabric.js — each with fundamental limitations for this use case.</p>
+      <ul>
+        <li class="pro">html2canvas: client-side, no server needed</li>
+        <li class="pro">Konva: native Node.js support via node-canvas for headless rendering</li>
+        <li class="pro">Snapdom: modern alternative, 148x faster than html2canvas, better CSS via SVG foreignObject</li>
+        <li class="con"><strong>html2canvas: not a real renderer</strong> — rebuilds DOM from properties, misses complex CSS</li>
+        <li class="con">Konva/Fabric.js: no CSS layout engine — all positioning is manual coordinates</li>
+        <li class="con">Cannot render React components or Tailwind classes natively</li>
+        <li class="con">Fabric.js server-side: unreliable without headless browser (needs Puppeteer anyway)</li>
+        <li class="con">No flexbox, no grid, no responsive layout</li>
+        <li class="note">Snapdom is interesting for client-side previews but still relies on browser DOM</li>
+        <li class="note">If you need a browser for CSS fidelity, you might as well use Playwright directly</li>
+      </ul>
+    </div>
+
+    <!-- Card 4: Paper.design -->
+    <div class="card good">
+      <h3>4. Paper.design Approach <span class="tag tag-alt">Instructive</span></h3>
+      <p>Paper's canvas IS HTML/CSS. Designs use real flexbox, Tailwind, React components. The concept is sound — but Paper is a GUI app, not a headless service.</p>
+      <ul>
+        <li class="pro">Proven concept: HTML/CSS as the design canvas works</li>
+        <li class="pro">MCP server exists with 24 tools (create frames, update styles, get screenshots)</li>
+        <li class="pro">Native Tailwind rendering with import/export</li>
+        <li class="pro">Real React component support</li>
+        <li class="con"><strong>Cannot run headlessly</strong> — requires Paper GUI application</li>
+        <li class="con">Closed source — can't embed or self-host the rendering engine</li>
+        <li class="con">Vendor dependency for a core pipeline component</li>
+        <li class="con">Not Docker-friendly on HP laptop</li>
+        <li class="note">Key insight: the approach (HTML/CSS canvas) is excellent, Paper's implementation is not what we need</li>
+        <li class="note">We can replicate the concept with Option 5: React components on a dev server</li>
+      </ul>
+    </div>
+
+    <!-- Card 5: React SSR + Playwright -->
+    <div class="card recommended">
+      <h3>5. React SSR + Playwright <span class="tag tag-rec">Recommended</span></h3>
+      <p>The "designs ARE code" approach. Serve real React/shadcn components on a local dev server. Screenshot with a persistent Playwright browser. The component IS the export.</p>
+      <ul>
+        <li class="pro"><strong>Zero fidelity gap</strong> — what you screenshot is what ships</li>
+        <li class="pro">Full Tailwind + shadcn/ui + any CSS works (it's a real browser)</li>
+        <li class="pro">Persistent Playwright context eliminates cold starts after first launch</li>
+        <li class="pro">Agent workflow: write JSX file &rarr; hot reload &rarr; screenshot &rarr; iterate</li>
+        <li class="pro">Export is trivial: the component file IS the deliverable</li>
+        <li class="pro">Docker: combine Node dev server + Playwright in one container</li>
+        <li class="pro">Existing projects validate this: react-x-playwright-screenshot, storywright, AI design workflows</li>
+        <li class="con">~700MB memory for Chromium + ~200MB for dev server (~900MB total)</li>
+        <li class="con">More moving parts: dev server + browser + file system</li>
+        <li class="con">Initial setup more complex than pure Playwright</li>
+        <li class="note">With 32GB RAM on the HP laptop, 900MB is trivial</li>
+        <li class="note">Hot module reload means sub-second iteration after file changes</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAB: Benchmarks -->
+<div id="tab-benchmarks" class="tab-content">
+  <h2 style="font-size:1.15rem; margin-bottom:1rem;">Collected Performance Data</h2>
+
+  <details open>
+    <summary>Playwright / Puppeteer Performance</summary>
+    <div class="inner">
+      <div class="data-row"><span class="data-label">Cold browser launch</span><span class="data-value">0.5 - 8 seconds (varies by machine, proxy config)</span></div>
+      <div class="data-row"><span class="data-label">Warm screenshot (page.screenshot)</span><span class="data-value">~100-300ms (typical page, fonts loaded)</span></div>
+      <div class="data-row"><span class="data-label">page.setContent() + screenshot</span><span class="data-value">~100-200ms (no network, warm browser)</span></div>
+      <div class="data-row"><span class="data-label">Headless Chromium memory (base)</span><span class="data-value">~700MB peak</span></div>
+      <div class="data-row"><span class="data-label">Per-context overhead</span><span class="data-value">Lightweight — shares browser process</span></div>
+      <div class="data-row"><span class="data-label">Parallel capacity (8-core)</span><span class="data-value">15-30 concurrent contexts</span></div>
+      <div class="data-row"><span class="data-label">Font loading gotcha</span><span class="data-value">Can add 1-10s if custom fonts load via network</span></div>
+      <div class="data-row"><span class="data-label">Docker image size (official)</span><span class="data-value">~1.2GB (Ubuntu base)</span></div>
+      <div class="data-row"><span class="data-label">Docker /dev/shm requirement</span><span class="data-value">Increase to 2GB (default 64MB causes crashes)</span></div>
+      <p style="margin-top: 0.75rem;">
+        <strong>Key optimization:</strong> Use <code>PW_TEST_SCREENSHOT_NO_FONTS_READY=1</code> for 10x faster screenshots when fonts are pre-loaded. Keep a persistent browser instance — context creation is near-instant. Use <code>page.setContent(html)</code> instead of navigation to avoid network entirely.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Satori / @vercel/og Performance</summary>
+    <div class="inner">
+      <div class="data-row"><span class="data-label">Render time (JSX to SVG)</span><span class="data-value">~100-300ms per image</span></div>
+      <div class="data-row"><span class="data-label">SVG to PNG (resvg)</span><span class="data-value">~20-50ms additional</span></div>
+      <div class="data-row"><span class="data-label">Total pipeline</span><span class="data-value">~120-350ms</span></div>
+      <div class="data-row"><span class="data-label">Memory usage</span><span class="data-value">~50-100MB (Node process only)</span></div>
+      <div class="data-row"><span class="data-label">Bundle size limit</span><span class="data-value">500KB max (JSX + CSS + fonts + images)</span></div>
+      <div class="data-row"><span class="data-label">Takumi (Rust alternative)</span><span class="data-value">2-10x faster, ~12-150ms</span></div>
+      <p style="margin-top: 0.75rem;">
+        <strong>The speed is attractive, but the fidelity ceiling kills it.</strong> No grid, no block layout, no auto-sizing, no real Tailwind, no React components. You'd spend more time working around limitations than you'd save on render speed.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Canvas Renderers Performance</summary>
+    <div class="inner">
+      <div class="data-row"><span class="data-label">html2canvas (10 widgets)</span><span class="data-value">21+ seconds (!)</span></div>
+      <div class="data-row"><span class="data-label">Snapdom (10 widgets)</span><span class="data-value">~140ms (148x faster than html2canvas)</span></div>
+      <div class="data-row"><span class="data-label">Konva (Node.js, simple shapes)</span><span class="data-value">~50-100ms</span></div>
+      <div class="data-row"><span class="data-label">Fabric.js (server-side)</span><span class="data-value">Unreliable without headless browser</span></div>
+      <p style="margin-top: 0.75rem;">
+        <strong>Snapdom is fast but client-side only</strong> — it needs a real browser DOM to clone. Konva is fast for primitive shapes but has no CSS layout engine. None of these can render React components or Tailwind classes natively.
+      </p>
+    </div>
+  </details>
+
+  <details>
+    <summary>React SSR + Playwright Combined</summary>
+    <div class="inner">
+      <div class="data-row"><span class="data-label">Initial startup (dev server + browser)</span><span class="data-value">3-10 seconds</span></div>
+      <div class="data-row"><span class="data-label">Warm iteration (file change + HMR + screenshot)</span><span class="data-value">~200-500ms</span></div>
+      <div class="data-row"><span class="data-label">page.setContent() path (skip HMR)</span><span class="data-value">~100-300ms</span></div>
+      <div class="data-row"><span class="data-label">Total memory (dev server + Chromium)</span><span class="data-value">~800-1000MB</span></div>
+      <div class="data-row"><span class="data-label">Percentage of 32GB RAM</span><span class="data-value">~3% (trivial)</span></div>
+      <p style="margin-top: 0.75rem;">
+        <strong>Two rendering paths available:</strong><br>
+        <strong>Path A (dev server):</strong> Agent writes .tsx file &rarr; Vite HMR picks up change (~50ms) &rarr; Playwright navigates/reloads &rarr; screenshot (~100-200ms). Total: ~200-500ms.<br>
+        <strong>Path B (setContent):</strong> Agent generates HTML string with Tailwind CDN &rarr; <code>page.setContent(html)</code> &rarr; screenshot. Total: ~100-300ms. Faster but less idiomatic.<br>
+        <strong>Path A is recommended</strong> because the .tsx file is the export artifact.
+      </p>
+    </div>
+  </details>
+</div>
+
+<!-- TAB: Docker -->
+<div id="tab-docker" class="tab-content">
+  <h2 style="font-size:1.15rem; margin-bottom:1rem;">Docker Setup for HP Laptop (Windows, 32GB RAM)</h2>
+
+  <details open>
+    <summary>Recommended Docker Configuration</summary>
+    <div class="inner">
+      <p>The recommended approach combines a Next.js/Vite dev server with Playwright in a single Docker container. Base image should be Ubuntu (not Alpine — Playwright needs glibc).</p>
+      <pre>FROM mcr.microsoft.com/playwright:v1.58.2-noble
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+
+# Dev server + Playwright screenshot service
+EXPOSE 3000
+CMD ["npm", "run", "dev"]</pre>
+
+      <p style="margin-top:1rem;"><strong>docker-compose.yml essentials:</strong></p>
+      <pre>services:
+  design-renderer:
+    build: .
+    ports:
+      - "3100:3000"
+    shm_size: '2gb'        # Critical for Chromium
+    init: true              # Prevents zombie processes
+    ipc: host               # Or use shm_size
+    environment:
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    deploy:
+      resources:
+        limits:
+          memory: 2g        # 2GB cap (plenty for our use)</pre>
+    </div>
+  </details>
+
+  <details>
+    <summary>Memory Budget (32GB HP Laptop)</summary>
+    <div class="inner">
+      <div class="data-row"><span class="data-label">Headless Chromium</span><span class="data-value">~700MB</span></div>
+      <div class="data-row"><span class="data-label">Node.js dev server</span><span class="data-value">~200MB</span></div>
+      <div class="data-row"><span class="data-label">MCP server process</span><span class="data-value">~100MB</span></div>
+      <div class="data-row"><span class="data-label">Total design tool</span><span class="data-value">~1GB</span></div>
+      <div class="data-row"><span class="data-label">Percentage of 32GB</span><span class="data-value">~3%</span></div>
+      <div class="data-row"><span class="data-label">Docker container limit</span><span class="data-value">2GB recommended</span></div>
+      <p style="margin-top: 0.75rem;">Memory is a non-issue. Even with Ollama models and other services running, 1GB for the design tool renderer is comfortably within budget.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Windows-Specific Notes</summary>
+    <div class="inner">
+      <ul style="padding-left:1.2rem;">
+        <li>Docker Desktop on Windows uses WSL2 backend — Linux containers run natively</li>
+        <li>Playwright's official Docker images are Linux (Ubuntu) — this is correct, they run in WSL2</li>
+        <li>GPU acceleration available if needed (UHD Graphics) via Chrome flags</li>
+        <li><code>--no-sandbox</code> flag needed inside Docker containers</li>
+        <li>Avoid Alpine-based images — musl/glibc incompatibility with Playwright browsers</li>
+        <li>Use <code>--ipc=host</code> or <code>shm_size: '2gb'</code> to prevent Chromium OOM crashes</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Optimization Flags for Lean Chromium</summary>
+    <div class="inner">
+      <pre>const browser = await chromium.launch({
+  headless: true,
+  args: [
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-gpu',           // Unless you need WebGL
+    '--no-first-run',
+    '--no-default-browser-check',
+  ]
+});
+
+// Keep ONE browser, reuse contexts
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 900 }
+});
+
+// Reuse page, recreate every 50-100 renders
+const page = await context.newPage();</pre>
+    </div>
+  </details>
+</div>
+
+<!-- TAB: Sources -->
+<div id="tab-sources" class="tab-content">
+  <h2 style="font-size:1.15rem; margin-bottom:1rem;">Research Sources</h2>
+
+  <details open>
+    <summary>Playwright / Puppeteer</summary>
+    <div class="inner">
+      <ul style="padding-left:1.2rem;">
+        <li><a href="https://testdino.com/blog/performance-benchmarks/" target="_blank">Performance Benchmarks of Playwright, Cypress, and Selenium in 2026 — TestDino</a></li>
+        <li><a href="https://ukdataservices.co.uk/blog/articles/selenium-vs-playwright-comparison" target="_blank">Selenium vs Playwright 2026: Speed Tests — UK Data Services</a></li>
+        <li><a href="https://playwright.dev/docs/docker" target="_blank">Docker | Playwright Official Docs</a></li>
+        <li><a href="https://thomasbourimech.com/blog/en/playwright-chromium-docker-production/" target="_blank">Playwright and Chromium in Docker Production — Thomas Bourimech</a></li>
+        <li><a href="https://datawookie.dev/blog/2025-06-06-playwright-browser-footprint/" target="_blank">Playwright Browser Footprint — datawookie</a></li>
+        <li><a href="https://medium.com/@onurmaciit/8gb-was-a-lie-playwright-in-production-c2bdbe4429d6" target="_blank">8GB Was a Lie: Playwright in Production — Medium</a></li>
+        <li><a href="https://github.com/microsoft/playwright/issues/38489" target="_blank">Playwright 1.57 Chrome for Testing Memory Issue — GitHub</a></li>
+        <li><a href="https://github.com/microsoft/playwright/issues/15773" target="_blank">Screenshot methods long delay — GitHub Issue #15773</a></li>
+        <li><a href="https://markaicode.com/playwright-mcp-memory-leak-fixes-2025/" target="_blank">Playwright MCP 2.0 Memory Leak Fixes 2025 — Markaicode</a></li>
+        <li><a href="https://screenshotsapi.dev/blog/render-html-with-playwright" target="_blank">How to Render HTML with Playwright — ScreenshotsAPI</a></li>
+        <li><a href="https://www.browserstack.com/guide/playwright-persistent-context" target="_blank">Using Persistent Context in Playwright — BrowserStack</a></li>
+        <li><a href="https://medium.com/@mikestopcontinues/speed-up-the-headless-browser-in-playwright-112c045669f1" target="_blank">Speed Up the Headless Browser in Playwright — Medium</a></li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Satori / @vercel/og</summary>
+    <div class="inner">
+      <ul style="padding-left:1.2rem;">
+        <li><a href="https://github.com/vercel/satori" target="_blank">vercel/satori — GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/satori" target="_blank">satori — npm</a></li>
+        <li><a href="https://github.com/vercel/satori/discussions/529" target="_blank">Rework Tailwind support — Satori Discussion #529</a></li>
+        <li><a href="https://github.com/vercel/satori/issues/41" target="_blank">Unsupported CSS properties — Satori Issue #41</a></li>
+        <li><a href="https://nuxtseo.com/docs/og-image/renderers/satori" target="_blank">Satori Renderer — Nuxt OG Image Docs</a></li>
+        <li><a href="https://deepwiki.com/vercel/satori/4-advanced-usage" target="_blank">CSS Support — vercel/satori DeepWiki</a></li>
+        <li><a href="https://github.com/kane50613/takumi" target="_blank">Takumi: Faster Satori Alternative — GitHub</a></li>
+        <li><a href="https://community.vercel.com/t/takumi-rust-based-jsx-to-image-rendering-engine-inspired-by-satori/34499" target="_blank">Takumi: Rust-based JSX to Image — Vercel Community</a></li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Canvas Renderers</summary>
+    <div class="inner">
+      <ul style="padding-left:1.2rem;">
+        <li><a href="https://npm-compare.com/html2canvas,modern-screenshot,puppeteer,screenshot-desktop" target="_blank">html2canvas vs Puppeteer — npm compare</a></li>
+        <li><a href="https://medium.com/@TheTechDude/html-to-image-conversion-browser-rendering-vs-dedicated-apis-9cbf94463e86" target="_blank">HTML to Image: Browser vs Dedicated APIs — Medium 2026</a></li>
+        <li><a href="https://dev.to/tinchox5/snapdom-a-modern-and-faster-alternative-to-html2canvas-1m9a" target="_blank">Snapdom: Modern Alternative to html2canvas — DEV</a></li>
+        <li><a href="https://zumerlab.github.io/snapdom/" target="_blank">Snapdom — Official Site</a></li>
+        <li><a href="https://engineering.monday.com/capturing-dom-as-image-is-harder-than-you-think-how-we-solved-it-at-monday-com/" target="_blank">Capturing DOM as Image — Monday.com Engineering</a></li>
+        <li><a href="https://konvajs.org/docs/nodejs/nodejs-setup" target="_blank">Node.js Setup — Konva Docs</a></li>
+        <li><a href="https://konvajs.org/docs/faq.html" target="_blank">Konva FAQ</a></li>
+        <li><a href="http://html2canvas.hertzen.com/faq.html" target="_blank">html2canvas FAQ</a></li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>Paper.design &amp; Design-as-Code</summary>
+    <div class="inner">
+      <ul style="padding-left:1.2rem;">
+        <li><a href="https://paper.design/docs/mcp" target="_blank">Paper MCP Server — Official Docs</a></li>
+        <li><a href="https://www.banani.co/blog/paper-design-mcp-review" target="_blank">Paper.design Review: MCP, Features, Pricing — Banani</a></li>
+        <li><a href="https://sfailabs.com/guides/figma-mcp-vs-paper" target="_blank">Figma MCP vs paper.design — SFAI Labs</a></li>
+        <li><a href="https://abduzeedo.com/paperdesign-gpu-shaders-mcp-and-vibe-coding-designers" target="_blank">Paper.design: GPU Shaders and MCP — Abduzeedo</a></li>
+        <li><a href="https://paper.design/" target="_blank">Paper.design — Official Site</a></li>
+        <li><a href="https://github.com/gridaco/grida" target="_blank">Grida: Open-source 2D Graphics Editor — GitHub</a></li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>React SSR + Playwright Workflows</summary>
+    <div class="inner">
+      <ul style="padding-left:1.2rem;">
+        <li><a href="https://github.com/RobinCsl/react-x-playwright-screenshot" target="_blank">react-x-playwright-screenshot — GitHub</a></li>
+        <li><a href="https://github.com/microsoft/storywright" target="_blank">Storywright: Storybook + Playwright — Microsoft GitHub</a></li>
+        <li><a href="https://egghead.io/ai-driven-design-workflow-playwright-mcp-screenshots-visual-diffs-and-cursor-rules~aulxx" target="_blank">AI-Driven Design Workflow: Playwright MCP — egghead.io</a></li>
+        <li><a href="https://javascript.plainenglish.io/experience-story-figma-mcp-claude-code-playwright-68b20bb0f8ce" target="_blank">Figma MCP + Claude Code + Playwright MCP — Medium</a></li>
+        <li><a href="https://dev.to/debs_obrien/automate-your-screenshot-documentation-with-playwright-mcp-3gk4" target="_blank">Automate Screenshot Docs with Playwright MCP — DEV</a></li>
+        <li><a href="https://github.com/facebook/react/issues/17770" target="_blank">Rendering React on Server for Screenshots — React Issue #17770</a></li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

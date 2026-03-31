@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design MCP Tool Inventory — Competitive Analysis</title>
+<style>
+  :root {
+    --coral: #FF6B6B;
+    --orange: #E8773A;
+    --gold: #F5C542;
+    --sage: #7c9070;
+    --warm-bg: #FFF9F5;
+    --warm-card: #FFFFFF;
+    --warm-border: #F0E6DD;
+    --warm-text: #3D3229;
+    --warm-muted: #8A7B6B;
+    --warm-hover: #FFF1E8;
+    --shadow: 0 2px 12px rgba(61,50,41,0.08);
+    --shadow-lg: 0 4px 24px rgba(61,50,41,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--warm-bg);
+    color: var(--warm-text);
+    line-height: 1.6;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 2px solid var(--warm-border);
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--warm-text);
+    margin-bottom: 8px;
+  }
+
+  header .subtitle {
+    color: var(--warm-muted);
+    font-size: 1rem;
+  }
+
+  /* Tab Navigation */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--warm-card);
+    border-radius: var(--radius);
+    padding: 4px;
+    box-shadow: var(--shadow);
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--warm-muted);
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn:hover { background: var(--warm-hover); color: var(--warm-text); }
+  .tab-btn.active { background: var(--orange); color: white; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--warm-card);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--warm-border);
+  }
+
+  .card h2 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card h3 {
+    font-size: 1.05rem;
+    margin: 16px 0 8px 0;
+    color: var(--orange);
+  }
+
+  /* Platform badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-pencil { background: #FFE5E5; color: #CC3333; }
+  .badge-paper { background: #E5F0E5; color: #336633; }
+  .badge-stitch { background: #FFF3D6; color: #996600; }
+  .badge-proposed { background: #F0E8FF; color: #663399; }
+
+  /* Tool Tables */
+  .tool-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+    margin-top: 12px;
+  }
+
+  .tool-table thead th {
+    background: #F7F1EB;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--warm-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+  }
+
+  .tool-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+  .tool-table thead th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+
+  .tool-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--warm-border);
+    vertical-align: top;
+  }
+
+  .tool-table tr:last-child td { border-bottom: none; }
+  .tool-table tr:hover td { background: var(--warm-hover); }
+
+  .tool-name {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--coral);
+  }
+
+  .param {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--warm-muted);
+  }
+
+  .param em { font-style: normal; color: var(--sage); }
+
+  /* Category Labels */
+  .cat-label {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .cat-read { background: #E8F4E8; color: #2D6A2D; }
+  .cat-write { background: #FFE8D6; color: #B35C00; }
+  .cat-util { background: #E8E4F0; color: #5C4B8A; }
+  .cat-gen { background: #FFF3D6; color: #996600; }
+
+  /* Comparison Grid */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 900px) { .comparison-grid { grid-template-columns: 1fr; } }
+
+  .comparison-col {
+    background: var(--warm-card);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 2px solid var(--warm-border);
+  }
+
+  .comparison-col h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--warm-border);
+  }
+
+  .comparison-col.pencil-col { border-top: 3px solid var(--coral); }
+  .comparison-col.paper-col { border-top: 3px solid var(--sage); }
+  .comparison-col.stitch-col { border-top: 3px solid var(--gold); }
+
+  /* Feature check */
+  .feature-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #F5F0EB;
+  }
+
+  .feature-row:last-child { border-bottom: none; }
+
+  .check { color: var(--sage); font-weight: bold; }
+  .cross { color: var(--coral); font-weight: bold; }
+  .partial { color: var(--gold); font-weight: bold; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    background: var(--warm-card);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--warm-border);
+    flex: 1;
+    min-width: 160px;
+    text-align: center;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--warm-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat.pencil .stat-number { color: var(--coral); }
+  .stat.paper .stat-number { color: var(--sage); }
+  .stat.stitch .stat-number { color: var(--gold); }
+  .stat.proposed .stat-number { color: var(--orange); }
+
+  /* Expandable sections */
+  .expandable-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--warm-border);
+    user-select: none;
+  }
+
+  .expandable-header:hover { color: var(--orange); }
+  .expandable-body { display: none; padding: 12px 0; }
+  .expandable-body.open { display: block; }
+  .arrow { transition: transform 0.2s; font-size: 0.8rem; }
+  .arrow.open { transform: rotate(90deg); }
+
+  /* Analysis boxes */
+  .analysis-box {
+    background: linear-gradient(135deg, #FFF9F5 0%, #FFF1E8 100%);
+    border: 2px solid var(--orange);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 16px 0;
+  }
+
+  .analysis-box h3 {
+    color: var(--orange);
+    margin-top: 0;
+  }
+
+  .analysis-box ul { padding-left: 20px; }
+  .analysis-box li { margin-bottom: 6px; }
+
+  /* Mapping table */
+  .mapping-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.82rem;
+    margin-top: 12px;
+  }
+
+  .mapping-table thead th {
+    background: var(--orange);
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+  }
+
+  .mapping-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+  .mapping-table thead th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+
+  .mapping-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--warm-border);
+    vertical-align: top;
+  }
+
+  .mapping-table tr:hover td { background: var(--warm-hover); }
+  .mapping-table .no-equiv { color: var(--warm-muted); font-style: italic; }
+
+  /* Gap/strength indicators */
+  .strength-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin: 2px;
+  }
+
+  .strength-tag.table-stakes { background: #E8F4E8; color: #2D6A2D; }
+  .strength-tag.unique { background: #FFF3D6; color: #996600; }
+  .strength-tag.gap { background: #FFE5E5; color: #CC3333; }
+  .strength-tag.ours { background: #F0E8FF; color: #663399; }
+
+  footer {
+    text-align: center;
+    padding: 32px 0 16px;
+    color: var(--warm-muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--warm-border);
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Design MCP Tool Inventory</h1>
+    <p class="subtitle">Competitive analysis of Pencil, Paper.design, and Google Stitch MCP interfaces — March 2026</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat pencil">
+      <span class="stat-number">13</span>
+      <span class="stat-label">Pencil Tools</span>
+    </div>
+    <div class="stat paper">
+      <span class="stat-number">24</span>
+      <span class="stat-label">Paper Tools</span>
+    </div>
+    <div class="stat stitch">
+      <span class="stat-number">12</span>
+      <span class="stat-label">Stitch Tools</span>
+    </div>
+    <div class="stat proposed">
+      <span class="stat-number">16</span>
+      <span class="stat-label">Our Proposed</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('pencil')">Pencil</button>
+    <button class="tab-btn" onclick="showTab('paper')">Paper.design</button>
+    <button class="tab-btn" onclick="showTab('stitch')">Google Stitch</button>
+    <button class="tab-btn" onclick="showTab('comparison')">Side-by-Side</button>
+    <button class="tab-btn" onclick="showTab('analysis')">Analysis</button>
+    <button class="tab-btn" onclick="showTab('proposed')">Our Tool Set</button>
+  </div>
+
+  <!-- ================= PENCIL TAB ================= -->
+  <div id="tab-pencil" class="tab-content active">
+    <div class="card">
+      <h2><span class="badge badge-pencil">Pencil</span> pencil.dev (formerly pencil.sdks.io) — 13 MCP Tools</h2>
+      <p>Pencil is an AI-native vector design tool with a proprietary <code>.pen</code> file format. Its MCP server gives agents full read/write access to the encrypted canvas. Key differentiator: <strong>batch operations</strong> with a scripting DSL (<code>I()</code>, <code>C()</code>, <code>U()</code>, <code>R()</code>, <code>D()</code>, <code>M()</code>, <code>G()</code>) and spatial-awareness tools.</p>
+
+      <h3><span class="cat-label cat-read">Read</span> Context &amp; State</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">get_editor_state</span></td>
+            <td><span class="param"><em>include_schema</em>: bool (required)</span></td>
+            <td>Active file path, current selection IDs, document metadata, and optionally the full .pen schema</td>
+            <td>Always called first. Agent orients: what file is open, what's selected, what's the schema.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">open_document</span></td>
+            <td><span class="param"><em>filePathOrTemplate</em>: string — absolute path or "new"</span></td>
+            <td>Opens the file in the editor; returns editor state</td>
+            <td>Agent creates a fresh design or opens an existing .pen file to work on.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_guidelines</span></td>
+            <td><span class="param"><em>category?</em>: "guide" | "style"<br><em>name?</em>: string<br><em>params?</em>: object</span></td>
+            <td>List of available guides/styles, or specific guide content with design instructions</td>
+            <td>Agent loads task-specific instructions (e.g., "how to build a landing page") and visual style archetypes.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-read">Read</span> Node Inspection</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">batch_get</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>patterns?</em>: [{type?, name?, reusable?}]<br><em>nodeIds?</em>: string[]<br><em>parentId?</em>: string<br><em>readDepth?</em>: number<br><em>searchDepth?</em>: number<br><em>resolveInstances?</em>: bool<br><em>resolveVariables?</em>: bool<br><em>includePathGeometry?</em>: bool</span></td>
+            <td>Matched nodes with their properties and children (to specified depth)</td>
+            <td>Agent explores document structure, finds components by type/name/reusability, reads design system components in bulk. The power read tool.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_variables</span></td>
+            <td><span class="param"><em>filePath</em>: string</span></td>
+            <td>All design variables and themes defined in the document</td>
+            <td>Agent reads design tokens (colors, spacing, typography) to generate matching CSS or apply consistent styling.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">search_all_unique_properties</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>parents</em>: string[]<br><em>properties</em>: [fillColor | textColor | strokeColor | fontSize | fontFamily | fontWeight | cornerRadius | padding | gap | strokeThickness]</span></td>
+            <td>Unique values for each queried property across the subtree</td>
+            <td>Agent audits a design's property usage — finds all unique colors, fonts, radii in use. Enables design system extraction.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-read">Read</span> Visual &amp; Spatial</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">get_screenshot</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>nodeId</em>: string</span></td>
+            <td>PNG screenshot image of the specified node</td>
+            <td>Agent verifies design output visually. Critical for the review-iterate loop — agent renders, checks, fixes.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">snapshot_layout</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>parentId?</em>: string<br><em>maxDepth?</em>: number<br><em>problemsOnly?</em>: bool</span></td>
+            <td>Layout rectangles with computed bounds; optionally only nodes with layout problems (clipping, overlap)</td>
+            <td>Agent detects layout bugs — overlapping elements, clipped content, misaligned nodes. Quality assurance without vision.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">find_empty_space_on_canvas</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>width</em>: number<br><em>height</em>: number<br><em>padding</em>: number<br><em>direction</em>: top | right | bottom | left<br><em>nodeId?</em>: string</span></td>
+            <td>x/y coordinates of available empty space</td>
+            <td>Agent finds room on the canvas to place new artboards/frames without overlapping existing work.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">export_nodes</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>outputDir</em>: string<br><em>nodeIds</em>: string[]<br><em>format?</em>: png | jpeg | webp | pdf<br><em>scale?</em>: number<br><em>quality?</em>: number</span></td>
+            <td>Absolute file paths of exported images (2x scale, 4096 max resolution default)</td>
+            <td>Agent exports finished designs to image files for handoff, documentation, or comparison.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-write">Write</span> Design Operations</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">batch_design</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>operations</em>: string — scripting DSL:<br>&nbsp;&nbsp;I(parent, {nodeData}) — Insert<br>&nbsp;&nbsp;C(nodeId, parent, {overrides}) — Copy<br>&nbsp;&nbsp;U(path, {updates}) — Update<br>&nbsp;&nbsp;R(path, {replacement}) — Replace<br>&nbsp;&nbsp;D(nodeId) — Delete<br>&nbsp;&nbsp;M(nodeId, newParent) — Move<br>&nbsp;&nbsp;G(nodeId, "ai"|"stock", prompt) — Image<br>Max 25 ops per call. Atomic rollback.</span></td>
+            <td>Created/modified node IDs and bindings. Issues list for follow-up fixes.</td>
+            <td>THE power tool. Agent builds entire screens in batches — inserts frames, text, components; updates styles; rearranges layout. Supports component instances with override paths.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">set_variables</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>variables</em>: object (per .pen schema)<br><em>replace?</em>: bool</span></td>
+            <td>Updated variable definitions</td>
+            <td>Agent creates/updates design tokens — colors, typography, spacing. Themes auto-register.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">replace_all_matching_properties</span></td>
+            <td><span class="param"><em>filePath</em>: string<br><em>parents</em>: string[]<br><em>properties</em>: {fillColor?, textColor?, strokeColor?, fontSize?, fontFamily?, fontWeight?, cornerRadius?, padding?, gap?, strokeThickness?} — each with [{from, to}] pairs</span></td>
+            <td>Count of replaced properties</td>
+            <td>Agent does bulk find-and-replace across a design — swap brand colors, change fonts, update radii globally. Design system refactoring.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= PAPER TAB ================= -->
+  <div id="tab-paper" class="tab-content">
+    <div class="card">
+      <h2><span class="badge badge-paper">Paper</span> paper.design — 24 MCP Tools (11 Read / 8 Write / 5 Utility)</h2>
+      <p>Paper is an HTML/CSS DOM-native design tool with GPU shader effects. Its MCP server provides <strong>bidirectional</strong> access — agents can both read and modify the live canvas. Key differentiator: <strong>write_html</strong> for direct HTML injection, <strong>get_jsx</strong> for Tailwind/inline-style code export, and <strong>working indicators</strong> for human awareness.</p>
+
+      <h3><span class="cat-label cat-read">Read</span> Context &amp; Structure (11 tools)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">get_basic_info</span></td>
+            <td><span class="param">none</span></td>
+            <td>File name, page name, node count, artboard list with dimensions</td>
+            <td>Agent orients to the current document — how many artboards, what sizes, overall scope.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_selection</span></td>
+            <td><span class="param">none</span></td>
+            <td>Selected node IDs, names, types, sizes, artboard context</td>
+            <td>Agent acts on what the user selected — "make this bigger", "change this color".</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_node_info</span></td>
+            <td><span class="param"><em>nodeId</em>: string</span></td>
+            <td>Size, visibility, lock status, parent, children, text content</td>
+            <td>Agent inspects a specific node in detail before modifying it.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_children</span></td>
+            <td><span class="param"><em>nodeId</em>: string</span></td>
+            <td>Direct child IDs, names, types, child counts</td>
+            <td>Agent traverses the tree top-down to understand hierarchy.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_tree_summary</span></td>
+            <td><span class="param"><em>nodeId</em>: string<br><em>depth?</em>: number</span></td>
+            <td>Compact text summary of the subtree hierarchy</td>
+            <td>Agent gets a quick structural overview without reading every node.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_screenshot</span></td>
+            <td><span class="param"><em>nodeId</em>: string<br><em>scale?</em>: 1 | 2</span></td>
+            <td>Base64-encoded PNG image</td>
+            <td>Agent visually verifies design output. Review-iterate loop.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_jsx</span></td>
+            <td><span class="param"><em>nodeId</em>: string<br><em>format</em>: "tailwind" | "inline-styles"</span></td>
+            <td>JSX code for the node and descendants</td>
+            <td>Agent extracts production-ready React/Tailwind code directly from the design. Design-to-code pipeline.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_computed_styles</span></td>
+            <td><span class="param"><em>nodeIds</em>: string[] (batch)</span></td>
+            <td>Computed CSS styles for each node</td>
+            <td>Agent reads exact visual properties — useful for style auditing and consistency checks.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_fill_image</span></td>
+            <td><span class="param"><em>nodeId</em>: string</span></td>
+            <td>Base64 JPEG image data from a node's image fill</td>
+            <td>Agent extracts image assets from designs for reuse or export.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_font_family_info</span></td>
+            <td><span class="param"><em>fontFamily</em>: string</span></td>
+            <td>Availability status, weights, styles (local + Google Fonts)</td>
+            <td>Agent validates font choices before applying them — avoids missing font errors.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_guide</span></td>
+            <td><span class="param"><em>topic</em>: string (e.g., "figma-import")</span></td>
+            <td>Guided workflow instructions for the topic</td>
+            <td>Agent loads platform-specific how-to guides for complex tasks.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-write">Write</span> Modification (8 tools)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">create_artboard</span></td>
+            <td><span class="param"><em>name?</em>: string<br><em>styles?</em>: {width, height, ...}</span></td>
+            <td>New artboard ID</td>
+            <td>Agent creates a new canvas/page for a fresh design.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">write_html</span></td>
+            <td><span class="param"><em>html</em>: string<br><em>mode</em>: "insert-children" | "replace"</span></td>
+            <td>Created/modified node IDs</td>
+            <td>THE power tool. Agent writes entire layouts as HTML — the DOM IS the design. Can insert into or replace existing nodes.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">set_text_content</span></td>
+            <td><span class="param"><em>nodeIds</em>: string[] (batch)<br><em>content</em>: string[]</span></td>
+            <td>Updated node IDs</td>
+            <td>Agent updates copy — headings, labels, paragraphs — without rebuilding structure.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">update_styles</span></td>
+            <td><span class="param"><em>nodeIds</em>: string[] (batch)<br><em>styles</em>: CSS properties</span></td>
+            <td>Updated node IDs</td>
+            <td>Agent changes visual styling — colors, spacing, typography, layout — via CSS properties.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">rename_nodes</span></td>
+            <td><span class="param"><em>nodeIds</em>: string[] (batch)<br><em>names</em>: string[]</span></td>
+            <td>Updated node IDs</td>
+            <td>Agent organizes the layer tree with semantic names.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">duplicate_nodes</span></td>
+            <td><span class="param"><em>nodeIds</em>: string[]</span></td>
+            <td>New node IDs + descendant ID map</td>
+            <td>Agent deep-clones nodes to repeat patterns (cards, list items, etc.).</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">delete_nodes</span></td>
+            <td><span class="param"><em>nodeIds</em>: string[]</span></td>
+            <td>Confirmation</td>
+            <td>Agent removes unwanted elements.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">find_placement</span></td>
+            <td><span class="param">none (analyzes canvas)</span></td>
+            <td>Suggested x/y coordinates for new artboard</td>
+            <td>Agent finds non-overlapping position before creating new artboards.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-util">Utility</span> Workflow (estimated 5 tools — 3 confirmed)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">start_working_on_nodes</span></td>
+            <td><span class="param"><em>artboardIds</em>: string[]</span></td>
+            <td>Confirmation</td>
+            <td>Agent signals to the human that it's actively modifying these artboards. Visual indicator on canvas.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">finish_working_on_nodes</span></td>
+            <td><span class="param"><em>artboardIds</em>: string[]</span></td>
+            <td>Confirmation</td>
+            <td>Agent signals it's done working. Human knows they can inspect/interact safely.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">[2-3 unconfirmed utility tools]</span></td>
+            <td><span class="param">Documentation lists 24 total (11R + 8W + 5U). The remaining 2-3 utility tools are likely: undo/redo, zoom/pan, or import-related. Not publicly documented.</span></td>
+            <td>--</td>
+            <td>--</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= STITCH TAB ================= -->
+  <div id="tab-stitch" class="tab-content">
+    <div class="card">
+      <h2><span class="badge badge-stitch">Stitch</span> stitch.withgoogle.com — 12 MCP Tools (9 core + 3 proxy)</h2>
+      <p>Google Stitch is an AI-powered UI generation tool — it generates high-fidelity screens from text prompts using Gemini models. Its SDK wraps the MCP server and provides three consumption layers: domain API, tool client, and AI SDK adapter. Key differentiator: <strong>AI generation is the primary operation</strong> (not manual construction), with <strong>variant generation</strong> and <strong>design DNA extraction</strong>.</p>
+
+      <h3><span class="cat-label cat-gen">Generate</span> AI Generation (4 tools)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">generate_screen_from_text</span></td>
+            <td><span class="param"><em>prompt</em>: string<br><em>projectId</em>: string<br><em>deviceType?</em>: MOBILE | DESKTOP | TABLET | AGNOSTIC<br><em>modelId?</em>: GEMINI_3_PRO | GEMINI_3_FLASH</span></td>
+            <td>Screen object with ID, metadata</td>
+            <td>THE power tool. Agent describes a UI in natural language and gets a complete screen. No node-by-node construction needed.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">edit_screen</span></td>
+            <td><span class="param"><em>prompt</em>: string (edit instructions)<br><em>screenId</em>: string<br><em>deviceType?</em>: DeviceType<br><em>modelId?</em>: ModelId</span></td>
+            <td>Updated Screen object</td>
+            <td>Agent refines existing screens with natural language — "make the header larger", "add a sidebar". Iterative design.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">generate_screen_variants</span></td>
+            <td><span class="param"><em>prompt</em>: string<br><em>screenId</em>: string<br><em>variantOptions</em>: {<br>&nbsp;&nbsp;variantCount: 1-5,<br>&nbsp;&nbsp;creativeRange: REFINE | EXPLORE | REIMAGINE,<br>&nbsp;&nbsp;aspects: [LAYOUT, COLOR_SCHEME, IMAGES, TEXT_FONT, TEXT_CONTENT]<br>}<br><em>deviceType?</em>: DeviceType<br><em>modelId?</em>: ModelId</span></td>
+            <td>Array of Screen objects (variants)</td>
+            <td>Agent explores design alternatives — generate 5 color variants, 3 layout options. Enables A/B design exploration.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">extract_design_context</span></td>
+            <td><span class="param"><em>screenId</em>: string</span></td>
+            <td>Design DNA: fonts, colors, layout patterns</td>
+            <td>Agent extracts design tokens from an existing screen to ensure consistency when generating new screens.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-read">Read</span> Project &amp; Screen Management (5 tools)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">create_project</span></td>
+            <td><span class="param"><em>title</em>: string</span></td>
+            <td>Project object with ID</td>
+            <td>Agent creates a workspace container for related screens.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">list_projects</span></td>
+            <td><span class="param">none</span></td>
+            <td>Array of Project objects</td>
+            <td>Agent discovers existing projects to work with.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_project</span></td>
+            <td><span class="param"><em>projectId</em>: string</span></td>
+            <td>Project metadata</td>
+            <td>Agent reads project details.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">list_screens</span></td>
+            <td><span class="param"><em>projectId</em>: string</span></td>
+            <td>Array of Screen objects</td>
+            <td>Agent inventories screens in a project for editing or export.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_screen</span></td>
+            <td><span class="param"><em>screenId</em>: string<br><em>projectId</em>: string</span></td>
+            <td>Screen metadata</td>
+            <td>Agent reads a specific screen's details.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-read">Read</span> Export &amp; Output (3 tools via proxy)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">get_screen_html</span> / <span class="tool-name">fetch_screen_code</span></td>
+            <td><span class="param"><em>screenId</em>: string<br><em>projectId</em>: string</span></td>
+            <td>HTML/CSS code of the screen (or download URL)</td>
+            <td>Agent extracts the generated code for integration into a real app.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_screen_image</span> / <span class="tool-name">fetch_screen_image</span></td>
+            <td><span class="param"><em>screenId</em>: string<br><em>projectId</em>: string</span></td>
+            <td>Base64 screenshot or download URL</td>
+            <td>Agent captures visual output for review or documentation.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">build_site</span></td>
+            <td><span class="param"><em>projectId</em>: string<br><em>routes</em>: [{screenId, route}]</span></td>
+            <td>HTML for each mapped page/route</td>
+            <td>Agent assembles a multi-page site from individual screens, mapping screens to URL routes.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-util">Utility</span> Generation Tracking (stitch-mcp proxy)</h3>
+      <table class="tool-table">
+        <thead><tr><th>Tool</th><th>Parameters</th><th>Returns</th><th>Agent Workflow</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">generation_status</span></td>
+            <td><span class="param"><em>generationId</em>: string</span></td>
+            <td>Status of screen generation (pending/complete/failed)</td>
+            <td>Agent polls async generation jobs. Screen generation can take 10-30s.</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">list_generations</span></td>
+            <td><span class="param">none</span></td>
+            <td>All in-flight and recent generation jobs</td>
+            <td>Agent tracks multiple concurrent generation tasks.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:16px; color: var(--warm-muted); font-size:0.85rem;">
+        <strong>Stitch Skills layer:</strong> Additionally, the <code>stitch-skills</code> repo provides 7 high-level skills (stitch-design, stitch-loop, design-md, enhance-prompt, react-components, remotion, shadcn-ui) that orchestrate these tools into complete workflows like "generate a multi-page site" or "convert screens to React components."
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= COMPARISON TAB ================= -->
+  <div id="tab-comparison" class="tab-content">
+    <div class="card">
+      <h2>Side-by-Side Capability Matrix</h2>
+
+      <div class="comparison-grid">
+        <div class="comparison-col pencil-col">
+          <h3 style="color: var(--coral);">Pencil (13 tools)</h3>
+          <div class="feature-row"><span class="check">+</span> Get editor context</div>
+          <div class="feature-row"><span class="check">+</span> Open / create documents</div>
+          <div class="feature-row"><span class="check">+</span> Load design guides/styles</div>
+          <div class="feature-row"><span class="check">+</span> Search/read nodes (batch)</div>
+          <div class="feature-row"><span class="check">+</span> Batch write operations (DSL)</div>
+          <div class="feature-row"><span class="check">+</span> Screenshot / visual preview</div>
+          <div class="feature-row"><span class="check">+</span> Export to image files</div>
+          <div class="feature-row"><span class="check">+</span> Design variables / tokens</div>
+          <div class="feature-row"><span class="check">+</span> Layout analysis / problems</div>
+          <div class="feature-row"><span class="check">+</span> Spatial awareness (empty space)</div>
+          <div class="feature-row"><span class="check">+</span> Bulk property search</div>
+          <div class="feature-row"><span class="check">+</span> Bulk property replace</div>
+          <div class="feature-row"><span class="check">+</span> AI image generation (in batch)</div>
+          <div class="feature-row"><span class="cross">-</span> Code export (JSX/HTML)</div>
+          <div class="feature-row"><span class="cross">-</span> AI screen generation</div>
+          <div class="feature-row"><span class="cross">-</span> Working indicators</div>
+          <div class="feature-row"><span class="cross">-</span> Font validation</div>
+          <div class="feature-row"><span class="cross">-</span> Design variant generation</div>
+        </div>
+
+        <div class="comparison-col paper-col">
+          <h3 style="color: var(--sage);">Paper (24 tools)</h3>
+          <div class="feature-row"><span class="check">+</span> Get editor context</div>
+          <div class="feature-row"><span class="cross">-</span> Open / create documents</div>
+          <div class="feature-row"><span class="check">+</span> Load design guides/styles</div>
+          <div class="feature-row"><span class="check">+</span> Search/read nodes (individual)</div>
+          <div class="feature-row"><span class="check">+</span> Write operations (HTML-based)</div>
+          <div class="feature-row"><span class="check">+</span> Screenshot / visual preview</div>
+          <div class="feature-row"><span class="cross">-</span> Export to image files</div>
+          <div class="feature-row"><span class="cross">-</span> Design variables / tokens</div>
+          <div class="feature-row"><span class="cross">-</span> Layout analysis / problems</div>
+          <div class="feature-row"><span class="check">+</span> Spatial awareness (find_placement)</div>
+          <div class="feature-row"><span class="cross">-</span> Bulk property search</div>
+          <div class="feature-row"><span class="cross">-</span> Bulk property replace</div>
+          <div class="feature-row"><span class="cross">-</span> AI image generation</div>
+          <div class="feature-row"><span class="check">+</span> Code export (JSX/Tailwind)</div>
+          <div class="feature-row"><span class="cross">-</span> AI screen generation</div>
+          <div class="feature-row"><span class="check">+</span> Working indicators</div>
+          <div class="feature-row"><span class="check">+</span> Font validation</div>
+          <div class="feature-row"><span class="cross">-</span> Design variant generation</div>
+        </div>
+
+        <div class="comparison-col stitch-col">
+          <h3 style="color: var(--gold);">Stitch (12 tools)</h3>
+          <div class="feature-row"><span class="cross">-</span> Get editor context</div>
+          <div class="feature-row"><span class="check">+</span> Open / create documents</div>
+          <div class="feature-row"><span class="cross">-</span> Load design guides/styles</div>
+          <div class="feature-row"><span class="check">+</span> Search/read nodes (project-level)</div>
+          <div class="feature-row"><span class="cross">-</span> Write operations (manual)</div>
+          <div class="feature-row"><span class="check">+</span> Screenshot / visual preview</div>
+          <div class="feature-row"><span class="cross">-</span> Export to image files</div>
+          <div class="feature-row"><span class="partial">~</span> Design variables / tokens (extract only)</div>
+          <div class="feature-row"><span class="cross">-</span> Layout analysis / problems</div>
+          <div class="feature-row"><span class="cross">-</span> Spatial awareness</div>
+          <div class="feature-row"><span class="cross">-</span> Bulk property search</div>
+          <div class="feature-row"><span class="cross">-</span> Bulk property replace</div>
+          <div class="feature-row"><span class="cross">-</span> AI image generation</div>
+          <div class="feature-row"><span class="check">+</span> Code export (HTML/CSS)</div>
+          <div class="feature-row"><span class="check">+</span> AI screen generation</div>
+          <div class="feature-row"><span class="cross">-</span> Working indicators</div>
+          <div class="feature-row"><span class="cross">-</span> Font validation</div>
+          <div class="feature-row"><span class="check">+</span> Design variant generation</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Architecture Comparison</h2>
+      <table class="tool-table">
+        <thead><tr><th>Aspect</th><th>Pencil</th><th>Paper</th><th>Stitch</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Design paradigm</strong></td>
+            <td>Vector canvas (.pen proprietary format)</td>
+            <td>HTML/CSS DOM-native canvas</td>
+            <td>AI-generated screens (prompt-to-UI)</td>
+          </tr>
+          <tr>
+            <td><strong>Write model</strong></td>
+            <td>Batch script DSL (I/C/U/R/D/M/G operations)</td>
+            <td>Direct HTML injection + CSS updates</td>
+            <td>Natural language prompts to AI</td>
+          </tr>
+          <tr>
+            <td><strong>Read model</strong></td>
+            <td>Pattern search on node tree (batch_get)</td>
+            <td>Individual node inspection + tree summary</td>
+            <td>Project/screen listing + export</td>
+          </tr>
+          <tr>
+            <td><strong>Code export</strong></td>
+            <td>None (agent must generate from node data)</td>
+            <td>Built-in JSX with Tailwind or inline</td>
+            <td>Built-in HTML/CSS from generated screens</td>
+          </tr>
+          <tr>
+            <td><strong>Component reuse</strong></td>
+            <td>ref nodes, reusable flag, component instances</td>
+            <td>HTML templates via write_html</td>
+            <td>Design DNA extraction for consistency</td>
+          </tr>
+          <tr>
+            <td><strong>Max ops/call</strong></td>
+            <td>25 operations per batch_design</td>
+            <td>Batch on some tools (styles, text, rename)</td>
+            <td>1 screen per generation call</td>
+          </tr>
+          <tr>
+            <td><strong>Human collaboration</strong></td>
+            <td>Agent opens .pen files that humans edit in Pencil app</td>
+            <td>Working indicators + live canvas sync</td>
+            <td>Cloud project sharing</td>
+          </tr>
+          <tr>
+            <td><strong>Async handling</strong></td>
+            <td>Synchronous (all ops return immediately)</td>
+            <td>Synchronous</td>
+            <td>Async (generation_status polling)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= ANALYSIS TAB ================= -->
+  <div id="tab-analysis" class="tab-content">
+    <div class="card">
+      <h2>1. Common Patterns (Table Stakes)</h2>
+      <p>These capabilities appear across all three platforms. Any design MCP server must have them.</p>
+      <div class="analysis-box">
+        <h3>Every design MCP server provides:</h3>
+        <ul>
+          <li><strong>Document/project creation</strong> — Pencil: <code>open_document("new")</code>, Paper: <code>create_artboard</code>, Stitch: <code>create_project</code></li>
+          <li><strong>Visual preview / screenshot</strong> — All three: <code>get_screenshot</code> / <code>get_screen_image</code>. Critical for the review-iterate loop. The agent must see what it built.</li>
+          <li><strong>Node/element inspection</strong> — Pencil: <code>batch_get</code>, Paper: <code>get_node_info</code> + <code>get_children</code>, Stitch: <code>get_screen</code></li>
+          <li><strong>Code/markup export</strong> — Paper: <code>get_jsx</code>, Stitch: <code>get_screen_html</code>. (Pencil lacks this, agents must infer code from node data.)</li>
+          <li><strong>Design modification</strong> — Pencil: <code>batch_design</code>, Paper: <code>write_html</code> + <code>update_styles</code>, Stitch: <code>edit_screen</code></li>
+          <li><strong>Canvas space management</strong> — Pencil: <code>find_empty_space_on_canvas</code>, Paper: <code>find_placement</code>. (Stitch handles this implicitly.)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Unique Strengths</h2>
+
+      <div class="comparison-grid">
+        <div class="comparison-col pencil-col">
+          <h3 style="color:var(--coral)">Pencil's Unique Strengths</h3>
+          <ul style="padding-left:18px">
+            <li><strong>Batch scripting DSL</strong> — The <code>I()/C()/U()/R()/D()/M()/G()</code> syntax is the most expressive write interface. Agents can build complex layouts in one call with variable bindings across operations.</li>
+            <li><strong>Atomic rollback</strong> — If any operation in a batch fails, all previous ops roll back. Safe for complex multi-step edits.</li>
+            <li><strong>Layout problem detection</strong> — <code>snapshot_layout(problemsOnly: true)</code> finds clipping, overlap, and misalignment without vision. No other tool has this.</li>
+            <li><strong>Bulk property operations</strong> — <code>search_all_unique_properties</code> + <code>replace_all_matching_properties</code> enable design-system-wide refactoring (swap all brand colors, change all font sizes).</li>
+            <li><strong>Design guidelines system</strong> — <code>get_guidelines</code> gives agents task-specific instructions and style archetypes. Built-in prompt engineering for design tasks.</li>
+            <li><strong>AI image generation in batch</strong> — <code>G(nodeId, "ai", prompt)</code> generates and places images inline with design operations.</li>
+          </ul>
+        </div>
+
+        <div class="comparison-col paper-col">
+          <h3 style="color:var(--sage)">Paper's Unique Strengths</h3>
+          <ul style="padding-left:18px">
+            <li><strong>HTML/CSS as design language</strong> — <code>write_html</code> means agents write the same code they already know. No proprietary format to learn. The DOM IS the design.</li>
+            <li><strong>Built-in JSX/Tailwind export</strong> — <code>get_jsx(format: "tailwind")</code> gives production-ready React code directly. Zero design-to-code translation gap.</li>
+            <li><strong>Working indicators</strong> — <code>start/finish_working_on_nodes</code> tells the human when the agent is actively modifying. Unique collaborative awareness.</li>
+            <li><strong>Font validation</strong> — <code>get_font_family_info</code> checks font availability before use. Prevents rendering issues.</li>
+            <li><strong>Computed styles access</strong> — <code>get_computed_styles</code> reads resolved CSS properties, not just declarations. More accurate than reading source styles.</li>
+            <li><strong>Largest tool surface</strong> — 24 tools means more granular operations. Each tool does one thing well.</li>
+          </ul>
+        </div>
+
+        <div class="comparison-col stitch-col">
+          <h3 style="color:var(--gold)">Stitch's Unique Strengths</h3>
+          <ul style="padding-left:18px">
+            <li><strong>AI-first generation</strong> — <code>generate_screen_from_text</code> creates entire screens from prompts. Highest abstraction level. Agent describes, AI designs.</li>
+            <li><strong>Variant exploration</strong> — <code>generate_screen_variants</code> with <code>creativeRange</code> and <code>aspects</code> parameters enables systematic design exploration. No manual A/B needed.</li>
+            <li><strong>Design DNA extraction</strong> — <code>extract_design_context</code> pulls fonts, colors, layouts from existing screens to seed new generation. Cross-screen consistency via AI.</li>
+            <li><strong>Multi-page site assembly</strong> — <code>build_site</code> maps screens to routes, outputting a complete multi-page site. End-to-end generation.</li>
+            <li><strong>Rich skills layer</strong> — 7 stitch-skills (prompt enhancement, React conversion, video generation) show how to compose tools into complete workflows.</li>
+            <li><strong>Model selection</strong> — Agents can choose between GEMINI_3_PRO (quality) and GEMINI_3_FLASH (speed) per generation.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. Gaps — Underserved Agent Workflows</h2>
+      <div class="analysis-box" style="border-color: var(--coral);">
+        <h3 style="color: var(--coral);">Gaps across ALL three platforms:</h3>
+        <ul>
+          <li><strong>No version history / undo for agents</strong> — None offer <code>undo()</code>, <code>checkpoint()</code>, or <code>restore(version)</code>. Agents can't safely experiment and roll back. Pencil has atomic rollback within a batch, but no cross-batch undo.</li>
+          <li><strong>No responsive preview</strong> — None offer "render at mobile/tablet/desktop" from a single design. Stitch has <code>deviceType</code> on generation, but no responsive reflow of an existing screen.</li>
+          <li><strong>No accessibility audit</strong> — None have built-in contrast ratio, ARIA, or focus-order checking. Agents must infer accessibility from visual/structural data.</li>
+          <li><strong>No design-to-component-library mapping</strong> — None map design elements to a specific component library (shadcn, Material, etc.) structurally. Paper gets closest with get_jsx, but it outputs raw HTML/Tailwind, not component imports.</li>
+          <li><strong>No interactive prototype / state management</strong> — None handle hover states, click interactions, page transitions, or conditional rendering in the design layer.</li>
+          <li><strong>No collaborative diff / merge</strong> — No tool supports "compare version A with version B" or "merge these two design variants."</li>
+          <li><strong>No design linting / guidelines enforcement</strong> — Pencil has <code>get_guidelines</code> but no automated enforcement. No tool can <code>lint_design(rules)</code> to check spacing consistency, color system compliance, etc.</li>
+          <li><strong>No real-time human feedback channel</strong> — Paper's working indicators are closest. But there's no <code>request_human_review()</code> that pauses the agent and waits for approval.</li>
+          <li><strong>No cross-platform export</strong> — None export to Flutter, SwiftUI, or Kotlin Compose. All are web-only (React/HTML/CSS).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PROPOSED TAB ================= -->
+  <div id="tab-proposed" class="tab-content">
+    <div class="card">
+      <h2>Proposed MCP Tool Set for Our Agent-Native Design Tool</h2>
+      <p>16 tools organized into 4 categories, taking the best patterns from each platform and filling the identified gaps. Designed for our specific workflow: <strong>agent creates design via MCP -> renders screenshot -> human reviews -> agent iterates -> exports production React/Tailwind.</strong></p>
+
+      <h3><span class="cat-label cat-read">Context</span> 4 Tools — Orientation &amp; State</h3>
+      <table class="mapping-table">
+        <thead><tr><th>Our Tool</th><th>Parameters</th><th>Returns</th><th>Pencil Equiv.</th><th>Paper Equiv.</th><th>Stitch Equiv.</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">get_project_state</span></td>
+            <td><span class="param">none</span></td>
+            <td>Current project, active document, design tokens, component library summary, version count</td>
+            <td>get_editor_state</td>
+            <td>get_basic_info</td>
+            <td>get_project</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">open_project</span></td>
+            <td><span class="param"><em>path</em>: string | "new"<br><em>name?</em>: string<br><em>template?</em>: string</span></td>
+            <td>Project object with ID, file paths</td>
+            <td>open_document</td>
+            <td class="no-equiv">--</td>
+            <td>create_project</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_design_tokens</span></td>
+            <td><span class="param"><em>projectId</em>: string</span></td>
+            <td>Colors, typography, spacing, radii, shadows — mapped to Tailwind config values</td>
+            <td>get_variables</td>
+            <td class="no-equiv">--</td>
+            <td>extract_design_context</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">set_design_tokens</span></td>
+            <td><span class="param"><em>projectId</em>: string<br><em>tokens</em>: object<br><em>merge?</em>: bool</span></td>
+            <td>Updated token set</td>
+            <td>set_variables</td>
+            <td class="no-equiv">--</td>
+            <td class="no-equiv">--</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-read">Read</span> 4 Tools — Inspect &amp; Verify</h3>
+      <table class="mapping-table">
+        <thead><tr><th>Our Tool</th><th>Parameters</th><th>Returns</th><th>Pencil Equiv.</th><th>Paper Equiv.</th><th>Stitch Equiv.</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">get_node_tree</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>nodeId?</em>: string<br><em>depth?</em>: number<br><em>filter?</em>: {type?, name?, component?}</span></td>
+            <td>Node tree with types, names, props, children. Supports pattern filtering like Pencil's batch_get.</td>
+            <td>batch_get</td>
+            <td>get_tree_summary + get_children + get_node_info</td>
+            <td>list_screens</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">get_screenshot</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>nodeId?</em>: string<br><em>viewport?</em>: {width, height}<br><em>scale?</em>: 1 | 2</span></td>
+            <td>Base64 PNG image. Supports responsive viewport sizes (fills gap).</td>
+            <td>get_screenshot</td>
+            <td>get_screenshot</td>
+            <td>get_screen_image</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">lint_design</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>nodeId?</em>: string<br><em>rules?</em>: [spacing | colors | typography | contrast | hierarchy]</span></td>
+            <td>Array of issues with severity, location, suggestion. Combines Pencil's layout problems with new accessibility + consistency checks.</td>
+            <td>snapshot_layout (problemsOnly)</td>
+            <td class="no-equiv">--</td>
+            <td class="no-equiv">--</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">list_components</span></td>
+            <td><span class="param"><em>projectId</em>: string<br><em>category?</em>: string</span></td>
+            <td>Available component library entries with prop schemas, variants, and the real shadcn component each maps to.</td>
+            <td>batch_get({reusable: true})</td>
+            <td class="no-equiv">--</td>
+            <td class="no-equiv">--</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-write">Write</span> 5 Tools — Create &amp; Modify</h3>
+      <table class="mapping-table">
+        <thead><tr><th>Our Tool</th><th>Parameters</th><th>Returns</th><th>Pencil Equiv.</th><th>Paper Equiv.</th><th>Stitch Equiv.</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">create_document</span></td>
+            <td><span class="param"><em>projectId</em>: string<br><em>name</em>: string<br><em>viewport</em>: {width, height}<br><em>tokens?</em>: string (token set ID)</span></td>
+            <td>Document ID, root node ID</td>
+            <td>open_document("new")</td>
+            <td>create_artboard</td>
+            <td>generate_screen_from_text</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">batch_modify</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>operations</em>: [{<br>&nbsp;&nbsp;op: "insert"|"update"|"delete"|"move"|"duplicate",<br>&nbsp;&nbsp;nodeId?: string,<br>&nbsp;&nbsp;parentId?: string,<br>&nbsp;&nbsp;data?: {type, component?, props?, styles?, children?}<br>}]<br><em>max 25 per call, atomic rollback</em></span></td>
+            <td>Created/modified node IDs. Issues list.</td>
+            <td>batch_design (I/C/U/R/D/M)</td>
+            <td>write_html + update_styles + duplicate_nodes + delete_nodes</td>
+            <td class="no-equiv">--</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">write_html</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>parentId</em>: string<br><em>html</em>: string<br><em>mode</em>: "insert" | "replace"</span></td>
+            <td>Created node IDs</td>
+            <td class="no-equiv">--</td>
+            <td>write_html</td>
+            <td class="no-equiv">--</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">bulk_style_replace</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>scopeNodeIds</em>: string[]<br><em>replacements</em>: {property: [{from, to}]}</span></td>
+            <td>Count of replacements made</td>
+            <td>replace_all_matching_properties</td>
+            <td class="no-equiv">--</td>
+            <td class="no-equiv">--</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">checkpoint</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>label?</em>: string</span></td>
+            <td>Checkpoint ID with timestamp</td>
+            <td class="no-equiv">-- (fills gap)</td>
+            <td class="no-equiv">-- (fills gap)</td>
+            <td class="no-equiv">-- (fills gap)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3><span class="cat-label cat-util">Export</span> 3 Tools — Output &amp; Handoff</h3>
+      <table class="mapping-table">
+        <thead><tr><th>Our Tool</th><th>Parameters</th><th>Returns</th><th>Pencil Equiv.</th><th>Paper Equiv.</th><th>Stitch Equiv.</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="tool-name">export_code</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>nodeId?</em>: string<br><em>format</em>: "react-tailwind" | "react-shadcn" | "html-css"<br><em>componentMap?</em>: bool</span></td>
+            <td>Production-ready code string with imports. When componentMap is true, outputs shadcn component usage instead of raw HTML.</td>
+            <td class="no-equiv">-- (export_nodes for images only)</td>
+            <td>get_jsx</td>
+            <td>get_screen_html / fetch_screen_code</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">export_image</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>nodeIds</em>: string[]<br><em>format</em>: png | jpeg | webp | pdf<br><em>scale?</em>: number<br><em>outputDir</em>: string</span></td>
+            <td>File paths of exported images</td>
+            <td>export_nodes</td>
+            <td class="no-equiv">--</td>
+            <td>fetch_screen_image</td>
+          </tr>
+          <tr>
+            <td><span class="tool-name">restore_checkpoint</span></td>
+            <td><span class="param"><em>documentId</em>: string<br><em>checkpointId</em>: string</span></td>
+            <td>Restored document state</td>
+            <td class="no-equiv">-- (fills gap)</td>
+            <td class="no-equiv">-- (fills gap)</td>
+            <td class="no-equiv">-- (fills gap)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Design Decisions &amp; Rationale</h2>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why batch_modify uses JSON, not a scripting DSL like Pencil</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>Pencil's <code>I()/C()/U()/R()/D()/M()</code> DSL is powerful but requires agents to learn a custom syntax. JSON operations are universally parseable, easier to validate, and work natively with LLM tool-calling conventions. We keep the same expressiveness (insert, copy, update, replace, delete, move) but in structured form. Atomic rollback is preserved.</p>
+      </div>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why we include BOTH batch_modify AND write_html</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>Paper proves that <code>write_html</code> is extremely efficient for agents — they already know HTML/CSS. But batch_modify gives fine-grained control for updates, moves, and deletes that HTML injection can't express. Different tools for different phases: write_html for initial layout, batch_modify for precise iteration.</p>
+      </div>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why checkpoint/restore instead of undo</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>Agents don't think in sequential undo steps. They think in versions: "before I tried this approach" vs "after." Named checkpoints let agents safely experiment and return to known-good states. This fills the biggest gap in all three existing platforms.</p>
+      </div>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why lint_design is a first-class tool</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>Pencil's <code>snapshot_layout(problemsOnly)</code> proves agents need automated QA. We extend this with contrast checking (WCAG), spacing consistency, color system compliance, and typography hierarchy validation. This replaces manual "look at the screenshot and check for issues" with structured issue reports the agent can systematically fix.</p>
+      </div>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why we skip AI generation tools (like Stitch)</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>Our agent IS the AI. Stitch uses a separate AI model (Gemini) to generate screens. We don't need that layer — Claude is the agent doing the designing, using our MCP tools as its hands. Adding AI generation inside the tool creates a confusing two-model architecture. Instead, we give the agent precise tools and let it use its own intelligence to compose designs.</p>
+      </div>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why export_code supports react-shadcn format</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>Paper exports raw JSX/Tailwind. Stitch exports raw HTML/CSS. Neither maps to a real component library. Our <code>react-shadcn</code> format outputs code that uses actual shadcn/ui imports (<code>&lt;Button&gt;</code>, <code>&lt;Card&gt;</code>, <code>&lt;Input&gt;</code>) instead of generic divs. This is the gap that matters most for production code quality.</p>
+      </div>
+
+      <div class="expandable-header" onclick="toggleExpand(this)">
+        <strong>Why responsive viewport on get_screenshot</strong>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="expandable-body">
+        <p>No existing tool lets you screenshot the same design at different viewport sizes. Our <code>viewport</code> parameter renders with responsive CSS reflow, so agents can verify mobile/tablet/desktop without maintaining separate designs. This is critical since our designs use Tailwind responsive classes.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Research compiled March 30, 2026. Sources: Pencil MCP (live tool schemas), Paper.design docs, Google Stitch SDK docs, community MCP implementations.
+</footer>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function toggleExpand(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+</script>
+</body>
+</html>

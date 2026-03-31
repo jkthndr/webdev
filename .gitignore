@@ -1,0 +1,9 @@
+node_modules/
+.next/
+projects/
+dist/
+*.log
+.env
+spikes/fidelity/node_modules/
+spikes/fidelity/.next/
+spikes/fidelity/screenshots/
