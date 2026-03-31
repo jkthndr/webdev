@@ -9,7 +9,7 @@ import { takeScreenshot, closeBrowser } from "./screenshot.js";
 
 const pm = new ProjectManager();
 const PREVIEW_BASE_PORT = 4501;
-let nextPort = PREVIEW_BASE_PORT;
+let nextPort = PREVIEW_BASE_PORT + pm.listProjects().length;
 
 // --- MCP Server Factory ---
 
@@ -25,19 +25,26 @@ function createMcpServerWithTools(): McpServer {
     "Open or create a design project (Next.js + shadcn/ui workspace)",
     { name: z.string().describe("Project name (alphanumeric + hyphens)") },
     async ({ name }) => {
-      const project = await pm.openOrCreate(name);
-      const port = await pm.startDevServer(name, nextPort++);
-      return {
-        content: [{
-          type: "text" as const,
-          text: JSON.stringify({
-            project: project.name,
-            screens: project.screens,
-            previewUrl: `http://localhost:${port}`,
-            checkpoints: pm.getCheckpoints(name).length,
-          }, null, 2),
-        }],
-      };
+      try {
+        const project = await pm.openOrCreate(name);
+        const port = await pm.startDevServer(name, nextPort++);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              project: project.name,
+              screens: project.screens,
+              previewUrl: `http://localhost:${port}`,
+              checkpoints: pm.getCheckpoints(name).length,
+            }, null, 2),
+          }],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Error opening project: ${e instanceof Error ? e.message : String(e)}` }],
+          isError: true,
+        };
+      }
     }
   );
 
@@ -51,6 +58,9 @@ function createMcpServerWithTools(): McpServer {
       code: z.string().optional().describe("Optional TSX code. If omitted, creates a starter template."),
     },
     async ({ project, screen, code }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found. Call open_project first.` }], isError: true };
+      }
       const filePath = pm.createScreen(project, screen, code);
       return {
         content: [{
@@ -174,6 +184,9 @@ function createMcpServerWithTools(): McpServer {
       message: z.string().describe("Checkpoint description"),
     },
     async ({ project, message }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
       const hash = pm.checkpoint(project, message);
       const checkpoints = pm.getCheckpoints(project);
       return {
@@ -198,6 +211,9 @@ function createMcpServerWithTools(): McpServer {
       hash: z.string().describe("Checkpoint hash to restore to (from checkpoint tool output)"),
     },
     async ({ project, hash }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
       pm.restoreCheckpoint(project, hash);
       const screens = pm.listScreens(project);
       return {

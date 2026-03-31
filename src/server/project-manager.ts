@@ -16,6 +16,18 @@ export interface ProjectInfo {
 const PROJECTS_DIR = path.resolve(process.cwd(), "projects");
 const TEMPLATE_DIR = path.resolve(import.meta.dirname, "../template");
 
+const VALID_NAME = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
+
+function validateName(name: string, label: string): void {
+  if (!VALID_NAME.test(name)) {
+    throw new Error(`Invalid ${label} name '${name}': must be alphanumeric with hyphens/underscores, 1-64 chars`);
+  }
+}
+
+function sanitizeForShell(s: string): string {
+  return s.replace(/[^a-zA-Z0-9 .,!?:;_\-()]/g, "");
+}
+
 export class ProjectManager {
   private devServers = new Map<string, { process: ChildProcess; port: number }>();
 
@@ -24,6 +36,7 @@ export class ProjectManager {
   }
 
   private projectDir(name: string): string {
+    validateName(name, "project");
     return path.join(PROJECTS_DIR, name);
   }
 
@@ -83,6 +96,7 @@ export class ProjectManager {
   }
 
   createScreen(projectName: string, screenName: string, code?: string): string {
+    validateName(screenName, "screen");
     const dir = this.projectDir(projectName);
     const screenDir = path.join(dir, "src/app/screens", screenName);
     fs.mkdirSync(screenDir, { recursive: true });
@@ -115,9 +129,10 @@ export class ProjectManager {
 
   checkpoint(projectName: string, message: string): string {
     const dir = this.projectDir(projectName);
+    const safeMessage = sanitizeForShell(message) || "checkpoint";
     execSync("git add -A", { cwd: dir, stdio: "pipe" });
     try {
-      execSync(`git commit -m "${message.replace(/"/g, '\\"')}"`, { cwd: dir, stdio: "pipe" });
+      execSync(`git commit -m "${safeMessage}"`, { cwd: dir, stdio: "pipe" });
     } catch {
       // Nothing to commit
       return execSync("git rev-parse HEAD", { cwd: dir, encoding: "utf-8" }).trim();
@@ -126,6 +141,9 @@ export class ProjectManager {
   }
 
   restoreCheckpoint(projectName: string, hash: string): void {
+    if (!/^[a-f0-9]{7,40}$/.test(hash)) {
+      throw new Error(`Invalid checkpoint hash: ${hash}`);
+    }
     const dir = this.projectDir(projectName);
     execSync(`git reset --hard ${hash}`, { cwd: dir, stdio: "pipe" });
   }
@@ -181,7 +199,7 @@ export class ProjectManager {
     this.devServers.delete(projectName);
 
     // Rebuild and restart
-    execSync("npm run build", { cwd: dir, stdio: "pipe", timeout: 120000 });
+    await execAsync("npm run build", { cwd: dir, timeout: 120000 });
 
     const proc = spawn("npx", ["next", "start", "--port", String(port)], {
       cwd: dir, stdio: "pipe", shell: true,
