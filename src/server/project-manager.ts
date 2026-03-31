@@ -1,6 +1,9 @@
-import { execSync, spawn, ChildProcess } from "child_process";
+import { execSync, exec, spawn, ChildProcess } from "child_process";
+import { promisify } from "util";
 import * as fs from "fs";
 import * as path from "path";
+
+const execAsync = promisify(exec);
 
 export interface ProjectInfo {
   id: string;
@@ -66,7 +69,7 @@ export class ProjectManager {
     }
 
     if (!hasNodeModules) {
-      execSync("npm install", { cwd: dir, stdio: "pipe", timeout: 120000 });
+      await execAsync("npm install", { cwd: dir, timeout: 120000 });
     }
 
     return this.getProjectInfo(name)!;
@@ -147,7 +150,7 @@ export class ProjectManager {
     const dir = this.projectDir(projectName);
 
     // Build first for production-mode serving (deterministic screenshots)
-    execSync("npm run build", { cwd: dir, stdio: "pipe", timeout: 120000 });
+    await execAsync("npm run build", { cwd: dir, timeout: 120000 });
 
     const proc = spawn("npx", ["next", "start", "--port", String(port)], {
       cwd: dir, stdio: "pipe", shell: true,
