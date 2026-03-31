@@ -215,10 +215,19 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
       card.style.left = pos.x + "px";
       card.style.top = pos.y + "px";
 
-      const thumbUrl = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
-      card.innerHTML =
-        '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Loading...</div>\\'"/>' +
-        '<div class="sc-name-overlay">' + name + (animate ? ' <span class="sc-new">NEW</span>' : '') + '</div>';
+      const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
+      if (RUNNING) {
+        card.innerHTML =
+          '<div class="sc-iframe-wrap">' +
+            '<iframe class="sc-iframe" src="' + proxyUrl + '" loading="lazy"></iframe>' +
+          '</div>' +
+          '<div class="sc-name-overlay">' + name + (animate ? ' <span class="sc-new">NEW</span>' : '') + '</div>';
+      } else {
+        const thumbUrl = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
+        card.innerHTML =
+          '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>' +
+          '<div class="sc-name-overlay">' + name + '</div>';
+      }
 
       // Click → preview overlay (only if not dragging or panning)
       card.addEventListener("click", (e) => {
@@ -321,18 +330,19 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
           screens = data.screens.map(s => s.name);
           currentHash = data.hash;
 
-          // Refresh existing thumbnails
+          // Refresh existing screens
           screens.forEach(name => {
             if (oldScreens.has(name) && cardEls[name]) {
-              const img = cardEls[name].querySelector(".sc-thumb");
-              if (img) {
-                img.src = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
-                cardEls[name].classList.add("updated");
-                setTimeout(() => cardEls[name].classList.remove("updated"), 1100);
+              // Reload iframe or thumbnail
+              const iframe = cardEls[name].querySelector(".sc-iframe");
+              if (iframe) {
+                iframe.src = iframe.src;
+              } else {
+                const img = cardEls[name].querySelector(".sc-thumb");
+                if (img) img.src = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
               }
-              // Update hash display
-              const hashEl = cardEls[name].querySelector(".sc-hash");
-              if (hashEl) hashEl.textContent = currentHash.slice(0,7);
+              cardEls[name].classList.add("updated");
+              setTimeout(() => cardEls[name].classList.remove("updated"), 1100);
             }
           });
 

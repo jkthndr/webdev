@@ -295,6 +295,23 @@ export const CANVAS_CSS = `
     animation: flashGold 1s ease-out;
   }
 
+  .screen-card .sc-iframe-wrap {
+    width: 100%;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+    position: relative;
+    background: white;
+  }
+
+  .screen-card .sc-iframe {
+    width: 1280px;
+    height: 800px;
+    border: none;
+    transform: scale(0.25);
+    transform-origin: top left;
+    pointer-events: none;
+  }
+
   .screen-card .sc-thumb {
     width: 100%;
     aspect-ratio: 16/10;
