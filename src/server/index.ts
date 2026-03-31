@@ -123,7 +123,7 @@ function createMcpServerWithTools(): McpServer {
       const dir = pm.getProjectInfo(project)?.dir;
       if (dir) {
         try {
-          execSync("npx next build", { cwd: dir, stdio: "pipe", timeout: 120000 });
+          execSync("npm run build", { cwd: dir, stdio: "pipe", timeout: 120000 });
         } catch (e) {
           return {
             content: [{ type: "text" as const, text: `Build error: ${e instanceof Error ? e.message : String(e)}` }],

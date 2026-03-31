@@ -48,19 +48,26 @@ export class ProjectManager {
 
   async openOrCreate(name: string): Promise<ProjectInfo> {
     const dir = this.projectDir(name);
-    if (fs.existsSync(path.join(dir, "package.json"))) {
+    const hasPackageJson = fs.existsSync(path.join(dir, "package.json"));
+    const hasNodeModules = fs.existsSync(path.join(dir, "node_modules"));
+
+    if (hasPackageJson && hasNodeModules) {
       return this.getProjectInfo(name)!;
     }
-    // Clone template
-    fs.cpSync(TEMPLATE_DIR, dir, { recursive: true });
 
-    // Initialize git
-    execSync("git init", { cwd: dir, stdio: "pipe" });
-    execSync("git add -A", { cwd: dir, stdio: "pipe" });
-    execSync('git commit -m "Initial project scaffold"', { cwd: dir, stdio: "pipe" });
+    if (!hasPackageJson) {
+      // Clone template
+      fs.cpSync(TEMPLATE_DIR, dir, { recursive: true });
 
-    // Install dependencies
-    execSync("npm install", { cwd: dir, stdio: "pipe", timeout: 120000 });
+      // Initialize git
+      execSync("git init", { cwd: dir, stdio: "pipe" });
+      execSync("git add -A", { cwd: dir, stdio: "pipe" });
+      execSync('git commit -m "Initial project scaffold"', { cwd: dir, stdio: "pipe" });
+    }
+
+    if (!hasNodeModules) {
+      execSync("npm install", { cwd: dir, stdio: "pipe", timeout: 120000 });
+    }
 
     return this.getProjectInfo(name)!;
   }
@@ -140,7 +147,7 @@ export class ProjectManager {
     const dir = this.projectDir(projectName);
 
     // Build first for production-mode serving (deterministic screenshots)
-    execSync("npx next build", { cwd: dir, stdio: "pipe", timeout: 120000 });
+    execSync("npm run build", { cwd: dir, stdio: "pipe", timeout: 120000 });
 
     const proc = spawn("npx", ["next", "start", "--port", String(port)], {
       cwd: dir, stdio: "pipe", shell: true,
