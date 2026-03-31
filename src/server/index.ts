@@ -119,17 +119,13 @@ function createMcpServerWithTools(): McpServer {
         };
       }
 
-      const { execSync } = await import("child_process");
-      const dir = pm.getProjectInfo(project)?.dir;
-      if (dir) {
-        try {
-          execSync("npm run build", { cwd: dir, stdio: "pipe", timeout: 120000 });
-        } catch (e) {
-          return {
-            content: [{ type: "text" as const, text: `Build error: ${e instanceof Error ? e.message : String(e)}` }],
-            isError: true,
-          };
-        }
+      try {
+        await pm.rebuildAndRestart(project);
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Build error: ${e instanceof Error ? e.message : String(e)}` }],
+          isError: true,
+        };
       }
 
       const url = `http://localhost:${port}/screens/${screen}`;

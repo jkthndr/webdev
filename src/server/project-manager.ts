@@ -167,6 +167,36 @@ export class ProjectManager {
     return port;
   }
 
+  async rebuildAndRestart(projectName: string): Promise<void> {
+    const srv = this.devServers.get(projectName);
+    if (!srv) return;
+    const dir = this.projectDir(projectName);
+    const port = srv.port;
+
+    // Kill old server
+    srv.process.kill();
+    this.devServers.delete(projectName);
+
+    // Rebuild and restart
+    execSync("npm run build", { cwd: dir, stdio: "pipe", timeout: 120000 });
+
+    const proc = spawn("npx", ["next", "start", "--port", String(port)], {
+      cwd: dir, stdio: "pipe", shell: true,
+    });
+
+    // Wait for server ready
+    const start = Date.now();
+    while (Date.now() - start < 30000) {
+      try {
+        const res = await fetch(`http://localhost:${port}`);
+        if (res.ok) break;
+      } catch {}
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    this.devServers.set(projectName, { process: proc, port });
+  }
+
   stopDevServer(projectName: string): void {
     const srv = this.devServers.get(projectName);
     if (srv) {
