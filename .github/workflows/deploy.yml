@@ -12,7 +12,8 @@ jobs:
       - name: Pull latest code
         run: |
           cd C:\Users\oliver\Projects\webdev
-          git -c credential.helper= pull origin main
+          git fetch origin main
+          git reset --hard origin/main
 
       - name: Install dependencies
         run: |
