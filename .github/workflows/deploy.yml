@@ -7,47 +7,30 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Windows]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Wait for Tailscale connectivity
+      - name: Pull latest code
         run: |
-          for i in $(seq 1 15); do
-            if tailscale ping --timeout=2s 100.102.138.90 >/dev/null 2>&1; then
-              echo "Tailscale route established"
-              exit 0
-            fi
-            echo "Waiting for route... ($i/15)"
-            sleep 2
-          done
-          echo "Failed to establish Tailscale route"
-          tailscale status
-          exit 1
+          cd C:\Users\oliver\Projects\webdev
+          git -c credential.helper= pull origin main
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 100.102.138.90
-          username: oliver
-          key: ${{ secrets.HP_LAPTOP_SSH_KEY }}
-          script: |
-            cd C:\Users\oliver\Projects\webdev
-            git -c credential.helper= pull origin main
-            npm install
-            npm run build
-            REM Kill only the process on port 4500 (not TaskQ or other services)
-            for /f "tokens=5" %%a in ('netstat -aon ^| findstr :4500 ^| findstr LISTENING') do taskkill /f /t /pid %%a 2>nul
-            timeout /t 2 /nobreak >nul
-            start /b node dist/server/index.js > webdev.log 2>&1
-            timeout /t 8 /nobreak >nul
-            curl -sf http://localhost:4500/api/health || exit 1
-            echo Deploy successful
+      - name: Install dependencies
+        run: |
+          cd C:\Users\oliver\Projects\webdev
+          npm install
+
+      - name: Build
+        run: |
+          cd C:\Users\oliver\Projects\webdev
+          npm run build
+
+      - name: Restart server
+        shell: cmd
+        run: |
+          cd C:\Users\oliver\Projects\webdev
+          for /f "tokens=5" %%a in ('netstat -aon ^| findstr :4500 ^| findstr LISTENING') do taskkill /f /t /pid %%a 2>nul
+          timeout /t 2 /nobreak >nul
+          start /b node dist\server\index.js > webdev.log 2>&1
+          timeout /t 8 /nobreak >nul
+          curl -sf http://localhost:4500/api/health || exit 1
+          echo Deploy successful
