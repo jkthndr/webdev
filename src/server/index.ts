@@ -6,6 +6,8 @@ import { z } from "zod";
 import express from "express";
 import { ProjectManager } from "./project-manager.js";
 import { takeScreenshot, closeBrowser } from "./screenshot.js";
+import { createStudioRouter, createStudioApiRouter } from "./studio/routes.js";
+import { createProxyRouter } from "./studio/proxy.js";
 
 const pm = new ProjectManager();
 const PREVIEW_BASE_PORT = 4501;
@@ -235,6 +237,11 @@ app.use(express.json());
 
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || "4500");
 
+// Studio UI + Preview Proxy
+app.use("/studio", createStudioRouter(pm));
+app.use("/api", createStudioApiRouter(pm));
+app.use("/proxy", createProxyRouter(pm));
+
 // Session management
 const transports: Record<string, StreamableHTTPServerTransport> = {};
 
@@ -327,14 +334,9 @@ app.get("/api/projects", (_req, res) => {
   res.json(pm.listProjects());
 });
 
-// Root — basic info instead of 404
+// Root — redirect to Studio
 app.get("/", (_req, res) => {
-  res.json({
-    name: "webdev-design-tool",
-    version: "0.1.0",
-    mcp: "/mcp",
-    health: "/api/health",
-  });
+  res.redirect("/studio");
 });
 
 // --- Start ---

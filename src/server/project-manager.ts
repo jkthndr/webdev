@@ -226,6 +226,15 @@ export class ProjectManager {
     }
   }
 
+  getCurrentHash(projectName: string): string | null {
+    const dir = this.projectDir(projectName);
+    try {
+      return execSync("git rev-parse HEAD", { cwd: dir, encoding: "utf-8" }).trim();
+    } catch {
+      return null;
+    }
+  }
+
   getDevServerPort(projectName: string): number | null {
     return this.devServers.get(projectName)?.port ?? null;
   }
