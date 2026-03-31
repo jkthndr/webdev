@@ -26,16 +26,12 @@ jobs:
           npm run build
 
       - name: Restart server
+        shell: cmd
         run: |
-          cd C:\Users\oliver\Projects\webdev
-          # Kill process on port 4500
-          $procs = Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess
-          foreach ($p in $procs) { Stop-Process -Id $p -Force -ErrorAction SilentlyContinue }
-          Start-Sleep -Seconds 2
-          # Start server detached
-          Start-Process -FilePath "node" -ArgumentList "dist\server\index.js" -WorkingDirectory "C:\Users\oliver\Projects\webdev" -WindowStyle Hidden -RedirectStandardOutput "C:\Users\oliver\Projects\webdev\webdev.log" -RedirectStandardError "C:\Users\oliver\Projects\webdev\webdev.err.log"
-          Start-Sleep -Seconds 8
-          # Health check
-          $health = curl.exe -sf http://localhost:4500/api/health
-          if (-not $health) { Write-Error "Health check failed"; exit 1 }
-          Write-Output "Deploy successful: $health"
+          cd /d C:\Users\oliver\Projects\webdev
+          powershell -Command "Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"
+          ping -n 3 127.0.0.1 >nul
+          start "" /b cmd /c "node dist\server\index.js >webdev.log 2>webdev.err.log"
+          ping -n 9 127.0.0.1 >nul
+          curl.exe -sf http://localhost:4500/api/health || exit /b 1
+          echo Deploy successful
