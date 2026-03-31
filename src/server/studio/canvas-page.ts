@@ -83,10 +83,10 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
   <script>
     const PROJECT = "${project.name}";
     const RUNNING = ${running};
-    const CARD_W = 640;
-    const CARD_H = 720;
+    const CARD_W = 420;
+    const CARD_H = 500;
     const GAP = 60;
-    const COLS = 2;
+    const COLS = 3;
     const OFFSET = 60;
 
     let screens = ${screensJson};
@@ -253,7 +253,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
       const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
       const SCALE = CARD_W / 1280;
-      const IFRAME_H = 1400;
+      const IFRAME_H = 2000;
       if (RUNNING) {
         card.innerHTML =
           '<div class="sc-frame-label">' + name + newBadge + '</div>' +
