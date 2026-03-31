@@ -1,7 +1,7 @@
 import { STUDIO_CSS, CANVAS_CSS } from "./styles.js";
 import type { ProjectInfo } from "../project-manager.js";
 
-export function canvasPage(project: ProjectInfo, running: boolean, hash: string): string {
+export function canvasPage(project: ProjectInfo, running: boolean, starting: boolean, hash: string): string {
   const screensJson = JSON.stringify(project.screens);
 
   return `<!DOCTYPE html>
@@ -35,9 +35,44 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
     <div class="sep"></div>
     <button onclick="fitAll()" title="Fit All">Fit All</button>
     <button onclick="resetLayout()" title="Reset Layout">Reset</button>
+    <div class="sep"></div>
+    <button onclick="toggleTimeline()" title="Checkpoint History" id="btn-timeline">History</button>
+    <button onclick="toggleAnnotate()" title="Add Feedback" id="btn-annotate">Annotate</button>
   </div>
 
   <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
+
+  <!-- Timeline panel -->
+  <div id="timeline-panel" class="timeline-panel hidden">
+    <div class="timeline-header">
+      <span>Checkpoint History</span>
+      <button class="timeline-close" onclick="toggleTimeline()">&times;</button>
+    </div>
+    <div id="timeline-list" class="timeline-list"></div>
+  </div>
+
+  <!-- Diff overlay -->
+  <div id="diff-overlay" class="diff-overlay hidden">
+    <div class="diff-header">
+      <span id="diff-title">Visual Diff</span>
+      <div class="diff-controls">
+        <button class="btn btn-ghost" onclick="prevDiffScreen()">&larr;</button>
+        <span id="diff-screen-label">screen</span>
+        <button class="btn btn-ghost" onclick="nextDiffScreen()">&rarr;</button>
+      </div>
+      <button class="diff-close" onclick="closeDiff()">&times;</button>
+    </div>
+    <div class="diff-body">
+      <div class="diff-pane">
+        <div class="diff-pane-label" id="diff-left-label">Before</div>
+        <img id="diff-left-img" src="about:blank" alt="Before">
+      </div>
+      <div class="diff-pane">
+        <div class="diff-pane-label" id="diff-right-label">After (current)</div>
+        <img id="diff-right-img" src="about:blank" alt="After">
+      </div>
+    </div>
+  </div>
 
   <div id="preview-overlay">
     <iframe id="preview-iframe" src="about:blank"></iframe>
@@ -488,6 +523,207 @@ export function canvasPage(project: ProjectInfo, running: boolean, hash: string)
       document.body.classList.add("dark");
       document.querySelector(".dark-toggle").textContent = "\\u2600";
     }
+
+    // --- Timeline & Diff ---
+    let timelineOpen = false;
+    let checkpoints = [];
+    let diffState = { hash: null, screenIdx: 0, screens: [] };
+
+    function toggleTimeline() {
+      timelineOpen = !timelineOpen;
+      const panel = document.getElementById("timeline-panel");
+      panel.classList.toggle("hidden", !timelineOpen);
+      document.getElementById("btn-timeline").classList.toggle("active", timelineOpen);
+      if (timelineOpen) loadCheckpoints();
+    }
+
+    async function loadCheckpoints() {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/checkpoints");
+        const data = await res.json();
+        checkpoints = data.checkpoints;
+        renderTimeline(data.current);
+      } catch {}
+    }
+
+    function renderTimeline(currentHash) {
+      const list = document.getElementById("timeline-list");
+      if (checkpoints.length === 0) {
+        list.innerHTML = '<div class="timeline-empty">No checkpoints yet</div>';
+        return;
+      }
+      list.innerHTML = checkpoints.map((cp, i) => {
+        const short = cp.hash.slice(0, 7);
+        const date = new Date(cp.date).toLocaleString();
+        const isCurrent = cp.isCurrent;
+        const hasScreenshots = cp.screens.some(s => s.hasThumbnail);
+        return '<div class="timeline-item' + (isCurrent ? ' current' : '') + '" data-hash="' + cp.hash + '">' +
+          '<div class="timeline-dot' + (isCurrent ? ' current' : '') + '"></div>' +
+          '<div class="timeline-content">' +
+            '<div class="timeline-msg">' + cp.message + '</div>' +
+            '<div class="timeline-meta">' + short + ' &middot; ' + date + '</div>' +
+            '<div class="timeline-actions">' +
+              (hasScreenshots && !isCurrent ? '<button class="btn-sm" onclick="openDiff(\\'' + cp.hash + '\\')">Diff</button>' : '') +
+              (!isCurrent ? '<button class="btn-sm btn-restore" onclick="restoreCheckpoint(\\'' + cp.hash + '\\', \\'' + short + '\\')">Restore</button>' : '<span class="badge-current">current</span>') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+    }
+
+    function openDiff(hash) {
+      const cp = checkpoints.find(c => c.hash === hash);
+      if (!cp) return;
+      diffState.hash = hash;
+      diffState.screens = cp.screens.filter(s => s.hasThumbnail).map(s => s.name);
+      if (diffState.screens.length === 0) return;
+      diffState.screenIdx = 0;
+      showDiffScreen();
+      document.getElementById("diff-overlay").classList.remove("hidden");
+      document.getElementById("diff-title").textContent = "Diff: " + hash.slice(0, 7) + " vs current";
+    }
+
+    function showDiffScreen() {
+      const name = diffState.screens[diffState.screenIdx];
+      document.getElementById("diff-screen-label").textContent = name + " (" + (diffState.screenIdx + 1) + "/" + diffState.screens.length + ")";
+      document.getElementById("diff-left-img").src = "/api/projects/" + PROJECT + "/checkpoints/" + diffState.hash + "/screenshots/" + name;
+      document.getElementById("diff-right-img").src = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
+      document.getElementById("diff-left-label").textContent = diffState.hash.slice(0, 7);
+      document.getElementById("diff-right-label").textContent = "current";
+    }
+
+    function prevDiffScreen() {
+      if (diffState.screenIdx > 0) { diffState.screenIdx--; showDiffScreen(); }
+    }
+    function nextDiffScreen() {
+      if (diffState.screenIdx < diffState.screens.length - 1) { diffState.screenIdx++; showDiffScreen(); }
+    }
+
+    function closeDiff() {
+      document.getElementById("diff-overlay").classList.add("hidden");
+    }
+
+    async function restoreCheckpoint(hash, label) {
+      if (!confirm("Restore to checkpoint " + label + "? Current changes will be lost.")) return;
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/restore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hash }),
+        });
+        if (res.ok) location.reload();
+        else alert("Restore failed");
+      } catch { alert("Restore failed"); }
+    }
+
+    // --- Feedback Annotations ---
+    let annotateMode = false;
+    let annotations = [];
+
+    function toggleAnnotate() {
+      annotateMode = !annotateMode;
+      document.getElementById("btn-annotate").classList.toggle("active", annotateMode);
+      document.getElementById("canvas-viewport").classList.toggle("annotate-mode", annotateMode);
+      if (annotateMode) loadAnnotations();
+    }
+
+    async function loadAnnotations() {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/feedback");
+        const data = await res.json();
+        annotations = data.feedback || [];
+        renderPins();
+      } catch {}
+    }
+
+    function renderPins() {
+      // Remove old pins
+      document.querySelectorAll(".feedback-pin").forEach(p => p.remove());
+      // Add pins to their cards
+      annotations.forEach(a => {
+        const card = cardEls[a.screen];
+        if (!card) return;
+        const content = card.querySelector(".sc-frame-content");
+        if (!content) return;
+        content.style.position = "relative";
+        const pin = document.createElement("div");
+        pin.className = "feedback-pin" + (a.resolved ? " resolved" : "");
+        pin.style.left = a.x + "%";
+        pin.style.top = a.y + "%";
+        pin.dataset.id = a.id;
+        pin.title = a.text + " (" + a.author + ")";
+        pin.innerHTML = '<div class="pin-dot"></div><div class="pin-tooltip">' +
+          '<div class="pin-text">' + a.text.replace(/</g, "&lt;") + '</div>' +
+          '<div class="pin-meta">' + a.author + '</div>' +
+          '<div class="pin-actions">' +
+            (a.resolved ? '' : '<button onclick="resolvePin(\\'' + a.id + '\\')">Resolve</button>') +
+            '<button onclick="deletePin(\\'' + a.id + '\\')">Delete</button>' +
+          '</div>' +
+        '</div>';
+        pin.addEventListener("click", (e) => { e.stopPropagation(); pin.classList.toggle("open"); });
+        content.appendChild(pin);
+      });
+    }
+
+    // Click on card content to add pin (in annotate mode)
+    document.getElementById("canvas-world").addEventListener("click", (e) => {
+      if (!annotateMode) return;
+      const content = e.target.closest(".sc-frame-content");
+      if (!content) return;
+      const card = content.closest(".screen-card");
+      if (!card) return;
+      if (dragStart?.moved) return;
+      e.stopPropagation();
+      const rect = content.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+      const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+      const text = prompt("Feedback for " + card.dataset.screen + ":");
+      if (!text) return;
+      addAnnotation(card.dataset.screen, parseFloat(x), parseFloat(y), text);
+    });
+
+    async function addAnnotation(screen, x, y, text) {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ screen, x, y, text, author: "human" }),
+        });
+        if (res.ok) { await loadAnnotations(); }
+      } catch {}
+    }
+
+    async function resolvePin(id) {
+      try {
+        await fetch("/api/projects/" + PROJECT + "/feedback/" + id, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resolved: true }),
+        });
+        await loadAnnotations();
+      } catch {}
+    }
+
+    async function deletePin(id) {
+      try {
+        await fetch("/api/projects/" + PROJECT + "/feedback/" + id, { method: "DELETE" });
+        await loadAnnotations();
+      } catch {}
+    }
+
+    // Load annotations on init
+    loadAnnotations();
+
+    // --- Auto-start polling ---
+    ${!running ? `(function pollStart() {
+      const iv = setInterval(async () => {
+        try {
+          const res = await fetch("/api/projects/" + PROJECT + "/status");
+          const d = await res.json();
+          if (d.running) { clearInterval(iv); location.reload(); }
+        } catch {}
+      }, 2000);
+    })();` : ""}
 
     // --- Start ---
     init();

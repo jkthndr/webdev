@@ -58,4 +58,26 @@ export class ScreenshotCache {
     const dir = this.cacheDir(projectName);
     return fs.existsSync(path.join(dir, this.cacheKey(screen, hash)));
   }
+
+  /** Check if a screenshot exists for a specific hash. */
+  hasCachedForHash(projectName: string, screen: string, hash: string): boolean {
+    try {
+      const dir = this.cacheDir(projectName);
+      return fs.existsSync(path.join(dir, this.cacheKey(screen, hash)));
+    } catch {
+      return false;
+    }
+  }
+
+  /** Get a cached screenshot for a specific hash (returns null if not cached). */
+  getCachedForHash(projectName: string, screen: string, hash: string): Buffer | null {
+    try {
+      const dir = this.cacheDir(projectName);
+      const file = path.join(dir, this.cacheKey(screen, hash));
+      if (fs.existsSync(file)) {
+        return fs.readFileSync(file);
+      }
+    } catch {}
+    return null;
+  }
 }

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { randomUUID } from "node:crypto";
 import * as fs from "fs";
 import * as path from "path";
 import type { ProjectManager } from "../project-manager.js";
@@ -15,6 +16,13 @@ export function createStudioRouter(pm: ProjectManager): Router {
     res.type("html").send(galleryPage(projects));
   });
 
+  // Auto-start helper: kick off preview server in background if not running/starting
+  function autoStart(project: string): void {
+    if (pm.getDevServerPort(project) === null && !pm.isStarting(project)) {
+      pm.startDevServer(project).catch(() => {});
+    }
+  }
+
   // Project detail
   router.get("/:project", (req: Request, res: Response) => {
     const project = String(req.params.project);
@@ -23,8 +31,10 @@ export function createStudioRouter(pm: ProjectManager): Router {
       res.status(404).send("Project not found");
       return;
     }
+    autoStart(project);
     const running = pm.getDevServerPort(project) !== null;
-    res.type("html").send(projectPage(info, running));
+    const starting = pm.isStarting(project);
+    res.type("html").send(projectPage(info, running, starting));
   });
 
   // Canvas view — must be before /:project/:screen
@@ -35,9 +45,11 @@ export function createStudioRouter(pm: ProjectManager): Router {
       res.status(404).send("Project not found");
       return;
     }
+    autoStart(project);
     const running = pm.getDevServerPort(project) !== null;
+    const starting = pm.isStarting(project);
     const hash = pm.getCurrentHash(project) || "unknown";
-    res.type("html").send(canvasPage(info, running, hash));
+    res.type("html").send(canvasPage(info, running, starting, hash));
   });
 
   // Screen detail
@@ -53,9 +65,11 @@ export function createStudioRouter(pm: ProjectManager): Router {
       res.status(404).send("Screen not found");
       return;
     }
+    autoStart(project);
     const hash = pm.getCurrentHash(project) || "unknown";
     const running = pm.getDevServerPort(project) !== null;
-    res.type("html").send(screenPage(info, screen, hash, running));
+    const starting = pm.isStarting(project);
+    res.type("html").send(screenPage(info, screen, hash, running, starting));
   });
 
   return router;
@@ -151,6 +165,17 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     res.json({ code });
   });
 
+  // Preview server status (for polling during auto-start)
+  router.get("/projects/:project/status", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const port = pm.getDevServerPort(project);
+    res.json({
+      running: port !== null,
+      starting: pm.isStarting(project),
+      port,
+    });
+  });
+
   // Current git hash (for polling)
   router.get("/projects/:project/hash", (req: Request, res: Response) => {
     const project = String(req.params.project);
@@ -160,6 +185,159 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
       return;
     }
     res.json({ hash });
+  });
+
+  // List checkpoints
+  router.get("/projects/:project/checkpoints", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const info = pm.getProjectInfo(project);
+    if (!info) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const checkpoints = pm.getCheckpoints(project);
+    const currentHash = pm.getCurrentHash(project);
+    // For each checkpoint, note which screens have cached thumbnails
+    res.json({
+      current: currentHash,
+      checkpoints: checkpoints.map(cp => ({
+        ...cp,
+        isCurrent: cp.hash === currentHash,
+        screens: info.screens.map(s => ({
+          name: s,
+          hasThumbnail: cache.hasCachedForHash(project, s, cp.hash),
+        })),
+      })),
+    });
+  });
+
+  // Historical screenshot for a specific checkpoint
+  router.get("/projects/:project/checkpoints/:hash/screenshots/:screen", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const hash = String(req.params.hash);
+    const screen = String(req.params.screen);
+    if (!/^[a-f0-9]{7,40}$/.test(hash)) {
+      res.status(400).json({ error: "Invalid hash" });
+      return;
+    }
+    const buffer = cache.getCachedForHash(project, screen, hash);
+    if (!buffer) {
+      res.status(404).send("No cached screenshot for this checkpoint");
+      return;
+    }
+    res.type("png").set("Cache-Control", "public, max-age=86400").send(buffer);
+  });
+
+  // --- Feedback annotations ---
+
+  function feedbackFile(projectName: string): string | null {
+    const info = pm.getProjectInfo(projectName);
+    if (!info) return null;
+    return path.join(info.dir, ".studio", "feedback.json");
+  }
+
+  function readFeedback(projectName: string): any[] {
+    const file = feedbackFile(projectName);
+    if (!file || !fs.existsSync(file)) return [];
+    try { return JSON.parse(fs.readFileSync(file, "utf-8")); } catch { return []; }
+  }
+
+  function writeFeedback(projectName: string, data: any[]): void {
+    const file = feedbackFile(projectName);
+    if (!file) return;
+    const dir = path.dirname(file);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  }
+
+  // List feedback
+  router.get("/projects/:project/feedback", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const feedback = readFeedback(project);
+    res.json({ feedback });
+  });
+
+  // Add feedback annotation
+  router.post("/projects/:project/feedback", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const { screen, x, y, text, author } = req.body;
+    if (!screen || x == null || y == null || !text) {
+      res.status(400).json({ error: "Missing required fields: screen, x, y, text" });
+      return;
+    }
+    const annotation = {
+      id: randomUUID(),
+      screen: String(screen),
+      x: Number(x),
+      y: Number(y),
+      text: String(text),
+      author: String(author || "human"),
+      createdAt: new Date().toISOString(),
+      resolved: false,
+    };
+    const feedback = readFeedback(project);
+    feedback.push(annotation);
+    writeFeedback(project, feedback);
+    res.json(annotation);
+  });
+
+  // Update feedback (resolve/edit)
+  router.patch("/projects/:project/feedback/:id", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const id = String(req.params.id);
+    const feedback = readFeedback(project);
+    const idx = feedback.findIndex((f: any) => f.id === id);
+    if (idx === -1) {
+      res.status(404).json({ error: "Annotation not found" });
+      return;
+    }
+    if (req.body.resolved !== undefined) feedback[idx].resolved = Boolean(req.body.resolved);
+    if (req.body.text !== undefined) feedback[idx].text = String(req.body.text);
+    writeFeedback(project, feedback);
+    res.json(feedback[idx]);
+  });
+
+  // Delete feedback
+  router.delete("/projects/:project/feedback/:id", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const id = String(req.params.id);
+    let feedback = readFeedback(project);
+    const before = feedback.length;
+    feedback = feedback.filter((f: any) => f.id !== id);
+    if (feedback.length === before) {
+      res.status(404).json({ error: "Annotation not found" });
+      return;
+    }
+    writeFeedback(project, feedback);
+    res.json({ ok: true });
+  });
+
+  // Restore checkpoint
+  router.post("/projects/:project/restore", async (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const hash = String(req.body.hash || "");
+    if (!/^[a-f0-9]{7,40}$/.test(hash)) {
+      res.status(400).json({ error: "Invalid hash" });
+      return;
+    }
+    try {
+      pm.restoreCheckpoint(project, hash);
+      // Rebuild if the server is running
+      if (pm.getDevServerPort(project) !== null) {
+        await pm.rebuildAndRestart(project);
+      }
+      res.json({ ok: true, hash });
+    } catch (e) {
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
   });
 
   return router;

@@ -215,6 +215,8 @@ export const STUDIO_CSS = `
 
   .status-dot.running { background: var(--s-sage); }
   .status-dot.stopped { background: var(--s-muted); }
+  .status-dot.starting { background: var(--s-gold); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   /* Empty states */
   .empty-state {
@@ -446,4 +448,208 @@ export const CANVAS_CSS = `
     background: var(--s-border);
     margin: 0.25rem 0;
   }
+
+  .canvas-toolbar button.active {
+    background: var(--s-secondary);
+    color: var(--s-coral);
+  }
+
+  /* Timeline panel */
+  .timeline-panel {
+    position: fixed;
+    top: 48px; right: 0; bottom: 0;
+    width: 320px;
+    background: var(--s-card);
+    border-left: 1px solid var(--s-border);
+    z-index: 60;
+    display: flex; flex-direction: column;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    transition: transform 0.25s ease;
+  }
+  .timeline-panel.hidden { transform: translateX(100%); pointer-events: none; }
+
+  .timeline-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--s-border);
+    font-weight: 600; font-size: 0.875rem;
+  }
+  .timeline-close {
+    background: none; border: none; color: var(--s-muted);
+    font-size: 1.25rem; cursor: pointer; padding: 0 0.25rem;
+  }
+  .timeline-close:hover { color: var(--s-text); }
+
+  .timeline-list {
+    flex: 1; overflow-y: auto; padding: 0.5rem 0;
+  }
+  .timeline-empty {
+    text-align: center; color: var(--s-muted);
+    padding: 2rem 1rem; font-size: 0.8125rem;
+  }
+
+  .timeline-item {
+    display: flex; gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    position: relative;
+  }
+  .timeline-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: calc(1rem + 4px);
+    top: calc(0.625rem + 14px);
+    bottom: -0.625rem;
+    width: 1px;
+    background: var(--s-border);
+  }
+
+  .timeline-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--s-muted);
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+  }
+  .timeline-dot.current { background: var(--s-coral); }
+
+  .timeline-content { flex: 1; min-width: 0; }
+  .timeline-msg {
+    font-size: 0.8125rem; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .timeline-meta {
+    font-size: 0.6875rem; color: var(--s-muted);
+    margin-top: 0.125rem; font-family: var(--s-mono);
+  }
+  .timeline-actions {
+    display: flex; gap: 0.375rem; margin-top: 0.375rem;
+  }
+
+  .btn-sm {
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--s-border);
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--s-text);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-sm:hover { background: var(--s-secondary); }
+  .btn-restore:hover { background: var(--s-coral); color: white; border-color: var(--s-coral); }
+
+  .badge-current {
+    font-size: 0.6875rem; color: var(--s-coral);
+    font-weight: 600; padding: 0.125rem 0;
+  }
+
+  .timeline-item.current .timeline-msg { color: var(--s-coral); }
+
+  /* Diff overlay */
+  .diff-overlay {
+    position: fixed; inset: 0; z-index: 90;
+    background: rgba(26,25,23,0.95);
+    display: flex; flex-direction: column;
+    transition: opacity 0.2s ease;
+  }
+  .diff-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .diff-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+    font-weight: 600; font-size: 0.875rem;
+  }
+  .diff-controls { display: flex; align-items: center; gap: 0.5rem; }
+  .diff-controls .btn { color: rgba(255,255,255,0.7); }
+  .diff-close {
+    background: none; border: none; color: rgba(255,255,255,0.5);
+    font-size: 1.5rem; cursor: pointer;
+  }
+  .diff-close:hover { color: white; }
+
+  .diff-body {
+    flex: 1; display: flex; gap: 1.5rem;
+    padding: 1.5rem;
+    overflow: hidden;
+  }
+  .diff-pane {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; border-radius: var(--s-radius);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .diff-pane-label {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem; font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-family: var(--s-mono);
+  }
+  .diff-pane img {
+    flex: 1;
+    object-fit: contain;
+    padding: 0.5rem;
+    min-height: 0;
+  }
+
+  /* Annotate mode */
+  #canvas-viewport.annotate-mode { cursor: crosshair; }
+  #canvas-viewport.annotate-mode .screen-card { cursor: crosshair; }
+  #canvas-viewport.annotate-mode .sc-frame-label { cursor: crosshair; }
+
+  /* Feedback pins */
+  .feedback-pin {
+    position: absolute;
+    z-index: 20;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .feedback-pin .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--s-coral);
+    border: 2px solid white;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+    transition: transform 0.15s;
+  }
+  .feedback-pin:hover .pin-dot,
+  .feedback-pin.open .pin-dot { transform: scale(1.3); }
+  .feedback-pin.resolved .pin-dot { background: var(--s-muted); opacity: 0.6; }
+
+  .feedback-pin .pin-tooltip {
+    display: none;
+    position: absolute;
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0.5rem;
+    background: var(--s-card);
+    border: 1px solid var(--s-border);
+    border-radius: var(--s-radius);
+    padding: 0.5rem 0.625rem;
+    min-width: 160px; max-width: 240px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    z-index: 30;
+  }
+  .feedback-pin.open .pin-tooltip { display: block; }
+
+  .pin-text { font-size: 0.8125rem; line-height: 1.4; margin-bottom: 0.25rem; }
+  .pin-meta { font-size: 0.6875rem; color: var(--s-muted); font-family: var(--s-mono); }
+  .pin-actions {
+    display: flex; gap: 0.25rem; margin-top: 0.375rem;
+    border-top: 1px solid var(--s-border); padding-top: 0.375rem;
+  }
+  .pin-actions button {
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--s-border);
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--s-text);
+    font-size: 0.625rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pin-actions button:hover { background: var(--s-secondary); }
 `;

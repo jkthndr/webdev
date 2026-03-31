@@ -3,6 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import * as fs from "fs";
+import * as path from "path";
 import express from "express";
 import { ProjectManager } from "./project-manager.js";
 import { takeScreenshot, closeBrowser } from "./screenshot.js";
@@ -220,6 +222,48 @@ function createMcpServerWithTools(): McpServer {
         content: [{
           type: "text" as const,
           text: JSON.stringify({ restored: hash, screens }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // Tool 8: get_feedback
+  mcp.tool(
+    "get_feedback",
+    "Get human feedback annotations left on screens via the Studio canvas. Returns unresolved feedback by default.",
+    {
+      project: z.string().describe("Project name"),
+      include_resolved: z.boolean().optional().describe("Include resolved feedback (default: false)"),
+    },
+    async ({ project, include_resolved }) => {
+      const info = pm.getProjectInfo(project);
+      if (!info) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      const feedbackFile = path.join(info.dir, ".studio", "feedback.json");
+      let feedback: any[] = [];
+      if (fs.existsSync(feedbackFile)) {
+        try { feedback = JSON.parse(fs.readFileSync(feedbackFile, "utf-8")); } catch {}
+      }
+      if (!include_resolved) {
+        feedback = feedback.filter((f: any) => !f.resolved);
+      }
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            project,
+            feedbackCount: feedback.length,
+            feedback: feedback.map((f: any) => ({
+              id: f.id,
+              screen: f.screen,
+              position: { x: f.x, y: f.y },
+              text: f.text,
+              author: f.author,
+              createdAt: f.createdAt,
+              resolved: f.resolved,
+            })),
+          }, null, 2),
         }],
       };
     }

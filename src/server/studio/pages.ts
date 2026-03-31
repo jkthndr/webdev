@@ -88,7 +88,7 @@ export function galleryPage(projects: ProjectInfo[]): string {
   `);
 }
 
-export function projectPage(project: ProjectInfo, running: boolean): string {
+export function projectPage(project: ProjectInfo, running: boolean, starting: boolean = false): string {
   const cards = project.screens.map((s) => {
     const thumbUrl = `/api/projects/${project.name}/screens/${s}/thumbnail`;
     return `
@@ -108,8 +108,8 @@ export function projectPage(project: ProjectInfo, running: boolean): string {
       </div>`
     : `<div class="card-grid">${cards}</div>`;
 
-  const statusDot = running ? "running" : "stopped";
-  const statusLabel = running ? "Preview running" : "Not running";
+  const statusDot = running ? "running" : starting ? "starting" : "stopped";
+  const statusLabel = running ? "Preview running" : starting ? "Starting preview\u2026" : "Not running";
 
   const headerExtra = `
     <div class="header-actions">
@@ -122,14 +122,28 @@ export function projectPage(project: ProjectInfo, running: boolean): string {
   ], `
     <h1 class="page-title">${project.name}</h1>
     <p class="page-subtitle">
-      <span class="status-dot ${statusDot}"></span>${statusLabel}
+      <span class="status-dot ${statusDot}" id="status-dot"></span><span id="status-label">${statusLabel}</span>
       &middot; ${project.screens.length} screen${project.screens.length !== 1 ? "s" : ""}
     </p>
     ${body}
+    ${!running ? `<script>
+      (function poll() {
+        const iv = setInterval(async () => {
+          try {
+            const res = await fetch("/api/projects/${project.name}/status");
+            const d = await res.json();
+            const dot = document.getElementById("status-dot");
+            const lbl = document.getElementById("status-label");
+            if (d.starting) { dot.className = "status-dot starting"; lbl.textContent = "Starting preview\\u2026"; }
+            if (d.running) { clearInterval(iv); location.reload(); }
+          } catch {}
+        }, 2000);
+      })();
+    </script>` : ""}
   `, { headerExtra });
 }
 
-export function screenPage(project: ProjectInfo, screen: string, hash: string, running: boolean): string {
+export function screenPage(project: ProjectInfo, screen: string, hash: string, running: boolean, starting: boolean = false): string {
   const proxyUrl = `/proxy/${project.name}/screens/${screen}`;
   const thumbUrl = `/api/projects/${project.name}/screens/${screen}/thumbnail?t=${Date.now()}`;
   const codeUrl = `/api/projects/${project.name}/screens/${screen}/code`;
@@ -149,7 +163,7 @@ export function screenPage(project: ProjectInfo, screen: string, hash: string, r
         <div class="pane-label">${running ? "Live Preview" : "Preview unavailable"}</div>
         ${running
           ? `<iframe id="preview-iframe" src="${proxyUrl}"></iframe>`
-          : `<div class="card-thumb-empty" style="width:100%;height:100%">Preview server not running</div>`
+          : `<div class="card-thumb-empty" style="width:100%;height:100%">${starting ? "Starting preview\u2026" : "Preview server not running"}</div>`
         }
       </div>
       <div class="pane" id="pane-right">
@@ -229,6 +243,17 @@ export function screenPage(project: ProjectInfo, screen: string, hash: string, r
           }
         } catch {}
       }, 3000);
+
+      ${!running ? `// Poll for preview server to come up, then reload
+      (function poll() {
+        const iv = setInterval(async () => {
+          try {
+            const res = await fetch("/api/projects/${project.name}/status");
+            const d = await res.json();
+            if (d.running) { clearInterval(iv); location.reload(); }
+          } catch {}
+        }, 2000);
+      })();` : ""}
     </script>`;
 
   return layout(`${screen} — ${project.name}`, [

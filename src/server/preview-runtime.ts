@@ -24,12 +24,21 @@ interface DevServer {
  */
 export class PreviewRuntimeService {
   private devServers = new Map<string, DevServer>();
+  private starting = new Set<string>();
 
   constructor(private workspace: ProjectWorkspaceService) {}
+
+  /** True if a server is currently being built/started (but not yet ready). */
+  isStarting(projectName: string): boolean {
+    return this.starting.has(projectName);
+  }
 
   async startDevServer(projectName: string): Promise<number> {
     const existing = this.devServers.get(projectName);
     if (existing) return existing.port;
+    if (this.starting.has(projectName)) return -1; // already starting
+
+    this.starting.add(projectName);
 
     const port = await this.findOpenPort();
     const dir = this.workspace.projectDir(projectName);
@@ -41,6 +50,7 @@ export class PreviewRuntimeService {
     this.devServers.set(projectName, srv);
 
     const ready = await this.waitForReady(port);
+    this.starting.delete(projectName);
     if (!ready) {
       this.killProcess(srv.process);
       this.devServers.delete(projectName);

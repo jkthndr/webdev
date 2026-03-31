@@ -85,6 +85,10 @@ export class ProjectManager {
     return this.runtime.getDevServerPort(projectName);
   }
 
+  isStarting(projectName: string): boolean {
+    return this.runtime.isStarting(projectName);
+  }
+
   stopAll(): void {
     return this.runtime.stopAll();
   }
