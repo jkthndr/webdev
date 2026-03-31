@@ -36,6 +36,6 @@ jobs:
           Start-Process -FilePath "node" -ArgumentList "dist\server\index.js" -WorkingDirectory "C:\Users\oliver\Projects\webdev" -WindowStyle Hidden -RedirectStandardOutput "C:\Users\oliver\Projects\webdev\webdev.log" -RedirectStandardError "C:\Users\oliver\Projects\webdev\webdev.err.log"
           Start-Sleep -Seconds 8
           # Health check
-          $health = curl -sf http://localhost:4500/api/health
+          $health = curl.exe -sf http://localhost:4500/api/health
           if (-not $health) { Write-Error "Health check failed"; exit 1 }
           Write-Output "Deploy successful: $health"
