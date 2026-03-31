@@ -320,7 +320,6 @@ export const CANVAS_CSS = `
   .screen-card .sc-iframe {
     position: absolute;
     top: 0; left: 0;
-    width: 1280px;
     border: none;
     pointer-events: none;
     transform-origin: top left;
