@@ -168,6 +168,10 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
   // Preview server status (for polling during auto-start)
   router.get("/projects/:project/status", (req: Request, res: Response) => {
     const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
     const port = pm.getDevServerPort(project);
     res.json({
       running: port !== null,
