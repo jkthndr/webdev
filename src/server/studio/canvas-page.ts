@@ -438,9 +438,9 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       const pad = 60;
       const bw = maxX - minX + pad * 2;
       const bh = maxY - minY + pad * 2;
-      // Reserve space: 48px header, 200px right for minimap, 80px bottom for toolbar+minimap
+      // Reserve space: 48px header, 200px right for minimap, 160px bottom for toolbar+minimap
       const vw = window.innerWidth - 200;
-      const vh = window.innerHeight - 48 - 80;
+      const vh = window.innerHeight - 48 - 160;
       const scale = Math.min(vw / bw, vh / bh, 1.2);
       const cx = minX + (maxX - minX) / 2;
       const cy = minY + (maxY - minY) / 2;
