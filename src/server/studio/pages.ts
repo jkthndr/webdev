@@ -97,6 +97,11 @@ export function projectPage(project: ProjectInfo, running: boolean): string {
   const statusDot = running ? "running" : "stopped";
   const statusLabel = running ? "Preview running" : "Not running";
 
+  const headerExtra = `
+    <div class="header-actions">
+      <a href="/studio/${project.name}/canvas" class="btn btn-ghost">Canvas View</a>
+    </div>`;
+
   return layout(project.name, [
     { label: "studio", href: "/studio" },
     { label: project.name },
@@ -107,7 +112,7 @@ export function projectPage(project: ProjectInfo, running: boolean): string {
       &middot; ${project.screens.length} screen${project.screens.length !== 1 ? "s" : ""}
     </p>
     ${body}
-  `);
+  `, { headerExtra });
 }
 
 export function screenPage(project: ProjectInfo, screen: string, hash: string, running: boolean): string {

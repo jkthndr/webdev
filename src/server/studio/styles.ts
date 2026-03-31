@@ -229,3 +229,190 @@ export const STUDIO_CSS = `
     color: var(--s-text);
   }
 `;
+
+export const CANVAS_CSS = `
+  #canvas-viewport {
+    width: 100%; height: calc(100vh - 48px);
+    overflow: hidden; position: relative;
+    background: var(--s-bg);
+    background-image: radial-gradient(circle, var(--s-border) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  #canvas-world {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  .screen-card {
+    position: absolute;
+    width: 320px;
+    background: var(--s-card);
+    border: 2px solid var(--s-border);
+    border-radius: var(--s-radius);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .screen-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+
+  .screen-card.focused {
+    border-color: var(--s-coral);
+    box-shadow: 0 0 0 3px rgba(255,107,107,0.25);
+  }
+
+  .screen-card.entering {
+    animation: fadeSlideIn 0.4s ease-out;
+  }
+
+  .screen-card.updated {
+    animation: flashGold 1s ease-out;
+  }
+
+  .screen-card .sc-thumb {
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+    object-position: top left;
+    background: var(--s-secondary);
+    display: block;
+    cursor: grab;
+  }
+
+  .screen-card .sc-thumb-empty {
+    width: 100%;
+    aspect-ratio: 16/10;
+    background: var(--s-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--s-muted);
+    font-size: 0.8125rem;
+    cursor: grab;
+  }
+
+  .screen-card .sc-label {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    border-top: 1px solid var(--s-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: grab;
+  }
+
+  .screen-card .sc-label .sc-hash {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.625rem;
+    color: var(--s-muted);
+    font-weight: 400;
+  }
+
+  .screen-card .sc-label .sc-new {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--s-coral);
+    text-transform: uppercase;
+  }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: scale(0.92) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes flashGold {
+    0%   { border-color: var(--s-gold); box-shadow: 0 0 0 4px rgba(245,197,66,0.35); }
+    100% { border-color: var(--s-border); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  }
+
+  /* Preview overlay */
+  #preview-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(45,42,38,0.6);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 0.75rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  #preview-overlay.visible {
+    opacity: 1; pointer-events: auto;
+  }
+
+  #preview-overlay iframe {
+    width: 90vw; height: 85vh;
+    border: none;
+    border-radius: var(--s-radius);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    background: white;
+  }
+
+  #preview-overlay .overlay-close {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+
+  #preview-overlay .overlay-close:hover {
+    color: white;
+  }
+
+  /* Minimap */
+  #minimap {
+    position: fixed;
+    bottom: 1rem; right: 1rem;
+    width: 180px; height: 120px;
+    background: var(--s-card);
+    border: 1px solid var(--s-border);
+    border-radius: var(--s-radius);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    z-index: 50;
+  }
+
+  #minimap canvas {
+    width: 100%; height: 100%;
+  }
+
+  /* Canvas toolbar */
+  .canvas-toolbar {
+    position: fixed;
+    bottom: 1rem; left: 50%;
+    transform: translateX(-50%);
+    background: var(--s-card);
+    border: 1px solid var(--s-border);
+    border-radius: var(--s-radius);
+    padding: 0.375rem;
+    display: flex; gap: 0.25rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    z-index: 50;
+  }
+
+  .canvas-toolbar button {
+    padding: 0.375rem 0.625rem;
+    border: none;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--s-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .canvas-toolbar button:hover {
+    background: var(--s-secondary);
+  }
+
+  .canvas-toolbar .sep {
+    width: 1px;
+    background: var(--s-border);
+    margin: 0.25rem 0;
+  }
+`;
