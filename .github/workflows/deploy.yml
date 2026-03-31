@@ -19,6 +19,20 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
+      - name: Wait for Tailscale connectivity
+        run: |
+          for i in $(seq 1 15); do
+            if tailscale ping --timeout=2s 100.102.138.90 >/dev/null 2>&1; then
+              echo "Tailscale route established"
+              exit 0
+            fi
+            echo "Waiting for route... ($i/15)"
+            sleep 2
+          done
+          echo "Failed to establish Tailscale route"
+          tailscale status
+          exit 1
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
