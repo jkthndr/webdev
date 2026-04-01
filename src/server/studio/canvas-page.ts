@@ -118,9 +118,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       pz = panzoom(world, {
         maxZoom: 3,
         minZoom: 0.1,
-        smoothScroll: true,
-        zoomSpeed: 0.065,
-        pinchSpeed: 2,
+        smoothScroll: false,
+        zoomSpeed: 0.15,
         filterKey: () => true,
         beforeMouseDown: (e) => {
           if (spaceDown) return true;
