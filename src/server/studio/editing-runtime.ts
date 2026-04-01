@@ -269,6 +269,41 @@ export function getEditingRuntimeScript(): string {
     }
   }, true);
 
+  // --- DOM tree for layers panel ---
+  function buildDomTree(el, depth) {
+    if (!el || depth > 6) return null;
+    if (!isEditable(el)) return null;
+    const tag = el.tagName.toLowerCase();
+    if (['script','style','link','meta','noscript','svg','path'].includes(tag)) return null;
+    const text = getTextContent(el);
+    const id = el.id || '';
+    const cls = (typeof el.className === 'string' ? el.className : '').trim().split(/\\s+/)[0] || '';
+    let label = tag;
+    if (id) label = tag + '#' + id;
+    else if (cls && cls.length < 30) label = tag + '.' + cls;
+    if (text && text.length < 40 && el.children.length === 0) label += ' "' + text + '"';
+    const children = [];
+    for (let i = 0; i < el.children.length; i++) {
+      const child = buildDomTree(el.children[i], depth + 1);
+      if (child) children.push(child);
+    }
+    return { tag: tag, label: label, children: children, hasText: text.length > 0, childIndex: Array.from(el.parentElement ? el.parentElement.children : []).indexOf(el) };
+  }
+
+  function sendDomTree() {
+    const body = document.body;
+    if (!body) return;
+    const tree = [];
+    for (let i = 0; i < body.children.length; i++) {
+      const node = buildDomTree(body.children[i], 0);
+      if (node) tree.push(node);
+    }
+    sendAction('dom-tree', { tree: tree });
+  }
+
+  // Send tree on load and after edits
+  setTimeout(sendDomTree, 500);
+
   // --- Activation ---
   document.addEventListener('mousemove', onMouseMove, true);
   document.addEventListener('click', onClick, true);
@@ -284,7 +319,11 @@ export function getEditingRuntimeScript(): string {
         document.body.style.cursor = '';
       } else {
         document.body.style.cursor = 'crosshair';
+        setTimeout(sendDomTree, 300);
       }
+    }
+    if (e.data && e.data.type === 'request-dom-tree') {
+      sendDomTree();
     }
   });
 

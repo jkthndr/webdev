@@ -47,13 +47,20 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       </button>
     </div>
 
-    <!-- Left panel: Screen list -->
+    <!-- Left panel: Screens / Layers -->
     <div class="left-panel" id="left-panel">
-      <div class="panel-header">
-        <span>Screens</span>
-        <span class="panel-count" id="screen-count">0</span>
+      <div class="panel-tabs">
+        <button class="panel-tab active" data-tab="screens" onclick="switchLeftTab('screens')">Screens</button>
+        <button class="panel-tab" data-tab="layers" onclick="switchLeftTab('layers')">Layers</button>
       </div>
-      <div id="screen-list" class="screen-list"></div>
+      <div id="tab-screens" class="tab-content active">
+        <div id="screen-list" class="screen-list"></div>
+      </div>
+      <div id="tab-layers" class="tab-content">
+        <div id="layers-tree" class="layers-tree">
+          <div class="inspector-empty" style="padding:2rem 1rem"><p>Enter edit mode (E) to view element layers</p></div>
+        </div>
+      </div>
     </div>
 
     <!-- Center: Canvas -->
@@ -76,8 +83,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
     <!-- Right panel: Inspector -->
     <div class="inspector-panel" id="inspector-panel">
-      <div class="panel-header">
-        <span id="inspector-title">Inspector</span>
+      <div class="panel-tabs">
+        <button class="panel-tab active">Design</button>
       </div>
       <div id="inspector-content" class="inspector-content">
         <div class="inspector-empty">
@@ -333,10 +340,19 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       }, 100);
     }
 
-    // --- Screen List (left panel) ---
+    // --- Left Panel Tabs ---
+    function switchLeftTab(tab) {
+      document.querySelectorAll(".left-panel .panel-tab").forEach(t => t.classList.remove("active"));
+      document.querySelector('[data-tab="' + tab + '"]').classList.add("active");
+      document.querySelectorAll(".left-panel .tab-content").forEach(t => t.classList.remove("active"));
+      document.getElementById("tab-" + tab).classList.add("active");
+    }
+
+    // --- Screen List ---
+    let domTrees = {}; // screen name -> tree data
+
     function updateScreenList() {
       const list = document.getElementById("screen-list");
-      document.getElementById("screen-count").textContent = screens.length;
       list.innerHTML = screens.map((name, i) => {
         const isSelected = selectedCard === name;
         return '<div class="screen-list-item' + (isSelected ? ' selected' : '') + '" data-screen="' + name + '" onclick="selectCardByName(\\'' + name + '\\')">' +
@@ -348,17 +364,44 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
     function selectCardByName(name) {
       selectCard(name);
-      // Pan canvas to center on the card
       const pos = positions[name];
       if (!pos) return;
       const t = pz.getTransform();
       const vp = document.getElementById("canvas-viewport");
-      const vpW = vp.clientWidth;
-      const vpH = vp.clientHeight;
-      const tx = vpW / 2 - (pos.x + CARD_W / 2) * t.scale;
-      const ty = vpH / 2 - (pos.y + CARD_H / 2) * t.scale;
+      const tx = vp.clientWidth / 2 - (pos.x + CARD_W / 2) * t.scale;
+      const ty = vp.clientHeight / 2 - (pos.y + CARD_H / 2) * t.scale;
       pz.moveTo(tx, ty);
     }
+
+    // --- Layers Tree ---
+    function updateLayersTree(screenName) {
+      const container = document.getElementById("layers-tree");
+      const tree = domTrees[screenName];
+      if (!tree || tree.length === 0) {
+        container.innerHTML = '<div class="inspector-empty" style="padding:2rem 1rem"><p>No elements found</p></div>';
+        return;
+      }
+      container.innerHTML = renderTreeNodes(tree, 0);
+    }
+
+    function renderTreeNodes(nodes, depth) {
+      return nodes.map(function(node) {
+        const hasChildren = node.children && node.children.length > 0;
+        const indent = depth * 16;
+        const icon = hasChildren ? '<span class="tree-toggle" onclick="this.parentElement.classList.toggle(\\'collapsed\\')">&#9662;</span>' : '<span class="tree-leaf"></span>';
+        let html = '<div class="tree-node" style="padding-left:' + indent + 'px">' +
+          icon +
+          '<span class="tree-label">' + escHtml(node.label) + '</span>' +
+        '</div>';
+        if (hasChildren) {
+          html = '<div class="tree-group">' + html +
+            '<div class="tree-children">' + renderTreeNodes(node.children, depth + 1) + '</div></div>';
+        }
+        return html;
+      }).join("");
+    }
+
+    function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     // --- Card Selection ---
     function selectCard(name) {
@@ -367,6 +410,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       if (cardEls[name]) cardEls[name].classList.add("focused");
       updateScreenList();
       updateInspector();
+      if (domTrees[name]) updateLayersTree(name);
     }
 
     function deselectCard() {
@@ -377,81 +421,122 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       updateInspector();
     }
 
-    // --- Inspector ---
+    // --- Inspector (Pencil-style sections) ---
     function updateInspector() {
       const content = document.getElementById("inspector-content");
-      const title = document.getElementById("inspector-title");
 
       if (!selectedCard) {
-        title.textContent = "Inspector";
         content.innerHTML = '<div class="inspector-empty">' +
           '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>' +
           '<p>Click a screen to inspect</p></div>';
         return;
       }
 
-      title.textContent = selectedCard;
-
-      let html = '<div class="inspector-section">' +
-        '<div class="inspector-section-title">Screen</div>' +
-        '<div class="inspector-field"><span class="inspector-label">Name</span><span class="inspector-value">' + selectedCard + '</span></div>' +
-        '<div class="inspector-field"><span class="inspector-label">Position</span><span class="inspector-value">' +
-          Math.round(positions[selectedCard]?.x || 0) + ', ' + Math.round(positions[selectedCard]?.y || 0) + '</span></div>' +
-        '<div class="inspector-field"><span class="inspector-label">Size</span><span class="inspector-value">' + CARD_W + ' × ' + CARD_H + '</span></div>' +
-      '</div>';
-
-      // Edit mode hint
-      if (!canvasEditMode) {
-        html += '<div class="inspector-section">' +
-          '<div class="inspector-hint">Press <kbd>E</kbd> to enter edit mode and inspect elements</div>' +
-        '</div>';
-      }
-
-      // Element details (populated when element-selected fires)
+      // Element selected in edit mode — show Pencil-style properties
       if (selectedElement && canvasEditMode) {
         const sig = selectedElement.signature;
-        const styles = sig.styles || {};
+        const s = sig.styles || {};
+        let html = '';
 
-        html += '<div class="inspector-section">' +
-          '<div class="inspector-section-title">Element</div>' +
-          '<div class="inspector-breadcrumb">' + (sig.path || sig.tagName) + '</div>' +
-          '<div class="inspector-field"><span class="inspector-label">Tag</span><span class="inspector-value tag">&lt;' + sig.tagName + '&gt;</span></div>' +
-          (sig.className ? '<div class="inspector-field"><span class="inspector-label">Class</span><span class="inspector-value mono">' + sig.className.split(' ').slice(0, 3).join(' ') + '</span></div>' : '') +
-          '<div class="inspector-field"><span class="inspector-label">Size</span><span class="inspector-value">' + sig.rect.w + ' × ' + sig.rect.h + '</span></div>' +
+        // Element name header
+        html += '<div class="inspector-el-header">' +
+          '<span class="inspector-el-tag">&lt;' + sig.tagName + '&gt;</span>' +
+          (sig.className ? '<span class="inspector-el-class">' + sig.className.split(' ').slice(0, 2).join(' ') + '</span>' : '') +
         '</div>';
 
-        // Editable text
+        // Breadcrumb
+        html += '<div class="inspector-breadcrumb">' + escHtml(sig.path || sig.tagName) + '</div>';
+
+        // Content (editable text)
         if (sig.directText) {
           html += '<div class="inspector-section">' +
             '<div class="inspector-section-title">Content</div>' +
             '<div class="inspector-text-edit">' +
-              '<textarea id="inspector-text-input" rows="2">' + sig.directText.replace(/</g, '&lt;') + '</textarea>' +
+              '<textarea id="inspector-text-input" rows="2">' + escHtml(sig.directText) + '</textarea>' +
               '<button class="inspector-save-btn" onclick="saveInspectorText()">Save</button>' +
-            '</div>' +
+            '</div></div>';
+        }
+
+        // Position
+        html += '<div class="inspector-section">' +
+          '<div class="inspector-section-title">Position</div>' +
+          '<div class="inspector-grid-2">' +
+            '<div class="inspector-input-group"><span class="input-label">X</span><span class="input-value">' + sig.rect.x + '</span></div>' +
+            '<div class="inspector-input-group"><span class="input-label">Y</span><span class="input-value">' + sig.rect.y + '</span></div>' +
+          '</div></div>';
+
+        // Dimensions
+        html += '<div class="inspector-section">' +
+          '<div class="inspector-section-title">Dimensions</div>' +
+          '<div class="inspector-grid-2">' +
+            '<div class="inspector-input-group"><span class="input-label">W</span><span class="input-value">' + sig.rect.w + '</span></div>' +
+            '<div class="inspector-input-group"><span class="input-label">H</span><span class="input-value">' + sig.rect.h + '</span></div>' +
+          '</div>' +
+          '<div class="inspector-field"><span class="inspector-label">display</span><span class="inspector-value mono">' + (s.display || '') + '</span></div>' +
+        '</div>';
+
+        // Typography
+        if (s.fontSize || s.fontFamily) {
+          html += '<div class="inspector-section">' +
+            '<div class="inspector-section-title">Typography</div>' +
+            (s.fontFamily ? '<div class="inspector-field"><span class="inspector-label">Font</span><span class="inspector-value mono">' + s.fontFamily + '</span></div>' : '') +
+            (s.fontSize ? '<div class="inspector-field"><span class="inspector-label">Size</span><span class="inspector-value mono">' + s.fontSize + '</span></div>' : '') +
+            (s.fontWeight ? '<div class="inspector-field"><span class="inspector-label">Weight</span><span class="inspector-value mono">' + s.fontWeight + '</span></div>' : '') +
+            (s.color ? '<div class="inspector-field"><span class="inspector-label">Color</span><span class="inspector-value mono"><span class="inspector-swatch" style="background:' + s.color + '"></span>' + s.color + '</span></div>' : '') +
           '</div>';
         }
 
-        // Styles
+        // Spacing
+        if (s.padding || s.margin) {
+          html += '<div class="inspector-section">' +
+            '<div class="inspector-section-title">Spacing</div>' +
+            (s.padding && s.padding !== '0px' ? '<div class="inspector-field"><span class="inspector-label">Padding</span><span class="inspector-value mono">' + s.padding + '</span></div>' : '') +
+            (s.margin && s.margin !== '0px' ? '<div class="inspector-field"><span class="inspector-label">Margin</span><span class="inspector-value mono">' + s.margin + '</span></div>' : '') +
+          '</div>';
+        }
+
+        // Fill / Background
+        if (s.backgroundColor && s.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+          html += '<div class="inspector-section">' +
+            '<div class="inspector-section-title">Fill</div>' +
+            '<div class="inspector-field"><span class="inspector-label">Background</span><span class="inspector-value mono"><span class="inspector-swatch" style="background:' + s.backgroundColor + '"></span>' + s.backgroundColor + '</span></div>' +
+          '</div>';
+        }
+
+        // Border
+        if (s.borderRadius && s.borderRadius !== '0px') {
+          html += '<div class="inspector-section">' +
+            '<div class="inspector-section-title">Border</div>' +
+            '<div class="inspector-field"><span class="inspector-label">Radius</span><span class="inspector-value mono">' + s.borderRadius + '</span></div>' +
+          '</div>';
+        }
+
+        content.innerHTML = html;
+        return;
+      }
+
+      // Screen selected but no element — show screen info + hint
+      let html = '<div class="inspector-el-header">' +
+        '<span class="inspector-el-tag">' + selectedCard + '</span>' +
+      '</div>';
+
+      html += '<div class="inspector-section">' +
+        '<div class="inspector-section-title">Position</div>' +
+        '<div class="inspector-grid-2">' +
+          '<div class="inspector-input-group"><span class="input-label">X</span><span class="input-value">' + Math.round(positions[selectedCard]?.x || 0) + '</span></div>' +
+          '<div class="inspector-input-group"><span class="input-label">Y</span><span class="input-value">' + Math.round(positions[selectedCard]?.y || 0) + '</span></div>' +
+        '</div></div>';
+
+      html += '<div class="inspector-section">' +
+        '<div class="inspector-section-title">Dimensions</div>' +
+        '<div class="inspector-grid-2">' +
+          '<div class="inspector-input-group"><span class="input-label">W</span><span class="input-value">' + CARD_W + '</span></div>' +
+          '<div class="inspector-input-group"><span class="input-label">H</span><span class="input-value">' + CARD_H + '</span></div>' +
+        '</div></div>';
+
+      if (!canvasEditMode) {
         html += '<div class="inspector-section">' +
-          '<div class="inspector-section-title">Styles</div>';
-        const styleEntries = [
-          ['color', styles.color],
-          ['font-size', styles.fontSize],
-          ['font-weight', styles.fontWeight],
-          ['font-family', styles.fontFamily],
-          ['background', styles.backgroundColor],
-          ['padding', styles.padding],
-          ['margin', styles.margin],
-          ['border-radius', styles.borderRadius],
-          ['display', styles.display],
-        ];
-        styleEntries.forEach(function(pair) {
-          if (!pair[1] || pair[1] === 'rgba(0, 0, 0, 0)' || pair[1] === 'none') return;
-          const isColor = pair[0] === 'color' || pair[0] === 'background';
-          const swatch = isColor ? '<span class="inspector-swatch" style="background:' + pair[1] + '"></span>' : '';
-          html += '<div class="inspector-field"><span class="inspector-label">' + pair[0] + '</span><span class="inspector-value mono">' + swatch + pair[1] + '</span></div>';
-        });
-        html += '</div>';
+          '<div class="inspector-hint">Press <kbd>E</kbd> to edit mode to inspect elements</div></div>';
       }
 
       content.innerHTML = html;
@@ -697,6 +782,13 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
         if (e.data.type === "reorder-element") {
           showToast("Reorder — coming soon");
+        }
+
+        if (e.data.type === "dom-tree") {
+          domTrees[screenName] = e.data.tree;
+          if (selectedCard === screenName) updateLayersTree(screenName);
+          // Auto-switch to layers tab when tree arrives
+          switchLeftTab("layers");
         }
       }
     });

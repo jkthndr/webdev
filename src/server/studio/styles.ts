@@ -293,36 +293,14 @@ export const CANVAS_CSS = `
     margin: 4px 0;
   }
 
-  /* Left panel: Screen list */
+  /* Left panel: Screen list / Layers */
   .left-panel {
-    width: 200px;
+    width: 210px;
     background: #242320;
     border-right: 1px solid rgba(255,255,255,0.08);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-  }
-
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.625rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgba(255,255,255,0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-
-  .panel-count {
-    font-size: 0.6875rem;
-    background: rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.5);
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    font-weight: 500;
   }
 
   .screen-list {
@@ -691,6 +669,79 @@ export const CANVAS_CSS = `
   }
   .pin-actions button:hover { background: var(--s-secondary); }
 
+  /* Panel tabs (shared by left + right) */
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .panel-tab {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+  }
+  .panel-tab:hover { color: rgba(255,255,255,0.6); }
+  .panel-tab.active { color: var(--s-coral); border-bottom-color: var(--s-coral); }
+
+  .tab-content { display: none; flex: 1; overflow-y: auto; }
+  .tab-content.active { display: flex; flex-direction: column; }
+
+  /* Layers tree */
+  .layers-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.25rem 0;
+    font-size: 0.75rem;
+    font-family: var(--s-mono);
+  }
+
+  .tree-group {}
+  .tree-group.collapsed > .tree-children { display: none; }
+  .tree-group.collapsed .tree-toggle { transform: rotate(-90deg); }
+
+  .tree-node {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    color: rgba(255,255,255,0.55);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .tree-node:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.8); }
+
+  .tree-toggle {
+    width: 14px; height: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.3);
+    transition: transform 0.15s;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .tree-leaf {
+    width: 14px; height: 14px;
+    flex-shrink: 0;
+  }
+
+  .tree-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   /* Inspector panel (right) */
   .inspector-panel {
     width: 280px;
@@ -702,13 +753,8 @@ export const CANVAS_CSS = `
     overflow: hidden;
   }
 
-  .inspector-panel .panel-header {
-    font-size: 0.8125rem;
-    text-transform: none;
-    letter-spacing: 0;
-    color: rgba(255,255,255,0.7);
-    font-weight: 600;
-    font-family: var(--s-mono);
+  .inspector-panel .panel-tabs {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
   }
 
   .inspector-content {
@@ -854,6 +900,62 @@ export const CANVAS_CSS = `
     font-family: inherit;
   }
   .inspector-save-btn:hover { filter: brightness(1.1); }
+
+  /* Inspector element header */
+  .inspector-el-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .inspector-el-tag {
+    font-family: var(--s-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--s-coral);
+  }
+
+  .inspector-el-class {
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.35);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Inspector 2-column grid (Position, Dimensions) */
+  .inspector-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.375rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .inspector-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 0.375rem 0.5rem;
+  }
+
+  .input-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    min-width: 0.75rem;
+  }
+
+  .input-value {
+    font-size: 0.75rem;
+    font-family: var(--s-mono);
+    color: rgba(255,255,255,0.75);
+  }
 
   /* Zoom level in toolbar */
   .zoom-level {
