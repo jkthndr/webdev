@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import { createProxyServer } from "http-proxy";
+import httpProxy from "http-proxy";
 import type { Server } from "http";
 import type { ProjectManager } from "../project-manager.js";
 import { getEditingRuntimeScript } from "./editing-runtime.js";
@@ -32,7 +32,7 @@ export function createProxyRouter(pm: ProjectManager): Router {
     const injectEdit = req.query.edit === "1";
 
     // Use http-proxy for the request
-    const proxy = createProxyServer({
+    const proxy = httpProxy.createProxyServer({
       target: `http://localhost:${port}`,
       selfHandleResponse: true,
       ws: false, // WS handled separately via upgrade
@@ -100,7 +100,7 @@ export function setupWebSocketProxy(server: Server, pm: ProjectManager): void {
       return;
     }
 
-    const proxy = createProxyServer({ target: `http://localhost:${port}`, ws: true });
+    const proxy = httpProxy.createProxyServer({ target: `http://localhost:${port}`, ws: true });
     // Rewrite the URL to remove the /proxy/:project prefix
     req.url = url.replace(`/proxy/${project}`, "");
     proxy.ws(req, socket, head);
