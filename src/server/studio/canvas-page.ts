@@ -277,15 +277,13 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
       const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
-      const IFRAME_W = 800;
-      const IFRAME_H = 1000;
-      const SCALE = CARD_W / IFRAME_W;
+      const IFRAME_H = 700;
       if (RUNNING) {
         card.innerHTML =
           '<div class="sc-frame-label">' + name + newBadge + '</div>' +
           '<div class="sc-frame-content">' +
-            '<div class="sc-iframe-wrap" style="height:' + Math.ceil(IFRAME_H * SCALE) + 'px">' +
-              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + IFRAME_W + 'px;height:' + IFRAME_H + 'px;zoom:' + SCALE + '" loading="lazy"></iframe>' +
+            '<div class="sc-iframe-wrap" style="height:' + IFRAME_H + 'px">' +
+              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + CARD_W + 'px;height:' + IFRAME_H + 'px" loading="lazy"></iframe>' +
             '</div>' +
           '</div>';
       } else {
