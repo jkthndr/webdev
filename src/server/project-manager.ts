@@ -89,6 +89,14 @@ export class ProjectManager {
     return this.runtime.isStarting(projectName);
   }
 
+  async switchToDevMode(projectName: string): Promise<number> {
+    return this.runtime.switchToDevMode(projectName);
+  }
+
+  getDevServerMode(projectName: string): "production" | "development" | null {
+    return this.runtime.getDevServerMode(projectName);
+  }
+
   stopAll(): void {
     return this.runtime.stopAll();
   }

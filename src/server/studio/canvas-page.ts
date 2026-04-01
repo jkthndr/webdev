@@ -75,8 +75,14 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
   </div>
 
   <div id="preview-overlay">
+    <div class="overlay-toolbar">
+      <span id="overlay-screen-name"></span>
+      <button class="btn btn-ghost" id="btn-edit-mode" onclick="toggleEditMode()">Edit</button>
+      <span id="edit-status" class="edit-status"></span>
+      <button class="btn btn-ghost" onclick="closePreview()">Close</button>
+    </div>
     <iframe id="preview-iframe" src="about:blank"></iframe>
-    <div class="overlay-close" onclick="closePreview()">Press Escape or click here to close</div>
+    <div id="toast" class="toast hidden"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/panzoom@9.4.3/dist/panzoom.min.js"></script>
@@ -335,14 +341,21 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     }
 
     // --- Preview Overlay ---
+    let previewScreen = null;
+    let editModeActive = false;
+
     async function openPreview(name) {
+      previewScreen = name;
       const overlay = document.getElementById("preview-overlay");
       const iframe = document.getElementById("preview-iframe");
-      // Always load through proxy — it auto-starts and shows a "starting" page if needed
+      document.getElementById("overlay-screen-name").textContent = name;
       iframe.src = "/proxy/" + PROJECT + "/screens/" + name;
       overlay.classList.add("visible");
+      editModeActive = false;
+      document.getElementById("btn-edit-mode").textContent = "Edit";
+      document.getElementById("btn-edit-mode").classList.remove("active");
+      document.getElementById("edit-status").textContent = "";
 
-      // Focus the card
       Object.values(cardEls).forEach(c => c.classList.remove("focused"));
       if (cardEls[name]) cardEls[name].classList.add("focused");
     }
@@ -351,13 +364,90 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       const overlay = document.getElementById("preview-overlay");
       if (!overlay.classList.contains("visible")) return;
       overlay.classList.remove("visible");
+      if (editModeActive) toggleEditMode();
       document.getElementById("preview-iframe").src = "about:blank";
       Object.values(cardEls).forEach(c => c.classList.remove("focused"));
+      previewScreen = null;
     }
 
-    // Click backdrop to close
+    async function toggleEditMode() {
+      editModeActive = !editModeActive;
+      const btn = document.getElementById("btn-edit-mode");
+      const status = document.getElementById("edit-status");
+      btn.classList.toggle("active", editModeActive);
+      btn.textContent = editModeActive ? "Editing" : "Edit";
+
+      if (editModeActive) {
+        // Switch to dev mode for HMR
+        status.textContent = "Switching to dev mode...";
+        try {
+          const res = await fetch("/api/projects/" + PROJECT + "/switch-to-dev", { method: "POST" });
+          if (!res.ok) throw new Error("Failed");
+          status.textContent = "Loading editor...";
+          // Reload iframe with edit mode
+          const iframe = document.getElementById("preview-iframe");
+          iframe.src = "/proxy/" + PROJECT + "/screens/" + previewScreen + "?edit=1";
+          status.textContent = "";
+        } catch (e) {
+          status.textContent = "Failed to start dev mode";
+          editModeActive = false;
+          btn.classList.remove("active");
+          btn.textContent = "Edit";
+        }
+      } else {
+        // Disable edit mode — reload without ?edit=1
+        const iframe = document.getElementById("preview-iframe");
+        iframe.contentWindow?.postMessage({ type: "edit-mode", enabled: false }, "*");
+        iframe.src = "/proxy/" + PROJECT + "/screens/" + previewScreen;
+        status.textContent = "";
+      }
+    }
+
+    // Listen for postMessage from editing runtime in iframe
+    window.addEventListener("message", async (e) => {
+      if (!e.data || !e.data.type) return;
+
+      if (e.data.type === "text-edited") {
+        showToast("Saving...");
+        try {
+          const res = await fetch("/api/projects/" + PROJECT + "/screens/" + previewScreen + "/edit-text", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oldText: e.data.oldText, newText: e.data.newText }),
+          });
+          if (res.ok) showToast("Saved");
+          else showToast("Save failed");
+        } catch { showToast("Save failed"); }
+      }
+
+      if (e.data.type === "element-selected") {
+        document.getElementById("edit-status").textContent = "<" + e.data.signature.tagName + ">";
+      }
+
+      if (e.data.type === "element-deselected") {
+        document.getElementById("edit-status").textContent = "";
+      }
+
+      if (e.data.type === "delete-element") {
+        showToast("Delete not yet implemented");
+      }
+
+      if (e.data.type === "reorder-element") {
+        showToast("Reorder not yet implemented");
+      }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.remove("hidden");
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => toast.classList.add("hidden"), 2000);
+    }
+
+    // Click backdrop to close (but not in edit mode — avoid accidental closes)
     document.getElementById("preview-overlay")?.addEventListener("click", (e) => {
-      if (e.target === document.getElementById("preview-overlay")) closePreview();
+      if (!editModeActive && e.target === document.getElementById("preview-overlay")) closePreview();
     });
 
     // --- Polling ---

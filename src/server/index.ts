@@ -9,7 +9,7 @@ import express from "express";
 import { ProjectManager } from "./project-manager.js";
 import { takeScreenshot, closeBrowser } from "./screenshot.js";
 import { createStudioRouter, createStudioApiRouter } from "./studio/routes.js";
-import { createProxyRouter } from "./studio/proxy.js";
+import { createProxyRouter, setupWebSocketProxy } from "./studio/proxy.js";
 
 const pm = new ProjectManager();
 
@@ -383,10 +383,13 @@ app.get("/", (_req, res) => {
 
 // --- Start ---
 
-app.listen(HTTP_PORT, "0.0.0.0", () => {
+const server = app.listen(HTTP_PORT, "0.0.0.0", () => {
   console.error(`[webdev] MCP server on http://0.0.0.0:${HTTP_PORT}/mcp`);
   console.error(`[webdev] Health API on http://0.0.0.0:${HTTP_PORT}/api/health`);
 });
+
+// WebSocket proxy for HMR in dev mode
+setupWebSocketProxy(server, pm);
 
 process.on("SIGINT", async () => {
   for (const sid in transports) {

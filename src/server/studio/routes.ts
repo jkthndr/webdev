@@ -324,6 +324,57 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     res.json({ ok: true });
   });
 
+  // --- Inline editing ---
+
+  // Switch to dev mode (HMR) for interactive editing
+  router.post("/projects/:project/switch-to-dev", async (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    try {
+      const port = await pm.switchToDevMode(project);
+      res.json({ ok: true, port, mode: "development" });
+    } catch (e) {
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
+  // Edit text in a screen's TSX source
+  router.post("/projects/:project/screens/:screen/edit-text", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const screen = String(req.params.screen);
+    const { oldText, newText } = req.body;
+    if (!oldText || newText === undefined) {
+      res.status(400).json({ error: "Missing oldText or newText" });
+      return;
+    }
+    const code = pm.readScreenCode(project, screen);
+    if (code === null) {
+      res.status(404).json({ error: "Screen not found" });
+      return;
+    }
+
+    // Find and replace the text in the TSX source
+    const occurrences = code.split(oldText).length - 1;
+    if (occurrences === 0) {
+      res.status(400).json({ error: "Text not found in source", oldText });
+      return;
+    }
+    if (occurrences === 1) {
+      // Exact single match — safe to replace
+      const updated = code.replace(oldText, newText);
+      pm.editScreenCode(project, screen, updated);
+      res.json({ ok: true, replaced: 1 });
+      return;
+    }
+    // Multiple matches — use context to disambiguate (replace first match for now)
+    const updated = code.replace(oldText, newText);
+    pm.editScreenCode(project, screen, updated);
+    res.json({ ok: true, replaced: 1, note: `${occurrences} occurrences found, replaced first` });
+  });
+
   // Restore checkpoint
   router.post("/projects/:project/restore", async (req: Request, res: Response) => {
     const project = String(req.params.project);

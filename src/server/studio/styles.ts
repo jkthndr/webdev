@@ -378,22 +378,55 @@ export const CANVAS_CSS = `
   }
 
   #preview-overlay iframe {
-    width: 90vw; height: 85vh;
+    width: 90vw; height: calc(85vh - 40px);
     border: none;
     border-radius: var(--s-radius);
     box-shadow: 0 8px 40px rgba(0,0,0,0.3);
     background: white;
   }
 
-  #preview-overlay .overlay-close {
-    color: rgba(255,255,255,0.7);
+  .overlay-toolbar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgba(26,25,23,0.9);
+    border-radius: var(--s-radius);
+    color: rgba(255,255,255,0.9);
     font-size: 0.8125rem;
-    cursor: pointer;
+    font-weight: 500;
   }
 
-  #preview-overlay .overlay-close:hover {
+  .overlay-toolbar #overlay-screen-name {
+    font-family: var(--s-mono);
+    color: rgba(255,255,255,0.6);
+  }
+
+  .overlay-toolbar .btn.active {
+    background: var(--s-coral);
     color: white;
   }
+
+  .edit-status {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    font-family: var(--s-mono);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(26,25,23,0.95);
+    color: #e8e4df;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--s-radius);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    z-index: 200;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .toast.hidden { opacity: 0; pointer-events: none; }
 
   /* Minimap */
   #minimap {

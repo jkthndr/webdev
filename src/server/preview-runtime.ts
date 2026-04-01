@@ -9,12 +9,14 @@ const execAsync = promisify(exec);
 const PORT_RANGE_START = 4501;
 const PORT_RANGE_END = 4510;
 const READINESS_TIMEOUT_MS = 30000;
+const READINESS_TIMEOUT_DEV_MS = 15000;
 const READINESS_POLL_MS = 500;
 const MAX_LOG_LINES = 200;
 
 interface DevServer {
   process: ChildProcess;
   port: number;
+  mode: "production" | "development";
   stdout: string[];
   stderr: string[];
 }
@@ -46,7 +48,7 @@ export class PreviewRuntimeService {
     // Build first for production-mode serving (deterministic screenshots)
     await execAsync("npm run build", { cwd: dir, timeout: 120000 });
 
-    const srv = this.spawnServer(dir, port);
+    const srv = this.spawnServer(dir, port, "production");
     this.devServers.set(projectName, srv);
 
     const ready = await this.waitForReady(port);
@@ -63,9 +65,47 @@ export class PreviewRuntimeService {
     return port;
   }
 
+  /** Start or switch to a dev server with HMR (no build step, fast reload). */
+  async switchToDevMode(projectName: string): Promise<number> {
+    const existing = this.devServers.get(projectName);
+    if (existing?.mode === "development") return existing.port;
+
+    const dir = this.workspace.projectDir(projectName);
+    let port: number;
+
+    if (existing) {
+      port = existing.port;
+      this.killProcess(existing.process);
+      this.devServers.delete(projectName);
+    } else {
+      port = await this.findOpenPort();
+    }
+
+    const srv = this.spawnServer(dir, port, "development");
+    this.devServers.set(projectName, srv);
+
+    const ready = await this.waitForReady(port, READINESS_TIMEOUT_DEV_MS);
+    if (!ready) {
+      this.killProcess(srv.process);
+      this.devServers.delete(projectName);
+      const logs = srv.stderr.slice(-20).join("\n");
+      throw new Error(
+        `Dev server for '${projectName}' failed to start on port ${port}.\nRecent stderr:\n${logs}`
+      );
+    }
+
+    return port;
+  }
+
+  getDevServerMode(projectName: string): "production" | "development" | null {
+    return this.devServers.get(projectName)?.mode ?? null;
+  }
+
   async rebuildAndRestart(projectName: string): Promise<void> {
     const srv = this.devServers.get(projectName);
     if (!srv) return;
+    // Skip rebuild for dev mode — HMR handles it
+    if (srv.mode === "development") return;
     const dir = this.workspace.projectDir(projectName);
     const port = srv.port;
 
@@ -74,7 +114,7 @@ export class PreviewRuntimeService {
 
     await execAsync("npm run build", { cwd: dir, timeout: 120000 });
 
-    const newSrv = this.spawnServer(dir, port);
+    const newSrv = this.spawnServer(dir, port, "production");
     this.devServers.set(projectName, newSrv);
 
     const ready = await this.waitForReady(port);
@@ -139,8 +179,11 @@ export class PreviewRuntimeService {
     });
   }
 
-  private spawnServer(dir: string, port: number): DevServer {
-    const proc = spawn("npx", ["next", "start", "--port", String(port)], {
+  private spawnServer(dir: string, port: number, mode: "production" | "development" = "production"): DevServer {
+    const cmd = mode === "development"
+      ? ["next", "dev", "--port", String(port)]
+      : ["next", "start", "--port", String(port)];
+    const proc = spawn("npx", cmd, {
       cwd: dir, stdio: "pipe", shell: true,
     });
 
@@ -163,12 +206,12 @@ export class PreviewRuntimeService {
       }
     });
 
-    return { process: proc, port, stdout, stderr };
+    return { process: proc, port, mode, stdout, stderr };
   }
 
-  private async waitForReady(port: number): Promise<boolean> {
+  private async waitForReady(port: number, timeout: number = READINESS_TIMEOUT_MS): Promise<boolean> {
     const start = Date.now();
-    while (Date.now() - start < READINESS_TIMEOUT_MS) {
+    while (Date.now() - start < timeout) {
       try {
         const res = await fetch(`http://localhost:${port}`);
         if (res.ok) return true;
