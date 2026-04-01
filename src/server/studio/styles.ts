@@ -919,4 +919,5 @@ export const CANVAS_CSS = `
     box-shadow: -4px 0 20px rgba(0,0,0,0.3);
     transition: transform 0.25s ease;
   }
+  .timeline-panel.hidden { transform: translateX(100%); pointer-events: none; }
 `;
