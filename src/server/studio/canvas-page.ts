@@ -128,7 +128,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
           if (canvasEditMode && e.target.closest("iframe")) return false;
           return !e.target.closest(".screen-card");
         },
-        beforeWheel: () => true,
+        beforeWheel: () => false,
         zoomDoubleClickSpeed: 1,
       });
       pz.on("transform", () => { updateMinimap(); });
