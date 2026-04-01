@@ -267,12 +267,21 @@ export const CANVAS_CSS = `
     position: absolute; top: 0; left: 0;
     transform-origin: 0 0;
     will-change: transform;
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   .screen-card {
     position: absolute;
     width: 420px;
     user-select: none;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+
+  .screen-card .sc-iframe-wrap {
+    image-rendering: -webkit-optimize-contrast;
   }
 
   .screen-card .sc-frame-label {
