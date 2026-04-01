@@ -322,7 +322,6 @@ export const CANVAS_CSS = `
     top: 0; left: 0;
     border: none;
     pointer-events: none;
-    transform-origin: top left;
   }
 
   .screen-card .sc-thumb {

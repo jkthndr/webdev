@@ -212,6 +212,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       });
     }
 
+    let savedViewport = null;
+
     async function loadLayoutThenRender() {
       try {
         const res = await fetch("/api/projects/" + PROJECT + "/layout");
@@ -219,9 +221,17 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         if (data.positions && Object.keys(data.positions).length > 0) {
           positions = data.positions;
         }
+        if (data.viewport) savedViewport = data.viewport;
       } catch {}
       renderCards(screens, false);
-      setTimeout(fitAll, 100);
+      setTimeout(() => {
+        if (savedViewport) {
+          pz.moveTo(savedViewport.x, savedViewport.y);
+          pz.zoomAbs(0, 0, savedViewport.zoom);
+        } else {
+          fitAll();
+        }
+      }, 100);
     }
 
     // --- Card Rendering ---
@@ -275,7 +285,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
           '<div class="sc-frame-label">' + name + newBadge + '</div>' +
           '<div class="sc-frame-content">' +
             '<div class="sc-iframe-wrap" style="height:' + Math.ceil(IFRAME_H * SCALE) + 'px">' +
-              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + IFRAME_W + 'px;height:' + IFRAME_H + 'px;transform:scale(' + SCALE + ')" loading="lazy"></iframe>' +
+              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + IFRAME_W + 'px;height:' + IFRAME_H + 'px;zoom:' + SCALE + '" loading="lazy"></iframe>' +
             '</div>' +
           '</div>';
       } else {
