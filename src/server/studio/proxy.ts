@@ -31,6 +31,9 @@ export function createProxyRouter(pm: ProjectManager): Router {
 
     const injectEdit = req.query.edit === "1";
 
+    // Prevent compressed responses so we can rewrite HTML
+    req.headers["accept-encoding"] = "identity";
+
     // Use http-proxy for the request
     const proxy = httpProxy.createProxyServer({
       target: `http://localhost:${port}`,
