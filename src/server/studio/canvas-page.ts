@@ -115,21 +115,49 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       const world = document.getElementById("canvas-world");
       const viewport = document.getElementById("canvas-viewport");
 
+      const ZOOM_STEPS = [0.15, 0.25, 0.35, 0.5, 0.65, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
+
       pz = panzoom(world, {
         maxZoom: 3,
         minZoom: 0.1,
         smoothScroll: false,
-        zoomSpeed: 0.25,
         filterKey: () => true,
         beforeMouseDown: (e) => {
           if (spaceDown) return true;
-          // In edit mode, don't let panzoom grab iframe interactions
           if (canvasEditMode && e.target.closest("iframe")) return false;
           return !e.target.closest(".screen-card");
         },
-        beforeWheel: () => false,
+        // Handle wheel zoom manually for stepped clean zoom levels
+        beforeWheel: () => true,
         zoomDoubleClickSpeed: 1,
       });
+
+      // Stepped zoom on wheel — snaps to clean levels for crisp rendering
+      function nearestStep(scale, direction) {
+        if (direction > 0) {
+          for (let i = 0; i < ZOOM_STEPS.length; i++) {
+            if (ZOOM_STEPS[i] > scale + 0.01) return ZOOM_STEPS[i];
+          }
+          return ZOOM_STEPS[ZOOM_STEPS.length - 1];
+        } else {
+          for (let i = ZOOM_STEPS.length - 1; i >= 0; i--) {
+            if (ZOOM_STEPS[i] < scale - 0.01) return ZOOM_STEPS[i];
+          }
+          return ZOOM_STEPS[0];
+        }
+      }
+
+      document.getElementById("canvas-viewport").addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const t = pz.getTransform();
+        const direction = e.deltaY < 0 ? 1 : -1;
+        const next = nearestStep(t.scale, direction);
+        // Zoom toward cursor position
+        const rect = document.getElementById("canvas-viewport").getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+        pz.zoomAbs(cx, cy, next);
+      }, { passive: false });
       pz.on("transform", () => { updateMinimap(); });
 
       // Middle mouse button pan
@@ -520,12 +548,14 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     // --- Toolbar ---
     function zoomIn() {
       const t = pz.getTransform();
-      pz.smoothZoomAbs(window.innerWidth / 2, window.innerHeight / 2, t.scale * 1.3);
+      const next = nearestStep(t.scale, 1);
+      pz.zoomAbs(window.innerWidth / 2, window.innerHeight / 2, next);
     }
 
     function zoomOut_() {
       const t = pz.getTransform();
-      pz.smoothZoomAbs(window.innerWidth / 2, window.innerHeight / 2, t.scale / 1.3);
+      const next = nearestStep(t.scale, -1);
+      pz.zoomAbs(window.innerWidth / 2, window.innerHeight / 2, next);
     }
 
     function zoomTo100() {
