@@ -23,7 +23,7 @@ export function getEditingRuntimeScript(): string {
   }
 
   hoverOverlay = createOverlay('__edit-hover', 'rgba(59,130,246,0.5)');
-  selectOverlay = createOverlay('__edit-select', '#3b82f6');
+  selectOverlay = createOverlay('__edit-select', '#FF6B6B');
 
   // --- Toolbar ---
   toolbar = document.createElement('div');
@@ -75,15 +75,29 @@ export function getEditingRuntimeScript(): string {
   }
 
   function findBestTarget(el) {
-    // Walk up to find a meaningful component boundary
     while (el && el.parentElement) {
       if (el.children.length > 0 && el.className && typeof el.className === 'string' && el.className.length > 0) return el;
       if (el.parentElement === document.body) return el;
-      // If parent has many children, this is likely a good level
       if (el.parentElement.children.length > 1) return el;
       el = el.parentElement;
     }
     return el;
+  }
+
+  function getDomPath(el) {
+    const parts = [];
+    let cur = el;
+    while (cur && cur !== document.body && cur !== document.documentElement) {
+      let tag = cur.tagName.toLowerCase();
+      if (cur.id) tag += '#' + cur.id;
+      else if (cur.className && typeof cur.className === 'string') {
+        const cls = cur.className.trim().split(/\\s+/)[0];
+        if (cls && cls.length < 40) tag += '.' + cls;
+      }
+      parts.unshift(tag);
+      cur = cur.parentElement;
+    }
+    return parts.join(' > ');
   }
 
   function getSignature(el) {
@@ -95,17 +109,34 @@ export function getEditingRuntimeScript(): string {
         if (parent.children[i] === el) { nthChild = i; break; }
       }
     }
+    const cs = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
     return {
       tagName: el.tagName.toLowerCase(),
       className: (typeof el.className === 'string' ? el.className : '').slice(0, 200),
       textContent: (el.textContent || '').slice(0, 100),
+      directText: getTextContent(el),
       childCount: el.children.length,
       nthChild: nthChild,
+      path: getDomPath(el),
+      rect: { x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.width), h: Math.round(rect.height) },
+      styles: {
+        color: cs.color,
+        fontSize: cs.fontSize,
+        fontWeight: cs.fontWeight,
+        fontFamily: cs.fontFamily.split(',')[0].replace(/['"]/g, ''),
+        backgroundColor: cs.backgroundColor,
+        padding: cs.padding,
+        margin: cs.margin,
+        borderRadius: cs.borderRadius,
+        display: cs.display,
+        width: Math.round(rect.width) + 'px',
+        height: Math.round(rect.height) + 'px',
+      },
     };
   }
 
   function getTextContent(el) {
-    // Get direct text content (not from children)
     let text = '';
     for (let i = 0; i < el.childNodes.length; i++) {
       if (el.childNodes[i].nodeType === 3) text += el.childNodes[i].textContent;
@@ -134,8 +165,6 @@ export function getEditingRuntimeScript(): string {
     e.stopPropagation();
     const raw = document.elementFromPoint(e.clientX, e.clientY);
     if (!raw || !isEditable(raw)) return;
-
-    // Smart target: if shift held, use raw element; otherwise find component boundary
     const el = e.shiftKey ? raw : findBestTarget(raw);
     selectElement(el);
   }
@@ -146,7 +175,6 @@ export function getEditingRuntimeScript(): string {
     e.stopPropagation();
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (!el || !isEditable(el)) return;
-    // For double-click, target the exact element (leaf) for text editing
     selectElement(el);
     startTextEdit(el);
   }
@@ -185,14 +213,13 @@ export function getEditingRuntimeScript(): string {
 
   function startTextEdit(el) {
     const text = getTextContent(el);
-    if (!text) return; // no direct text to edit
+    if (!text) return;
     editing = true;
     editingOldText = text;
     el.contentEditable = 'true';
-    el.style.outline = '2px dashed #3b82f6';
+    el.style.outline = '2px dashed #FF6B6B';
     el.style.outlineOffset = '2px';
     el.focus();
-    // Select all text
     const range = document.createRange();
     range.selectNodeContents(el);
     const sel = window.getSelection();
@@ -200,6 +227,7 @@ export function getEditingRuntimeScript(): string {
     sel.addRange(range);
     toolbar.style.display = 'none';
     selectOverlay.style.display = 'none';
+    sendAction('text-edit-started', { text: text });
   }
 
   function finishTextEdit(el, cancelled) {
@@ -217,7 +245,6 @@ export function getEditingRuntimeScript(): string {
         className: (typeof el.className === 'string' ? el.className : ''),
       });
     } else if (cancelled) {
-      // Restore original text
       for (let i = 0; i < el.childNodes.length; i++) {
         if (el.childNodes[i].nodeType === 3) {
           el.childNodes[i].textContent = editingOldText;
@@ -226,16 +253,15 @@ export function getEditingRuntimeScript(): string {
       }
     }
     selectElement(el);
+    sendAction('text-edit-finished', {});
   }
 
-  // Blur handler for finishing text edits
   document.addEventListener('focusout', function(e) {
     if (editing && selectedEl && e.target === selectedEl) {
       setTimeout(function() { finishTextEdit(selectedEl, false); }, 100);
     }
   });
 
-  // Enter key finishes text edit
   document.addEventListener('keydown', function(e) {
     if (editing && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();

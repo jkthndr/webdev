@@ -25,30 +25,74 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     </div>
   </header>
 
-  <div id="canvas-viewport">
-    <div id="canvas-world"></div>
+  <div class="canvas-layout">
+    <!-- Tool palette (Pencil-style left icons) -->
+    <div class="tool-palette">
+      <button class="tool-btn active" data-tool="select" title="Select (V)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="pan" title="Pan (Space)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="edit" title="Edit Elements (E)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="annotate" title="Annotate (A)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="history" title="History (H)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </button>
+    </div>
+
+    <!-- Left panel: Screen list -->
+    <div class="left-panel" id="left-panel">
+      <div class="panel-header">
+        <span>Screens</span>
+        <span class="panel-count" id="screen-count">0</span>
+      </div>
+      <div id="screen-list" class="screen-list"></div>
+    </div>
+
+    <!-- Center: Canvas -->
+    <div class="canvas-center">
+      <div id="canvas-viewport">
+        <div id="canvas-world"></div>
+      </div>
+
+      <div class="canvas-toolbar">
+        <button onclick="zoomOut_()" title="Zoom Out">&minus;</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button onclick="zoomIn()" title="Zoom In">+</button>
+        <div class="sep"></div>
+        <button onclick="fitAll()" title="Fit All (1)">Fit All</button>
+        <button onclick="resetLayout()" title="Reset Layout">Reset</button>
+      </div>
+
+      <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
+    </div>
+
+    <!-- Right panel: Inspector -->
+    <div class="inspector-panel" id="inspector-panel">
+      <div class="panel-header">
+        <span id="inspector-title">Inspector</span>
+      </div>
+      <div id="inspector-content" class="inspector-content">
+        <div class="inspector-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+          <p>Click a screen to inspect</p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="canvas-toolbar">
-    <button onclick="zoomIn()" title="Zoom In">+</button>
-    <button onclick="zoomOut_()" title="Zoom Out">&minus;</button>
-    <div class="sep"></div>
-    <button onclick="fitAll()" title="Fit All">Fit All</button>
-    <button onclick="resetLayout()" title="Reset Layout">Reset</button>
-    <div class="sep"></div>
-    <button onclick="toggleTimeline()" title="Checkpoint History" id="btn-timeline">History</button>
-    <button onclick="toggleAnnotate()" title="Add Feedback" id="btn-annotate">Annotate</button>
-    <div class="sep"></div>
-    <button onclick="toggleCanvasEdit()" title="Edit elements inline" id="btn-canvas-edit">Edit</button>
-  </div>
-
-  <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
-
-  <!-- Timeline panel -->
+  <!-- Timeline panel (slides over inspector) -->
   <div id="timeline-panel" class="timeline-panel hidden">
     <div class="timeline-header">
       <span>Checkpoint History</span>
-      <button class="timeline-close" onclick="toggleTimeline()">&times;</button>
+      <button class="timeline-close" onclick="setTool('select')">&times;</button>
     </div>
     <div id="timeline-list" class="timeline-list"></div>
   </div>
@@ -76,16 +120,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     </div>
   </div>
 
-  <div id="preview-overlay">
-    <div class="overlay-toolbar">
-      <span id="overlay-screen-name"></span>
-      <button class="btn btn-ghost" id="btn-edit-mode" onclick="toggleEditMode()">Edit</button>
-      <span id="edit-status" class="edit-status"></span>
-      <button class="btn btn-ghost" onclick="closePreview()">Close</button>
-    </div>
-    <iframe id="preview-iframe" src="about:blank"></iframe>
-    <div id="toast" class="toast hidden"></div>
-  </div>
+  <div id="canvas-toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/panzoom@9.4.3/dist/panzoom.min.js"></script>
   <script>
@@ -109,13 +144,63 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     let spaceDown = false;
     let middleDown = false;
     let panStart = null;
+    let selectedCard = null;
+    let canvasEditMode = false;
+    let annotateMode = false;
+    let currentTool = "select";
+    let selectedElement = null;
+
+    // --- Tool Palette ---
+    function setTool(tool) {
+      // Deactivate previous tool modes
+      if (currentTool === "edit" && tool !== "edit") deactivateEditMode();
+      if (currentTool === "annotate" && tool !== "annotate") deactivateAnnotateMode();
+      if (currentTool === "history" && tool !== "history") {
+        document.getElementById("timeline-panel").classList.add("hidden");
+      }
+
+      currentTool = tool;
+      document.querySelectorAll(".tool-btn").forEach(b => b.classList.remove("active"));
+      const btn = document.querySelector('[data-tool="' + tool + '"]');
+      if (btn) btn.classList.add("active");
+
+      const viewport = document.getElementById("canvas-viewport");
+      viewport.className = "";
+
+      if (tool === "edit") activateEditMode();
+      if (tool === "annotate") activateAnnotateMode();
+      if (tool === "history") {
+        document.getElementById("timeline-panel").classList.remove("hidden");
+        loadCheckpoints();
+      }
+      if (tool === "pan") viewport.style.cursor = "grab";
+      else viewport.style.cursor = "";
+    }
+
+    document.querySelectorAll(".tool-btn").forEach(function(btn) {
+      btn.addEventListener("click", function() { setTool(btn.dataset.tool); });
+    });
+
+    const ZOOM_STEPS = [0.15, 0.25, 0.35, 0.5, 0.65, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
+
+    function nearestStep(scale, direction) {
+      if (direction > 0) {
+        for (let i = 0; i < ZOOM_STEPS.length; i++) {
+          if (ZOOM_STEPS[i] > scale + 0.01) return ZOOM_STEPS[i];
+        }
+        return ZOOM_STEPS[ZOOM_STEPS.length - 1];
+      } else {
+        for (let i = ZOOM_STEPS.length - 1; i >= 0; i--) {
+          if (ZOOM_STEPS[i] < scale - 0.01) return ZOOM_STEPS[i];
+        }
+        return ZOOM_STEPS[0];
+      }
+    }
 
     // --- Init ---
     function init() {
       const world = document.getElementById("canvas-world");
       const viewport = document.getElementById("canvas-viewport");
-
-      const ZOOM_STEPS = [0.15, 0.25, 0.35, 0.5, 0.65, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 
       pz = panzoom(world, {
         maxZoom: 3,
@@ -123,44 +208,32 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         smoothScroll: false,
         filterKey: () => true,
         beforeMouseDown: (e) => {
-          if (spaceDown) return true;
+          if (spaceDown || currentTool === "pan") return true;
           if (canvasEditMode && e.target.closest("iframe")) return false;
           return !e.target.closest(".screen-card");
         },
-        // Handle wheel zoom manually for stepped clean zoom levels
         beforeWheel: () => true,
         zoomDoubleClickSpeed: 1,
       });
 
-      // Stepped zoom on wheel — snaps to clean levels for crisp rendering
-      function nearestStep(scale, direction) {
-        if (direction > 0) {
-          for (let i = 0; i < ZOOM_STEPS.length; i++) {
-            if (ZOOM_STEPS[i] > scale + 0.01) return ZOOM_STEPS[i];
-          }
-          return ZOOM_STEPS[ZOOM_STEPS.length - 1];
-        } else {
-          for (let i = ZOOM_STEPS.length - 1; i >= 0; i--) {
-            if (ZOOM_STEPS[i] < scale - 0.01) return ZOOM_STEPS[i];
-          }
-          return ZOOM_STEPS[0];
-        }
-      }
-
-      document.getElementById("canvas-viewport").addEventListener("wheel", (e) => {
+      viewport.addEventListener("wheel", (e) => {
         e.preventDefault();
         const t = pz.getTransform();
         const direction = e.deltaY < 0 ? 1 : -1;
         const next = nearestStep(t.scale, direction);
-        // Zoom toward cursor position
-        const rect = document.getElementById("canvas-viewport").getBoundingClientRect();
+        const rect = viewport.getBoundingClientRect();
         const cx = e.clientX - rect.left;
         const cy = e.clientY - rect.top;
         pz.zoomAbs(cx, cy, next);
       }, { passive: false });
-      pz.on("transform", () => { updateMinimap(); });
 
-      // Middle mouse button pan
+      pz.on("transform", () => {
+        updateMinimap();
+        const t = pz.getTransform();
+        document.getElementById("zoom-level").textContent = Math.round(t.scale * 100) + "%";
+      });
+
+      // Middle mouse pan
       viewport.addEventListener("mousedown", (e) => {
         if (e.button === 1) {
           e.preventDefault();
@@ -172,39 +245,28 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       document.addEventListener("mousemove", (e) => {
         if (middleDown && panStart) {
           const t = pz.getTransform();
-          const dx = e.clientX - panStart.x;
-          const dy = e.clientY - panStart.y;
-          pz.moveTo(t.x + dx, t.y + dy);
+          pz.moveTo(t.x + e.clientX - panStart.x, t.y + e.clientY - panStart.y);
           panStart = { x: e.clientX, y: e.clientY };
         }
       });
       document.addEventListener("mouseup", (e) => {
-        if (e.button === 1) {
-          middleDown = false;
-          panStart = null;
-          viewport.style.cursor = "";
-        }
+        if (e.button === 1) { middleDown = false; panStart = null; viewport.style.cursor = ""; }
       });
-
-      // Prevent middle-click scroll behavior
       viewport.addEventListener("auxclick", (e) => { if (e.button === 1) e.preventDefault(); });
 
-      // Space + drag to pan (Pencil-style)
+      // Space to pan
       document.addEventListener("keydown", (e) => {
-        if (e.code === "Space" && !e.repeat && !document.getElementById("preview-overlay").classList.contains("visible")) {
+        if (e.code === "Space" && !e.repeat && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
           spaceDown = true;
           viewport.style.cursor = "grab";
           e.preventDefault();
         }
       });
       document.addEventListener("keyup", (e) => {
-        if (e.code === "Space") {
-          spaceDown = false;
-          viewport.style.cursor = "";
-        }
+        if (e.code === "Space") { spaceDown = false; viewport.style.cursor = ""; }
       });
 
-      // Prevent browser zoom on Ctrl+wheel — capture phase on window, earliest intercept
+      // Prevent browser zoom
       window.addEventListener("wheel", (e) => {
         if (e.ctrlKey || e.metaKey) e.preventDefault();
       }, { passive: false, capture: true });
@@ -213,45 +275,54 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       setInterval(pollForChanges, 3000);
       window.addEventListener("beforeunload", saveLayout);
 
-      // Keyboard shortcuts (Pencil-style)
+      // Keyboard shortcuts
       document.addEventListener("keydown", (e) => {
-        // Don't trigger shortcuts when overlay is open (except Escape)
-        const overlayOpen = document.getElementById("preview-overlay").classList.contains("visible");
+        if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") return;
+        const diffOpen = !document.getElementById("diff-overlay").classList.contains("hidden");
+        if (e.key === "Escape") {
+          if (diffOpen) { closeDiff(); return; }
+          if (selectedCard) { deselectCard(); return; }
+          setTool("select");
+          return;
+        }
+        if (diffOpen) return;
 
-        if (e.key === "Escape") { closePreview(); return; }
-        if (overlayOpen) return;
+        // Tool shortcuts
+        if (e.key === "v" || e.key === "V") setTool("select");
+        if (e.key === "e" || e.key === "E") setTool("edit");
+        if (e.key === "a" || e.key === "A") setTool("annotate");
+        if (e.key === "h" || e.key === "H") setTool("history");
 
         // Zoom
         if ((e.metaKey || e.ctrlKey) && (e.key === "=" || e.key === "+")) { e.preventDefault(); zoomIn(); }
         if ((e.metaKey || e.ctrlKey) && e.key === "-") { e.preventDefault(); zoomOut_(); }
         if (e.key === "+" || e.key === "=") zoomIn();
         if (e.key === "-") zoomOut_();
-
-        // Fit all (1 key, like Pencil)
         if (e.key === "1") fitAll();
-        // Zoom to 100% (0 key, like Pencil)
         if (e.key === "0") zoomTo100();
 
-        // Select all (Ctrl/Cmd + A)
+        // Select all
         if ((e.metaKey || e.ctrlKey) && e.key === "a") {
           e.preventDefault();
           Object.values(cardEls).forEach(c => c.classList.add("focused"));
         }
+
+        // Delete selected card's screen? No — too dangerous. Skip.
       });
     }
 
+    // --- Layout ---
     let savedViewport = null;
 
     async function loadLayoutThenRender() {
       try {
         const res = await fetch("/api/projects/" + PROJECT + "/layout");
         const data = await res.json();
-        if (data.positions && Object.keys(data.positions).length > 0) {
-          positions = data.positions;
-        }
+        if (data.positions && Object.keys(data.positions).length > 0) positions = data.positions;
         if (data.viewport) savedViewport = data.viewport;
       } catch {}
       renderCards(screens, false);
+      updateScreenList();
       setTimeout(() => {
         if (savedViewport) {
           pz.moveTo(savedViewport.x, savedViewport.y);
@@ -262,38 +333,173 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       }, 100);
     }
 
+    // --- Screen List (left panel) ---
+    function updateScreenList() {
+      const list = document.getElementById("screen-list");
+      document.getElementById("screen-count").textContent = screens.length;
+      list.innerHTML = screens.map((name, i) => {
+        const isSelected = selectedCard === name;
+        return '<div class="screen-list-item' + (isSelected ? ' selected' : '') + '" data-screen="' + name + '" onclick="selectCardByName(\\'' + name + '\\')">' +
+          '<span class="screen-list-num">' + (i + 1) + '.</span>' +
+          '<span class="screen-list-name">' + name + '</span>' +
+        '</div>';
+      }).join("");
+    }
+
+    function selectCardByName(name) {
+      selectCard(name);
+      // Pan canvas to center on the card
+      const pos = positions[name];
+      if (!pos) return;
+      const t = pz.getTransform();
+      const vp = document.getElementById("canvas-viewport");
+      const vpW = vp.clientWidth;
+      const vpH = vp.clientHeight;
+      const tx = vpW / 2 - (pos.x + CARD_W / 2) * t.scale;
+      const ty = vpH / 2 - (pos.y + CARD_H / 2) * t.scale;
+      pz.moveTo(tx, ty);
+    }
+
+    // --- Card Selection ---
+    function selectCard(name) {
+      Object.values(cardEls).forEach(c => c.classList.remove("focused"));
+      selectedCard = name;
+      if (cardEls[name]) cardEls[name].classList.add("focused");
+      updateScreenList();
+      updateInspector();
+    }
+
+    function deselectCard() {
+      Object.values(cardEls).forEach(c => c.classList.remove("focused"));
+      selectedCard = null;
+      selectedElement = null;
+      updateScreenList();
+      updateInspector();
+    }
+
+    // --- Inspector ---
+    function updateInspector() {
+      const content = document.getElementById("inspector-content");
+      const title = document.getElementById("inspector-title");
+
+      if (!selectedCard) {
+        title.textContent = "Inspector";
+        content.innerHTML = '<div class="inspector-empty">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>' +
+          '<p>Click a screen to inspect</p></div>';
+        return;
+      }
+
+      title.textContent = selectedCard;
+
+      let html = '<div class="inspector-section">' +
+        '<div class="inspector-section-title">Screen</div>' +
+        '<div class="inspector-field"><span class="inspector-label">Name</span><span class="inspector-value">' + selectedCard + '</span></div>' +
+        '<div class="inspector-field"><span class="inspector-label">Position</span><span class="inspector-value">' +
+          Math.round(positions[selectedCard]?.x || 0) + ', ' + Math.round(positions[selectedCard]?.y || 0) + '</span></div>' +
+        '<div class="inspector-field"><span class="inspector-label">Size</span><span class="inspector-value">' + CARD_W + ' × ' + CARD_H + '</span></div>' +
+      '</div>';
+
+      // Edit mode hint
+      if (!canvasEditMode) {
+        html += '<div class="inspector-section">' +
+          '<div class="inspector-hint">Press <kbd>E</kbd> to enter edit mode and inspect elements</div>' +
+        '</div>';
+      }
+
+      // Element details (populated when element-selected fires)
+      if (selectedElement && canvasEditMode) {
+        const sig = selectedElement.signature;
+        const styles = sig.styles || {};
+
+        html += '<div class="inspector-section">' +
+          '<div class="inspector-section-title">Element</div>' +
+          '<div class="inspector-breadcrumb">' + (sig.path || sig.tagName) + '</div>' +
+          '<div class="inspector-field"><span class="inspector-label">Tag</span><span class="inspector-value tag">&lt;' + sig.tagName + '&gt;</span></div>' +
+          (sig.className ? '<div class="inspector-field"><span class="inspector-label">Class</span><span class="inspector-value mono">' + sig.className.split(' ').slice(0, 3).join(' ') + '</span></div>' : '') +
+          '<div class="inspector-field"><span class="inspector-label">Size</span><span class="inspector-value">' + sig.rect.w + ' × ' + sig.rect.h + '</span></div>' +
+        '</div>';
+
+        // Editable text
+        if (sig.directText) {
+          html += '<div class="inspector-section">' +
+            '<div class="inspector-section-title">Content</div>' +
+            '<div class="inspector-text-edit">' +
+              '<textarea id="inspector-text-input" rows="2">' + sig.directText.replace(/</g, '&lt;') + '</textarea>' +
+              '<button class="inspector-save-btn" onclick="saveInspectorText()">Save</button>' +
+            '</div>' +
+          '</div>';
+        }
+
+        // Styles
+        html += '<div class="inspector-section">' +
+          '<div class="inspector-section-title">Styles</div>';
+        const styleEntries = [
+          ['color', styles.color],
+          ['font-size', styles.fontSize],
+          ['font-weight', styles.fontWeight],
+          ['font-family', styles.fontFamily],
+          ['background', styles.backgroundColor],
+          ['padding', styles.padding],
+          ['margin', styles.margin],
+          ['border-radius', styles.borderRadius],
+          ['display', styles.display],
+        ];
+        styleEntries.forEach(function(pair) {
+          if (!pair[1] || pair[1] === 'rgba(0, 0, 0, 0)' || pair[1] === 'none') return;
+          const isColor = pair[0] === 'color' || pair[0] === 'background';
+          const swatch = isColor ? '<span class="inspector-swatch" style="background:' + pair[1] + '"></span>' : '';
+          html += '<div class="inspector-field"><span class="inspector-label">' + pair[0] + '</span><span class="inspector-value mono">' + swatch + pair[1] + '</span></div>';
+        });
+        html += '</div>';
+      }
+
+      content.innerHTML = html;
+    }
+
+    function saveInspectorText() {
+      const input = document.getElementById("inspector-text-input");
+      if (!input || !selectedElement || !selectedCard) return;
+      const newText = input.value;
+      const oldText = selectedElement.signature.directText;
+      if (newText === oldText) return;
+
+      showToast("Saving...");
+      fetch("/api/projects/" + PROJECT + "/screens/" + selectedCard + "/edit-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldText: oldText, newText: newText }),
+      }).then(r => {
+        if (r.ok) { showToast("Saved"); selectedElement.signature.directText = newText; }
+        else showToast("Save failed");
+      }).catch(() => showToast("Save failed"));
+    }
+
     // --- Card Rendering ---
     function renderCards(screenList, animate) {
       const world = document.getElementById("canvas-world");
       const existing = new Set(Object.keys(cardEls));
       const current = new Set(screenList);
 
-      // Add new cards
       screenList.forEach((name, i) => {
         if (!cardEls[name]) {
-          if (!positions[name]) {
-            positions[name] = autoPosition(Object.keys(positions).length);
-          }
+          if (!positions[name]) positions[name] = autoPosition(Object.keys(positions).length);
           const card = createCard(name, positions[name], animate);
           world.appendChild(card);
           cardEls[name] = card;
         }
       });
 
-      // Remove deleted cards
       existing.forEach(name => {
         if (!current.has(name)) {
           cardEls[name].style.opacity = "0";
           cardEls[name].style.transition = "opacity 0.3s";
-          setTimeout(() => {
-            cardEls[name].remove();
-            delete cardEls[name];
-            delete positions[name];
-          }, 300);
+          setTimeout(() => { cardEls[name].remove(); delete cardEls[name]; delete positions[name]; }, 300);
         }
       });
 
       updateMinimap();
+      updateScreenList();
     }
 
     function createCard(name, pos, animate) {
@@ -323,14 +529,15 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
           '</div>';
       }
 
-      // Click → preview overlay (only if not dragging or panning)
+      // Click → select card (Pencil-style, no preview overlay)
       card.addEventListener("click", (e) => {
-        if (spaceDown || dragStart?.moved || canvasEditMode) return;
-        openPreview(name);
+        if (spaceDown || dragStart?.moved) return;
+        if (canvasEditMode && e.target.closest("iframe")) return;
+        selectCard(name);
       });
 
-      // Drag card by holding mousedown and moving
-      card.addEventListener("mousedown", (e) => {
+      // Drag by label
+      card.querySelector(".sc-frame-label").addEventListener("mousedown", (e) => {
         if (e.button !== 0 || spaceDown) return;
         e.stopPropagation();
         dragging = name;
@@ -339,28 +546,32 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         card.style.cursor = "grabbing";
       });
 
-      if (animate) {
-        setTimeout(() => card.classList.remove("entering"), 500);
-      }
+      // Also drag from card border area (not iframe)
+      card.addEventListener("mousedown", (e) => {
+        if (e.button !== 0 || spaceDown || e.target.closest("iframe") || e.target.closest(".sc-frame-label")) return;
+        if (!canvasEditMode) {
+          e.stopPropagation();
+          dragging = name;
+          dragStart = { x: e.clientX, y: e.clientY, ox: pos.x, oy: pos.y, moved: false };
+          card.style.zIndex = "10";
+          card.style.cursor = "grabbing";
+        }
+      });
 
+      if (animate) setTimeout(() => card.classList.remove("entering"), 500);
       return card;
     }
 
-    // Global drag handlers
+    // Global drag
     document.addEventListener("mousemove", (e) => {
       if (!dragging || !dragStart) return;
       const t = pz.getTransform();
       const dx = (e.clientX - dragStart.x) / t.scale;
       const dy = (e.clientY - dragStart.y) / t.scale;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragStart.moved = true;
-      const nx = dragStart.ox + dx;
-      const ny = dragStart.oy + dy;
-      positions[dragging] = { x: nx, y: ny };
+      positions[dragging] = { x: dragStart.ox + dx, y: dragStart.oy + dy };
       const card = cardEls[dragging];
-      if (card) {
-        card.style.left = nx + "px";
-        card.style.top = ny + "px";
-      }
+      if (card) { card.style.left = positions[dragging].x + "px"; card.style.top = positions[dragging].y + "px"; }
       updateMinimap();
     });
 
@@ -368,13 +579,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       if (dragging) {
         const wasDrag = dragStart?.moved;
         const card = cardEls[dragging];
-        if (card) {
-          card.style.zIndex = "";
-          card.style.cursor = "";
-        }
-        const screenName = dragging;
-        dragging = null;
-        dragStart = null;
+        if (card) { card.style.zIndex = ""; card.style.cursor = ""; }
+        dragging = null; dragStart = null;
         if (wasDrag) debounceSave();
       }
     });
@@ -385,115 +591,123 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       return { x: OFFSET + col * (CARD_W + GAP), y: OFFSET + row * (CARD_H + GAP) };
     }
 
-    // --- Preview Overlay ---
-    let previewScreen = null;
-    let editModeActive = false;
+    // --- Edit Mode ---
+    async function activateEditMode() {
+      canvasEditMode = true;
+      document.getElementById("canvas-viewport").classList.add("canvas-edit-mode");
+      const editBtn = document.querySelector('[data-tool="edit"]');
+      if (editBtn) editBtn.classList.add("active");
 
-    async function openPreview(name) {
-      previewScreen = name;
-      const overlay = document.getElementById("preview-overlay");
-      const iframe = document.getElementById("preview-iframe");
-      document.getElementById("overlay-screen-name").textContent = name;
-      iframe.src = "/proxy/" + PROJECT + "/screens/" + name;
-      overlay.classList.add("visible");
-      editModeActive = false;
-      document.getElementById("btn-edit-mode").textContent = "Edit";
-      document.getElementById("btn-edit-mode").classList.remove("active");
-      document.getElementById("edit-status").textContent = "";
+      showToast("Starting edit mode...");
+      try { await fetch("/api/projects/" + PROJECT + "/switch-to-dev", { method: "POST" }); } catch {}
+      showToast("Edit mode active");
 
-      Object.values(cardEls).forEach(c => c.classList.remove("focused"));
-      if (cardEls[name]) cardEls[name].classList.add("focused");
-    }
-
-    function closePreview() {
-      const overlay = document.getElementById("preview-overlay");
-      if (!overlay.classList.contains("visible")) return;
-      overlay.classList.remove("visible");
-      if (editModeActive) toggleEditMode();
-      document.getElementById("preview-iframe").src = "about:blank";
-      Object.values(cardEls).forEach(c => c.classList.remove("focused"));
-      previewScreen = null;
-    }
-
-    async function toggleEditMode() {
-      editModeActive = !editModeActive;
-      const btn = document.getElementById("btn-edit-mode");
-      const status = document.getElementById("edit-status");
-      btn.classList.toggle("active", editModeActive);
-      btn.textContent = editModeActive ? "Editing" : "Edit";
-
-      if (editModeActive) {
-        // Switch to dev mode for HMR
-        status.textContent = "Switching to dev mode...";
-        try {
-          const res = await fetch("/api/projects/" + PROJECT + "/switch-to-dev", { method: "POST" });
-          if (!res.ok) throw new Error("Failed");
-          status.textContent = "Loading editor...";
-          // Reload iframe with edit mode
-          const iframe = document.getElementById("preview-iframe");
-          iframe.src = "/proxy/" + PROJECT + "/screens/" + previewScreen + "?edit=1";
-          status.textContent = "";
-        } catch (e) {
-          status.textContent = "Failed to start dev mode";
-          editModeActive = false;
-          btn.classList.remove("active");
-          btn.textContent = "Edit";
+      Object.keys(cardEls).forEach(function(name) {
+        const iframe = cardEls[name].querySelector(".sc-iframe");
+        if (iframe) {
+          iframe.style.pointerEvents = "auto";
+          iframe.src = "/proxy/" + PROJECT + "/screens/" + name + "?edit=1";
+          iframe.dataset.screen = name;
         }
-      } else {
-        // Disable edit mode — reload without ?edit=1
-        const iframe = document.getElementById("preview-iframe");
-        iframe.contentWindow?.postMessage({ type: "edit-mode", enabled: false }, "*");
-        iframe.src = "/proxy/" + PROJECT + "/screens/" + previewScreen;
-        status.textContent = "";
-      }
+      });
+
+      updateInspector();
     }
 
-    // Listen for postMessage from editing runtime in iframe
+    function deactivateEditMode() {
+      canvasEditMode = false;
+      selectedElement = null;
+      document.getElementById("canvas-viewport").classList.remove("canvas-edit-mode");
+
+      Object.keys(cardEls).forEach(function(name) {
+        const iframe = cardEls[name].querySelector(".sc-iframe");
+        if (iframe) {
+          iframe.style.pointerEvents = "none";
+          iframe.src = "/proxy/" + PROJECT + "/screens/" + name;
+        }
+      });
+
+      updateInspector();
+    }
+
+    // --- Annotate Mode ---
+    function activateAnnotateMode() {
+      annotateMode = true;
+      document.getElementById("canvas-viewport").classList.add("annotate-mode");
+      loadAnnotations();
+    }
+
+    function deactivateAnnotateMode() {
+      annotateMode = false;
+      document.getElementById("canvas-viewport").classList.remove("annotate-mode");
+    }
+
+    // --- Messages from editing runtime ---
     window.addEventListener("message", async (e) => {
       if (!e.data || !e.data.type) return;
 
-      if (e.data.type === "text-edited") {
-        showToast("Saving...");
-        try {
-          const res = await fetch("/api/projects/" + PROJECT + "/screens/" + previewScreen + "/edit-text", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ oldText: e.data.oldText, newText: e.data.newText }),
-          });
-          if (res.ok) showToast("Saved");
-          else showToast("Save failed");
-        } catch { showToast("Save failed"); }
-      }
+      // Find which screen sent the message
+      let screenName = null;
+      Object.keys(cardEls).forEach(function(name) {
+        const iframe = cardEls[name].querySelector(".sc-iframe");
+        if (iframe && iframe.contentWindow === e.source) screenName = name;
+      });
 
-      if (e.data.type === "element-selected") {
-        document.getElementById("edit-status").textContent = "<" + e.data.signature.tagName + ">";
-      }
+      // Canvas edit mode messages
+      if (canvasEditMode && screenName) {
+        if (e.data.type === "text-edited") {
+          showToast("Saving...");
+          try {
+            const res = await fetch("/api/projects/" + PROJECT + "/screens/" + screenName + "/edit-text", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ oldText: e.data.oldText, newText: e.data.newText }),
+            });
+            if (res.ok) showToast("Saved");
+            else showToast("Save failed");
+          } catch { showToast("Save failed"); }
+        }
 
-      if (e.data.type === "element-deselected") {
-        document.getElementById("edit-status").textContent = "";
-      }
+        if (e.data.type === "element-selected") {
+          selectedCard = screenName;
+          selectedElement = { signature: e.data.signature, hasText: e.data.hasText, screen: screenName };
+          Object.values(cardEls).forEach(c => c.classList.remove("focused"));
+          if (cardEls[screenName]) cardEls[screenName].classList.add("focused");
+          updateScreenList();
+          updateInspector();
+        }
 
-      if (e.data.type === "delete-element") {
-        showToast("Delete not yet implemented");
-      }
+        if (e.data.type === "element-deselected") {
+          selectedElement = null;
+          updateInspector();
+        }
 
-      if (e.data.type === "reorder-element") {
-        showToast("Reorder not yet implemented");
+        if (e.data.type === "text-edit-started") {
+          // Could show editing indicator in inspector
+        }
+
+        if (e.data.type === "text-edit-finished") {
+          // Refresh inspector after text edit
+          if (selectedElement) updateInspector();
+        }
+
+        if (e.data.type === "delete-element") {
+          showToast("Delete — coming soon");
+        }
+
+        if (e.data.type === "reorder-element") {
+          showToast("Reorder — coming soon");
+        }
       }
     });
 
     function showToast(msg) {
-      const toast = document.getElementById("toast");
+      const toast = document.getElementById("canvas-toast");
       toast.textContent = msg;
       toast.classList.remove("hidden");
       clearTimeout(toast._timer);
       toast._timer = setTimeout(() => toast.classList.add("hidden"), 2000);
     }
-
-    // Click backdrop to close (but not in edit mode — avoid accidental closes)
-    document.getElementById("preview-overlay")?.addEventListener("click", (e) => {
-      if (!editModeActive && e.target === document.getElementById("preview-overlay")) closePreview();
-    });
 
     // --- Polling ---
     async function pollForChanges() {
@@ -504,15 +718,11 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
           const oldScreens = new Set(screens);
           screens = data.screens.map(s => s.name);
           currentHash = data.hash;
-
-          // Refresh existing screens
           screens.forEach(name => {
             if (oldScreens.has(name) && cardEls[name]) {
-              // Reload iframe or thumbnail
               const iframe = cardEls[name].querySelector(".sc-iframe");
-              if (iframe) {
-                iframe.src = iframe.src;
-              } else {
+              if (iframe) iframe.src = iframe.src;
+              else {
                 const img = cardEls[name].querySelector(".sc-thumb");
                 if (img) img.src = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
               }
@@ -520,28 +730,20 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
               setTimeout(() => cardEls[name].classList.remove("updated"), 1100);
             }
           });
-
-          // Add new / remove old
           renderCards(screens, true);
         }
       } catch {}
     }
 
     // --- Layout Persistence ---
-    function debounceSave() {
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(saveLayout, 1000);
-    }
+    function debounceSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveLayout, 1000); }
 
     function saveLayout() {
       const t = pz.getTransform();
       fetch("/api/projects/" + PROJECT + "/layout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          positions: positions,
-          viewport: { x: t.x, y: t.y, zoom: t.scale },
-        })
+        body: JSON.stringify({ positions, viewport: { x: t.x, y: t.y, zoom: t.scale } })
       }).catch(() => {});
     }
 
@@ -568,35 +770,29 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       names.forEach(n => {
         const p = positions[n];
-        if (p.x < minX) minX = p.x;
-        if (p.y < minY) minY = p.y;
-        if (p.x + CARD_W > maxX) maxX = p.x + CARD_W;
-        if (p.y + CARD_H > maxY) maxY = p.y + CARD_H;
+        minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x + CARD_W); maxY = Math.max(maxY, p.y + CARD_H);
       });
       const pad = 60;
       const bw = maxX - minX + pad * 2;
       const bh = maxY - minY + pad * 2;
-      // Reserve space: 48px header, 200px right for minimap, 160px bottom for toolbar+minimap
-      const vw = window.innerWidth - 200;
-      const vh = window.innerHeight - 48 - 160;
+      const vp = document.getElementById("canvas-viewport");
+      const vw = vp.clientWidth;
+      const vh = vp.clientHeight - 80;
       const scale = Math.min(vw / bw, vh / bh, 1.2);
       const cx = minX + (maxX - minX) / 2;
       const cy = minY + (maxY - minY) / 2;
-      // Offset slightly left to avoid minimap area
-      const tx = (vw / 2) - cx * scale;
-      const ty = (vh / 2 + 48) - cy * scale;
+      const tx = vw / 2 - cx * scale;
+      const ty = vh / 2 + 20 - cy * scale;
       pz.smoothMoveTo(tx, ty);
-      setTimeout(() => pz.smoothZoomAbs(vw / 2, vh / 2 + 24, scale), 200);
+      setTimeout(() => pz.smoothZoomAbs(vw / 2, vh / 2, scale), 200);
     }
 
     function resetLayout() {
       positions = {};
-      const world = document.getElementById("canvas-world");
-      world.innerHTML = "";
+      document.getElementById("canvas-world").innerHTML = "";
       cardEls = {};
-      screens.forEach((name, i) => {
-        positions[name] = autoPosition(i);
-      });
+      screens.forEach((name, i) => { positions[name] = autoPosition(i); });
       renderCards(screens, false);
       setTimeout(fitAll, 100);
       debounceSave();
@@ -609,40 +805,32 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       const ctx = canvas.getContext("2d");
       const mw = 180, mh = 120;
       ctx.clearRect(0, 0, mw, mh);
-
       const names = Object.keys(positions);
       if (names.length === 0) return;
-
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       names.forEach(n => {
         const p = positions[n];
-        minX = Math.min(minX, p.x);
-        minY = Math.min(minY, p.y);
-        maxX = Math.max(maxX, p.x + CARD_W);
-        maxY = Math.max(maxY, p.y + CARD_H);
+        minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x + CARD_W); maxY = Math.max(maxY, p.y + CARD_H);
       });
-
       const pad = 40;
       const bw = maxX - minX + pad * 2;
       const bh = maxY - minY + pad * 2;
       const scale = Math.min(mw / bw, mh / bh);
       const ox = (mw - bw * scale) / 2 - minX * scale + pad * scale;
       const oy = (mh - bh * scale) / 2 - minY * scale + pad * scale;
-
-      // Draw cards
       ctx.fillStyle = "#E8E4DF";
       names.forEach(n => {
         const p = positions[n];
         ctx.fillRect(ox + p.x * scale, oy + p.y * scale, CARD_W * scale, CARD_H * scale);
       });
-
-      // Draw viewport
       if (pz) {
         const t = pz.getTransform();
-        const vx = (-t.x / t.scale);
-        const vy = ((-t.y + 48) / t.scale);
-        const vw = window.innerWidth / t.scale;
-        const vh = (window.innerHeight - 48) / t.scale;
+        const vp = document.getElementById("canvas-viewport");
+        const vx = -t.x / t.scale;
+        const vy = -t.y / t.scale;
+        const vw = vp.clientWidth / t.scale;
+        const vh = vp.clientHeight / t.scale;
         ctx.strokeStyle = "rgba(255,107,107,0.7)";
         ctx.lineWidth = 2;
         ctx.strokeRect(ox + vx * scale, oy + vy * scale, vw * scale, vh * scale);
@@ -657,22 +845,12 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       document.querySelector(".dark-toggle").textContent = isDark ? "\\u2600" : "\\u263E";
     }
     if (localStorage.getItem("studio-dark") === "1") {
-      document.body.classList.add("dark");
-      document.querySelector(".dark-toggle").textContent = "\\u2600";
+      document.body.classList.add("dark"); document.querySelector(".dark-toggle").textContent = "\\u2600";
     }
 
     // --- Timeline & Diff ---
-    let timelineOpen = false;
     let checkpoints = [];
     let diffState = { hash: null, screenIdx: 0, screens: [] };
-
-    function toggleTimeline() {
-      timelineOpen = !timelineOpen;
-      const panel = document.getElementById("timeline-panel");
-      panel.classList.toggle("hidden", !timelineOpen);
-      document.getElementById("btn-timeline").classList.toggle("active", timelineOpen);
-      if (timelineOpen) loadCheckpoints();
-    }
 
     async function loadCheckpoints() {
       try {
@@ -685,16 +863,13 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
     function renderTimeline(currentHash) {
       const list = document.getElementById("timeline-list");
-      if (checkpoints.length === 0) {
-        list.innerHTML = '<div class="timeline-empty">No checkpoints yet</div>';
-        return;
-      }
-      list.innerHTML = checkpoints.map((cp, i) => {
+      if (checkpoints.length === 0) { list.innerHTML = '<div class="timeline-empty">No checkpoints yet</div>'; return; }
+      list.innerHTML = checkpoints.map((cp) => {
         const short = cp.hash.slice(0, 7);
         const date = new Date(cp.date).toLocaleString();
         const isCurrent = cp.isCurrent;
         const hasScreenshots = cp.screens.some(s => s.hasThumbnail);
-        return '<div class="timeline-item' + (isCurrent ? ' current' : '') + '" data-hash="' + cp.hash + '">' +
+        return '<div class="timeline-item' + (isCurrent ? ' current' : '') + '">' +
           '<div class="timeline-dot' + (isCurrent ? ' current' : '') + '"></div>' +
           '<div class="timeline-content">' +
             '<div class="timeline-msg">' + cp.message + '</div>' +
@@ -729,23 +904,15 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       document.getElementById("diff-right-label").textContent = "current";
     }
 
-    function prevDiffScreen() {
-      if (diffState.screenIdx > 0) { diffState.screenIdx--; showDiffScreen(); }
-    }
-    function nextDiffScreen() {
-      if (diffState.screenIdx < diffState.screens.length - 1) { diffState.screenIdx++; showDiffScreen(); }
-    }
-
-    function closeDiff() {
-      document.getElementById("diff-overlay").classList.add("hidden");
-    }
+    function prevDiffScreen() { if (diffState.screenIdx > 0) { diffState.screenIdx--; showDiffScreen(); } }
+    function nextDiffScreen() { if (diffState.screenIdx < diffState.screens.length - 1) { diffState.screenIdx++; showDiffScreen(); } }
+    function closeDiff() { document.getElementById("diff-overlay").classList.add("hidden"); }
 
     async function restoreCheckpoint(hash, label) {
       if (!confirm("Restore to checkpoint " + label + "? Current changes will be lost.")) return;
       try {
         const res = await fetch("/api/projects/" + PROJECT + "/restore", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ hash }),
         });
         if (res.ok) location.reload();
@@ -754,15 +921,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     }
 
     // --- Feedback Annotations ---
-    let annotateMode = false;
     let annotations = [];
-
-    function toggleAnnotate() {
-      annotateMode = !annotateMode;
-      document.getElementById("btn-annotate").classList.toggle("active", annotateMode);
-      document.getElementById("canvas-viewport").classList.toggle("annotate-mode", annotateMode);
-      if (annotateMode) loadAnnotations();
-    }
 
     async function loadAnnotations() {
       try {
@@ -774,9 +933,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     }
 
     function renderPins() {
-      // Remove old pins
       document.querySelectorAll(".feedback-pin").forEach(p => p.remove());
-      // Add pins to their cards
       annotations.forEach(a => {
         const card = cardEls[a.screen];
         if (!card) return;
@@ -785,8 +942,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         content.style.position = "relative";
         const pin = document.createElement("div");
         pin.className = "feedback-pin" + (a.resolved ? " resolved" : "");
-        pin.style.left = a.x + "%";
-        pin.style.top = a.y + "%";
+        pin.style.left = a.x + "%"; pin.style.top = a.y + "%";
         pin.dataset.id = a.id;
         pin.title = a.text + " (" + a.author + ")";
         pin.innerHTML = '<div class="pin-dot"></div><div class="pin-tooltip">' +
@@ -795,14 +951,12 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
           '<div class="pin-actions">' +
             (a.resolved ? '' : '<button onclick="resolvePin(\\'' + a.id + '\\')">Resolve</button>') +
             '<button onclick="deletePin(\\'' + a.id + '\\')">Delete</button>' +
-          '</div>' +
-        '</div>';
+          '</div></div>';
         pin.addEventListener("click", (e) => { e.stopPropagation(); pin.classList.toggle("open"); });
         content.appendChild(pin);
       });
     }
 
-    // Click on card content to add pin (in annotate mode)
     document.getElementById("canvas-world").addEventListener("click", (e) => {
       if (!annotateMode) return;
       const content = e.target.closest(".sc-frame-content");
@@ -822,19 +976,17 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     async function addAnnotation(screen, x, y, text) {
       try {
         const res = await fetch("/api/projects/" + PROJECT + "/feedback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ screen, x, y, text, author: "human" }),
         });
-        if (res.ok) { await loadAnnotations(); }
+        if (res.ok) await loadAnnotations();
       } catch {}
     }
 
     async function resolvePin(id) {
       try {
         await fetch("/api/projects/" + PROJECT + "/feedback/" + id, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: "PATCH", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ resolved: true }),
         });
         await loadAnnotations();
@@ -848,98 +1000,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       } catch {}
     }
 
-    // Load annotations on init
     loadAnnotations();
-
-    // --- Canvas Edit Mode ---
-    let canvasEditMode = false;
-    let canvasEditScreen = null; // track which screen a postMessage came from
-
-    async function toggleCanvasEdit() {
-      canvasEditMode = !canvasEditMode;
-      document.getElementById("btn-canvas-edit").classList.toggle("active", canvasEditMode);
-      document.getElementById("canvas-viewport").classList.toggle("canvas-edit-mode", canvasEditMode);
-
-      if (canvasEditMode) {
-        // Switch to dev mode for HMR
-        document.getElementById("btn-canvas-edit").textContent = "Starting...";
-        try {
-          await fetch("/api/projects/" + PROJECT + "/switch-to-dev", { method: "POST" });
-        } catch {}
-        document.getElementById("btn-canvas-edit").textContent = "Editing";
-
-        // Reload all card iframes with ?edit=1 and enable pointer events
-        Object.keys(cardEls).forEach(function(name) {
-          const card = cardEls[name];
-          const iframe = card.querySelector(".sc-iframe");
-          if (iframe) {
-            iframe.style.pointerEvents = "auto";
-            iframe.src = "/proxy/" + PROJECT + "/screens/" + name + "?edit=1";
-            iframe.dataset.screen = name;
-          }
-        });
-      } else {
-        document.getElementById("btn-canvas-edit").textContent = "Edit";
-        // Disable pointer events and reload without edit mode
-        Object.keys(cardEls).forEach(function(name) {
-          const card = cardEls[name];
-          const iframe = card.querySelector(".sc-iframe");
-          if (iframe) {
-            iframe.style.pointerEvents = "none";
-            iframe.src = "/proxy/" + PROJECT + "/screens/" + name;
-          }
-        });
-      }
-    }
-
-    // Listen for postMessage from editing runtimes in card iframes
-    window.addEventListener("message", async (e) => {
-      if (!e.data || !e.data.type || !canvasEditMode) return;
-
-      // Figure out which screen sent the message
-      let screenName = null;
-      Object.keys(cardEls).forEach(function(name) {
-        const iframe = cardEls[name].querySelector(".sc-iframe");
-        if (iframe && iframe.contentWindow === e.source) screenName = name;
-      });
-      if (!screenName) return;
-
-      if (e.data.type === "text-edited") {
-        showCanvasToast("Saving...");
-        try {
-          const res = await fetch("/api/projects/" + PROJECT + "/screens/" + screenName + "/edit-text", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ oldText: e.data.oldText, newText: e.data.newText }),
-          });
-          if (res.ok) showCanvasToast("Saved");
-          else showCanvasToast("Save failed");
-        } catch { showCanvasToast("Save failed"); }
-      }
-
-      if (e.data.type === "delete-element") {
-        showCanvasToast("Delete — coming soon");
-      }
-
-      if (e.data.type === "reorder-element") {
-        showCanvasToast("Reorder — coming soon");
-      }
-    });
-
-    function showCanvasToast(msg) {
-      // Reuse or create a canvas-level toast
-      let toast = document.getElementById("canvas-toast");
-      if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "canvas-toast";
-        toast.className = "toast hidden";
-        document.body.appendChild(toast);
-      }
-      toast.textContent = msg;
-      toast.classList.remove("hidden");
-      clearTimeout(toast._timer);
-      toast._timer = setTimeout(() => toast.classList.add("hidden"), 2000);
-    }
 
     // --- Auto-start polling ---
     ${!running ? `(function pollStart() {
