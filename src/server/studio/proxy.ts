@@ -1,4 +1,5 @@
 import { Request, Response, Router } from "express";
+import { request as httpRequest } from "http";
 import httpProxy from "http-proxy";
 import type { Server } from "http";
 import type { ProjectManager } from "../project-manager.js";
@@ -14,7 +15,6 @@ export function createProxyRouter(pm: ProjectManager): Router {
     const port = pm.getDevServerPort(project);
 
     if (!port) {
-      // Auto-start if not already starting
       if (!pm.isStarting(project) && pm.getProjectInfo(project)) {
         pm.startDevServer(project).catch(() => {});
       }
@@ -30,57 +30,63 @@ export function createProxyRouter(pm: ProjectManager): Router {
     }
 
     const injectEdit = req.query.edit === "1";
+    const targetPath = req.url || "/";
 
-    // Prevent compressed responses so we can rewrite HTML
-    req.headers["accept-encoding"] = "identity";
+    const proxyReq = httpRequest(
+      {
+        hostname: "localhost",
+        port,
+        path: targetPath,
+        method: req.method,
+        headers: {
+          ...req.headers,
+          host: `localhost:${port}`,
+          "accept-encoding": "identity",
+        },
+      },
+      (proxyRes) => {
+        const contentType = proxyRes.headers["content-type"] || "";
+        const isHtml = contentType.includes("text/html");
 
-    // Use http-proxy for the request
-    const proxy = httpProxy.createProxyServer({
-      target: `http://localhost:${port}`,
-      selfHandleResponse: true,
-      ws: false, // WS handled separately via upgrade
-    });
+        if (isHtml) {
+          const chunks: Buffer[] = [];
+          proxyRes.on("data", (chunk: Buffer) => chunks.push(chunk));
+          proxyRes.on("end", () => {
+            let html = Buffer.concat(chunks).toString("utf-8");
+            const prefix = `/proxy/${project}`;
+            html = html.replace(/"\/_next\//g, `"${prefix}/_next/`);
+            html = html.replace(/'\/_next\//g, `'${prefix}/_next/`);
 
-    proxy.on("proxyRes", (proxyRes, _req, _res) => {
-      const contentType = proxyRes.headers["content-type"] || "";
-      const isHtml = contentType.includes("text/html");
+            if (injectEdit) {
+              html = html.replace("</body>", `<script>${editScript}</script></body>`);
+            }
 
-      if (isHtml) {
-        const chunks: Buffer[] = [];
-        proxyRes.on("data", (chunk: Buffer) => chunks.push(chunk));
-        proxyRes.on("end", () => {
-          let html = Buffer.concat(chunks).toString("utf-8");
-          // Rewrite asset paths to go through proxy
-          const prefix = `/proxy/${project}`;
-          html = html.replace(/"\/_next\//g, `"${prefix}/_next/`);
-          html = html.replace(/'\/_next\//g, `'${prefix}/_next/`);
+            const headers = { ...proxyRes.headers };
+            delete headers["content-length"];
+            delete headers["content-encoding"];
+            headers["content-length"] = String(Buffer.byteLength(html));
 
-          // Inject editing runtime if edit mode
-          if (injectEdit) {
-            html = html.replace("</body>", `<script>${editScript}</script></body>`);
-          }
-
-          const headers = { ...proxyRes.headers };
-          delete headers["content-length"];
-          delete headers["content-encoding"];
-          headers["content-length"] = String(Buffer.byteLength(html));
-
-          res.writeHead(proxyRes.statusCode ?? 200, headers);
-          res.end(html);
-        });
-      } else {
-        res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
-        proxyRes.pipe(res);
+            res.writeHead(proxyRes.statusCode ?? 200, headers);
+            res.end(html);
+          });
+        } else {
+          res.writeHead(proxyRes.statusCode ?? 200, proxyRes.headers);
+          proxyRes.pipe(res);
+        }
       }
-    });
+    );
 
-    proxy.on("error", (err) => {
+    proxyReq.on("error", (err) => {
       if (!res.headersSent) {
         res.status(502).send(`Proxy error: ${err.message}`);
       }
     });
 
-    proxy.web(req, res);
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      req.pipe(proxyReq);
+    } else {
+      proxyReq.end();
+    }
   });
 
   return router;
@@ -88,9 +94,10 @@ export function createProxyRouter(pm: ProjectManager): Router {
 
 /**
  * Set up WebSocket proxy for HMR. Call this after the HTTP server is created.
- * Handles upgrade requests on /proxy/:project/_next/webpack-hmr
  */
 export function setupWebSocketProxy(server: Server, pm: ProjectManager): void {
+  const wsProxy = httpProxy.createProxyServer({ ws: true });
+
   server.on("upgrade", (req, socket, head) => {
     const url = req.url || "";
     const match = url.match(/^\/proxy\/([^/]+)\//);
@@ -103,10 +110,8 @@ export function setupWebSocketProxy(server: Server, pm: ProjectManager): void {
       return;
     }
 
-    const proxy = httpProxy.createProxyServer({ target: `http://localhost:${port}`, ws: true });
-    // Rewrite the URL to remove the /proxy/:project prefix
     req.url = url.replace(`/proxy/${project}`, "");
-    proxy.ws(req, socket, head);
-    proxy.on("error", () => socket.destroy());
+    wsProxy.ws(req, socket, head, { target: `http://localhost:${port}` });
+    wsProxy.on("error", () => socket.destroy());
   });
 }
