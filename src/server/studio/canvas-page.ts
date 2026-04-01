@@ -177,10 +177,10 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         }
       });
 
-      // Prevent browser zoom on Ctrl+wheel — let panzoom handle it
-      document.addEventListener("wheel", (e) => {
+      // Prevent browser zoom on Ctrl+wheel — capture phase on window, earliest intercept
+      window.addEventListener("wheel", (e) => {
         if (e.ctrlKey || e.metaKey) e.preventDefault();
-      }, { passive: false });
+      }, { passive: false, capture: true });
 
       loadLayoutThenRender();
       setInterval(pollForChanges, 3000);
