@@ -119,7 +119,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         maxZoom: 3,
         minZoom: 0.1,
         smoothScroll: false,
-        zoomSpeed: 0.15,
+        zoomSpeed: 0.25,
         filterKey: () => true,
         beforeMouseDown: (e) => {
           if (spaceDown) return true;
