@@ -38,6 +38,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     <div class="sep"></div>
     <button onclick="toggleTimeline()" title="Checkpoint History" id="btn-timeline">History</button>
     <button onclick="toggleAnnotate()" title="Add Feedback" id="btn-annotate">Annotate</button>
+    <div class="sep"></div>
+    <button onclick="toggleCanvasEdit()" title="Edit elements inline" id="btn-canvas-edit">Edit</button>
   </div>
 
   <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
@@ -118,9 +120,12 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         minZoom: 0.1,
         smoothScroll: true,
         zoomSpeed: 0.065,
+        pinchSpeed: 2,
         filterKey: () => true,
         beforeMouseDown: (e) => {
           if (spaceDown) return true;
+          // In edit mode, don't let panzoom grab iframe interactions
+          if (canvasEditMode && e.target.closest("iframe")) return false;
           return !e.target.closest(".screen-card");
         },
         beforeWheel: () => true,
@@ -280,7 +285,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
       // Click → preview overlay (only if not dragging or panning)
       card.addEventListener("click", (e) => {
-        if (spaceDown || dragStart?.moved) return;
+        if (spaceDown || dragStart?.moved || canvasEditMode) return;
         openPreview(name);
       });
 
@@ -803,6 +808,96 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
     // Load annotations on init
     loadAnnotations();
+
+    // --- Canvas Edit Mode ---
+    let canvasEditMode = false;
+    let canvasEditScreen = null; // track which screen a postMessage came from
+
+    async function toggleCanvasEdit() {
+      canvasEditMode = !canvasEditMode;
+      document.getElementById("btn-canvas-edit").classList.toggle("active", canvasEditMode);
+      document.getElementById("canvas-viewport").classList.toggle("canvas-edit-mode", canvasEditMode);
+
+      if (canvasEditMode) {
+        // Switch to dev mode for HMR
+        document.getElementById("btn-canvas-edit").textContent = "Starting...";
+        try {
+          await fetch("/api/projects/" + PROJECT + "/switch-to-dev", { method: "POST" });
+        } catch {}
+        document.getElementById("btn-canvas-edit").textContent = "Editing";
+
+        // Reload all card iframes with ?edit=1 and enable pointer events
+        Object.keys(cardEls).forEach(function(name) {
+          const card = cardEls[name];
+          const iframe = card.querySelector(".sc-iframe");
+          if (iframe) {
+            iframe.style.pointerEvents = "auto";
+            iframe.src = "/proxy/" + PROJECT + "/screens/" + name + "?edit=1";
+            iframe.dataset.screen = name;
+          }
+        });
+      } else {
+        document.getElementById("btn-canvas-edit").textContent = "Edit";
+        // Disable pointer events and reload without edit mode
+        Object.keys(cardEls).forEach(function(name) {
+          const card = cardEls[name];
+          const iframe = card.querySelector(".sc-iframe");
+          if (iframe) {
+            iframe.style.pointerEvents = "none";
+            iframe.src = "/proxy/" + PROJECT + "/screens/" + name;
+          }
+        });
+      }
+    }
+
+    // Listen for postMessage from editing runtimes in card iframes
+    window.addEventListener("message", async (e) => {
+      if (!e.data || !e.data.type || !canvasEditMode) return;
+
+      // Figure out which screen sent the message
+      let screenName = null;
+      Object.keys(cardEls).forEach(function(name) {
+        const iframe = cardEls[name].querySelector(".sc-iframe");
+        if (iframe && iframe.contentWindow === e.source) screenName = name;
+      });
+      if (!screenName) return;
+
+      if (e.data.type === "text-edited") {
+        showCanvasToast("Saving...");
+        try {
+          const res = await fetch("/api/projects/" + PROJECT + "/screens/" + screenName + "/edit-text", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ oldText: e.data.oldText, newText: e.data.newText }),
+          });
+          if (res.ok) showCanvasToast("Saved");
+          else showCanvasToast("Save failed");
+        } catch { showCanvasToast("Save failed"); }
+      }
+
+      if (e.data.type === "delete-element") {
+        showCanvasToast("Delete — coming soon");
+      }
+
+      if (e.data.type === "reorder-element") {
+        showCanvasToast("Reorder — coming soon");
+      }
+    });
+
+    function showCanvasToast(msg) {
+      // Reuse or create a canvas-level toast
+      let toast = document.getElementById("canvas-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "canvas-toast";
+        toast.className = "toast hidden";
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.classList.remove("hidden");
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => toast.classList.add("hidden"), 2000);
+    }
 
     // --- Auto-start polling ---
     ${!running ? `(function pollStart() {

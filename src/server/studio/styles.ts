@@ -632,6 +632,11 @@ export const CANVAS_CSS = `
   #canvas-viewport.annotate-mode .screen-card { cursor: crosshair; }
   #canvas-viewport.annotate-mode .sc-frame-label { cursor: crosshair; }
 
+  /* Canvas edit mode */
+  #canvas-viewport.canvas-edit-mode .screen-card .sc-iframe { pointer-events: auto !important; cursor: default; }
+  #canvas-viewport.canvas-edit-mode .screen-card .sc-frame-content { border-color: rgba(59,130,246,0.3); }
+  #canvas-viewport.canvas-edit-mode .screen-card:hover .sc-frame-content { border-color: rgba(59,130,246,0.5); }
+
   /* Feedback pins */
   .feedback-pin {
     position: absolute;
