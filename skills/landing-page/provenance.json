@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "version": 1,
+      "id": "webdev-landing-page-skill",
+      "type": "web-skill",
+      "name": "Landing Page",
+      "author": "webdev",
+      "license": "proprietary-webdev-seed",
+      "created": "2026-05-04",
+      "sourceNotes": "Original webdev-authored landing page skill: SKILL.md guidance, a single seed page.tsx, and three references. No structural or copy material taken from Open Design, Claude Design, Stitch, Pencil, or any named brand site. Tailwind token names match the bundled webdev project template's globals.css; underlying values can be rebound by a project DESIGN.md without code changes.",
+      "files": [
+        "SKILL.md",
+        "seed/page.tsx",
+        "references/layout-patterns.md",
+        "references/component-map.md",
+        "references/review-checklist.md"
+      ],
+      "cleanRoom": {
+        "original": true,
+        "copiedThirdPartyMaterial": false,
+        "reviewNotes": "Skill body, seed page, and references are written for webdev. Patterns referenced by name (hero, features, pricing) are common landing-page conventions, not copies of any specific source. Lucide icons and shadcn/ui component conventions are mentioned by name only; no code is vendored from those projects."
+      },
+      "thirdParty": [
+        {
+          "name": "Next.js",
+          "license": "MIT",
+          "usage": "Seed page is a Next App Router server component, consumed by the bundled webdev project template."
+        },
+        {
+          "name": "Tailwind CSS",
+          "license": "MIT",
+          "usage": "Seed uses Tailwind utility classes against the project template's globals.css token layer."
+        },
+        {
+          "name": "Lucide React",
+          "license": "ISC",
+          "usage": "Mentioned in references/component-map.md as the recommended icon source. No icon code is vendored in this skill."
+        },
+        {
+          "name": "shadcn/ui conventions",
+          "license": "MIT components when copied from the upstream registry; local component files must be reviewed before paid distribution.",
+          "usage": "Referenced by name in references/component-map.md as optional upgrades for projects that have shadcn installed. No shadcn components are vendored in this skill."
+        }
+      ]
+    }
+  ]
+}
