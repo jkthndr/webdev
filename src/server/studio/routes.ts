@@ -219,6 +219,50 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     res.json({ hash });
   });
 
+  // Production proof runs
+  router.get("/projects/:project/proof-runs", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    res.json({ proofRuns: pm.listProofRuns(project) });
+  });
+
+  router.post("/projects/:project/screens/:screen/proof", async (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const screen = String(req.params.screen);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    try {
+      const run = await pm.runProof(project, screen, {
+        viewport: req.body.viewport,
+        fullPage: req.body.fullPage,
+        message: req.body.message,
+      });
+      res.json({
+        ok: true,
+        proofRun: run,
+        screenshotUrl: `/api/projects/${project}/proof-runs/${run.id}/screenshot`,
+      });
+    } catch (e) {
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
+  router.get("/projects/:project/proof-runs/:id/screenshot", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const id = String(req.params.id);
+    const file = pm.getProofScreenshotPath(project, id);
+    if (!file) {
+      res.status(404).send("Proof screenshot not found");
+      return;
+    }
+    res.type("png").set("Cache-Control", "public, max-age=86400").sendFile(file);
+  });
+
   // List checkpoints
   router.get("/projects/:project/checkpoints", (req: Request, res: Response) => {
     const project = String(req.params.project);

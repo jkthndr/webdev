@@ -114,6 +114,44 @@ function createMcpServerWithTools(): McpServer {
     }
   );
 
+  // Tool 4: run_proof
+  mcp.tool(
+    "run_proof",
+    "Run the authoritative production proof for a screen: build/start production app, capture Playwright screenshot, and checkpoint the result.",
+    {
+      project: z.string().describe("Project name"),
+      screen: z.string().describe("Screen name"),
+      viewport: z.object({
+        width: z.number().default(1280),
+        height: z.number().default(800),
+      }).optional().describe("Viewport size (default 1280x800)"),
+      fullPage: z.boolean().optional().describe("Capture full page screenshot (default true)"),
+      message: z.string().optional().describe("Optional checkpoint message"),
+    },
+    async ({ project, screen, viewport, fullPage, message }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      try {
+        const proofRun = await pm.runProof(project, screen, { viewport, fullPage, message });
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              proofRun,
+              screenshotUrl: `/api/projects/${project}/proof-runs/${proofRun.id}/screenshot`,
+            }, null, 2),
+          }],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Proof failed: ${e instanceof Error ? e.message : String(e)}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
   // Tool 2: create_screen
   mcp.tool(
     "create_screen",

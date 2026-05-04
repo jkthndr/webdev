@@ -1,10 +1,12 @@
 import { ProjectWorkspaceService, type ProjectInfo } from "./workspace.js";
 import { ProjectCheckpointService } from "./checkpoint.js";
 import { DesignBriefService, type DesignBrief, type DesignBriefInput } from "./design-brief.js";
+import { ProjectProofService, type ProofRun, type ProofRunOptions } from "./proof.js";
 import { PreviewRuntimeService } from "./preview-runtime.js";
 
 export type { ProjectInfo };
 export type { DesignBrief, DesignBriefInput };
+export type { ProofRun, ProofRunOptions };
 
 /**
  * Thin facade that delegates to focused services.
@@ -15,12 +17,14 @@ export class ProjectManager {
   readonly checkpoints: ProjectCheckpointService;
   readonly designBriefs: DesignBriefService;
   readonly runtime: PreviewRuntimeService;
+  readonly proofs: ProjectProofService;
 
   constructor() {
     this.workspace = new ProjectWorkspaceService();
     this.checkpoints = new ProjectCheckpointService(this.workspace);
     this.designBriefs = new DesignBriefService(this.workspace);
     this.runtime = new PreviewRuntimeService(this.workspace);
+    this.proofs = new ProjectProofService(this.workspace, this.runtime, this.checkpoints);
   }
 
   // --- Workspace delegates ---
@@ -65,6 +69,24 @@ export class ProjectManager {
 
   saveDesignBrief(projectName: string, input: DesignBriefInput): DesignBrief {
     return this.designBriefs.saveDesignBrief(projectName, input);
+  }
+
+  // --- Proof run delegates ---
+
+  async runProof(projectName: string, screenName: string, options?: ProofRunOptions): Promise<ProofRun> {
+    return this.proofs.runProof(projectName, screenName, options);
+  }
+
+  listProofRuns(projectName: string): ProofRun[] {
+    return this.proofs.listProofRuns(projectName);
+  }
+
+  getProofRun(projectName: string, id: string): ProofRun | null {
+    return this.proofs.getProofRun(projectName, id);
+  }
+
+  getProofScreenshotPath(projectName: string, id: string): string | null {
+    return this.proofs.getProofScreenshotPath(projectName, id);
   }
 
   // --- Checkpoint delegates ---
