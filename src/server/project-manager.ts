@@ -1,8 +1,10 @@
 import { ProjectWorkspaceService, type ProjectInfo } from "./workspace.js";
 import { ProjectCheckpointService } from "./checkpoint.js";
+import { DesignBriefService, type DesignBrief, type DesignBriefInput } from "./design-brief.js";
 import { PreviewRuntimeService } from "./preview-runtime.js";
 
 export type { ProjectInfo };
+export type { DesignBrief, DesignBriefInput };
 
 /**
  * Thin facade that delegates to focused services.
@@ -11,11 +13,13 @@ export type { ProjectInfo };
 export class ProjectManager {
   readonly workspace: ProjectWorkspaceService;
   readonly checkpoints: ProjectCheckpointService;
+  readonly designBriefs: DesignBriefService;
   readonly runtime: PreviewRuntimeService;
 
   constructor() {
     this.workspace = new ProjectWorkspaceService();
     this.checkpoints = new ProjectCheckpointService(this.workspace);
+    this.designBriefs = new DesignBriefService(this.workspace);
     this.runtime = new PreviewRuntimeService(this.workspace);
   }
 
@@ -47,6 +51,20 @@ export class ProjectManager {
 
   editScreenCode(projectName: string, screenName: string, code: string): string {
     return this.workspace.editScreenCode(projectName, screenName, code);
+  }
+
+  // --- Design brief delegates ---
+
+  getDesignBrief(projectName: string): DesignBrief | null {
+    return this.designBriefs.getDesignBrief(projectName);
+  }
+
+  getOrCreateDesignBrief(projectName: string): DesignBrief {
+    return this.designBriefs.getOrCreateDesignBrief(projectName);
+  }
+
+  saveDesignBrief(projectName: string, input: DesignBriefInput): DesignBrief {
+    return this.designBriefs.saveDesignBrief(projectName, input);
   }
 
   // --- Checkpoint delegates ---
