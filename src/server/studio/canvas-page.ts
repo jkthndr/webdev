@@ -87,15 +87,23 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
     </div>
 
-    <!-- Right panel: Inspector -->
+    <!-- Right panel: Inspector + Run -->
     <div class="inspector-panel" id="inspector-panel">
       <div class="panel-tabs">
-        <button class="panel-tab active">Design</button>
+        <button class="panel-tab" data-rtab="run" onclick="switchInspectorTab('run')">Run</button>
+        <button class="panel-tab active" data-rtab="design" onclick="switchInspectorTab('design')">Design</button>
       </div>
-      <div id="inspector-content" class="inspector-content">
-        <div class="inspector-empty">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
-          <p>Click a screen to inspect</p>
+      <div id="rtab-design" class="tab-content active">
+        <div id="inspector-content" class="inspector-content">
+          <div class="inspector-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+            <p>Click a screen to inspect</p>
+          </div>
+        </div>
+      </div>
+      <div id="rtab-run" class="tab-content">
+        <div id="run-content" class="run-content">
+          <div class="run-loading">Loading proof runs…</div>
         </div>
       </div>
     </div>
@@ -285,6 +293,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       }, { passive: false, capture: true });
 
       loadLayoutThenRender();
+      loadProofRuns(); // WEBD-66: prime proof state for the Run tab + advisory plumbing
       setInterval(pollForChanges, 3000);
       window.addEventListener("beforeunload", saveLayout);
 
@@ -561,6 +570,159 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     function briefHtml(s) { return String(s || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function briefAttr(s) { return String(s || "").replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
+    // --- Proof Runs / Run Timeline (WEBD-66) ---
+    let proofRuns = [];
+    let proofLoaded = false;
+    let proofPollTimer = null;
+    let activeInspectorTab = "design";
+
+    function switchInspectorTab(tab) {
+      activeInspectorTab = tab;
+      document.querySelectorAll(".inspector-panel .panel-tab").forEach(t => t.classList.remove("active"));
+      const btn = document.querySelector('[data-rtab="' + tab + '"]');
+      if (btn) btn.classList.add("active");
+      document.querySelectorAll(".inspector-panel .tab-content").forEach(t => t.classList.remove("active"));
+      document.getElementById("rtab-" + tab).classList.add("active");
+      if (tab === "run") {
+        if (!proofLoaded) loadProofRuns();
+        startProofPolling();
+      } else {
+        stopProofPolling();
+      }
+    }
+
+    function startProofPolling() {
+      if (proofPollTimer) return;
+      proofPollTimer = setInterval(loadProofRuns, 8000);
+    }
+
+    function stopProofPolling() {
+      if (proofPollTimer) { clearInterval(proofPollTimer); proofPollTimer = null; }
+    }
+
+    async function loadProofRuns() {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/proof-runs");
+        const data = await res.json();
+        proofRuns = Array.isArray(data.proofRuns) ? data.proofRuns : [];
+        proofLoaded = true;
+        renderProofRuns();
+        updateProofState();
+      } catch {
+        const el = document.getElementById("run-content");
+        if (el) el.innerHTML = '<div class="run-error">Could not load proof runs. <button class="brief-retry" onclick="loadProofRuns()">Retry</button></div>';
+      }
+    }
+
+    function renderProofRuns() {
+      const el = document.getElementById("run-content");
+      if (!el) return;
+
+      // Filter to current screen if one is selected; otherwise show all
+      const filtered = selectedCard
+        ? proofRuns.filter(r => r.screen === selectedCard)
+        : proofRuns;
+
+      if (filtered.length === 0) {
+        const hint = selectedCard
+          ? 'No proof runs for <strong>' + briefHtml(selectedCard) + '</strong> yet.'
+          : 'No proof runs in this project yet.';
+        el.innerHTML = '<div class="run-empty">' +
+          '<div class="run-empty-icon">⊙</div>' +
+          '<div class="run-empty-title">No proof yet</div>' +
+          '<div class="run-empty-hint">' + hint + '</div>' +
+          '<div class="run-empty-hint">Run proof on a screen to capture the production-build screenshot. Live preview is advisory until then.</div>' +
+        '</div>';
+        return;
+      }
+
+      const latest = filtered[0];
+      const history = filtered.slice(1);
+
+      let html = '<div class="run-section run-section-latest">' +
+        '<div class="run-section-title">Latest run</div>' +
+        renderProofRunCard(latest, true) +
+      '</div>';
+
+      if (history.length > 0) {
+        html += '<div class="run-section">' +
+          '<div class="run-section-title">History (' + history.length + ')</div>' +
+          history.map(r => renderProofRunCard(r, false)).join("") +
+        '</div>';
+      }
+
+      el.innerHTML = html;
+    }
+
+    function renderProofRunCard(run, isLatest) {
+      const passed = run.status === "passed";
+      const pipClass = "run-status-pip " + (passed ? "passed" : "failed");
+      const pipGlyph = passed ? "✓" : "✗";
+      const vp = run.viewport ? run.viewport.width + "×" + run.viewport.height : "—";
+      const time = run.completedAt || run.startedAt;
+      const ago = briefRelativeTime(time);
+
+      let card = '<div class="run-item' + (passed ? " passed" : " failed") + (isLatest ? " latest" : "") + '">';
+
+      card += '<div class="run-item-header">' +
+        '<span class="' + pipClass + '">' + pipGlyph + '</span>' +
+        '<span class="run-screen">' + briefHtml(run.screen) + '</span>' +
+        '<span class="run-vp">' + vp + '</span>' +
+        '<span class="run-time">' + ago + '</span>' +
+      '</div>';
+
+      if (passed) {
+        if (isLatest && run.screenshotPath) {
+          card += '<a class="run-screenshot" href="/api/projects/' + PROJECT + '/proof-runs/' + run.id + '/screenshot" target="_blank">' +
+            '<img src="/api/projects/' + PROJECT + '/proof-runs/' + run.id + '/screenshot" alt="Proof screenshot" loading="lazy"/>' +
+          '</a>';
+        }
+        if (run.checkpointHash) {
+          card += '<div class="run-meta-row"><span class="run-meta-label">Checkpoint</span><span class="run-meta-mono">' + run.checkpointHash.slice(0, 7) + '</span></div>';
+        }
+      } else {
+        card += '<div class="run-failure">' +
+          '<div class="run-failure-stage">Failed at: <span class="run-meta-mono">' + briefHtml(run.failureStage || "unknown") + '</span></div>' +
+          (run.error ? '<div class="run-failure-error">' + briefHtml(run.error) + '</div>' : '') +
+        '</div>';
+      }
+
+      if (Array.isArray(run.changedFiles) && run.changedFiles.length > 0 && isLatest) {
+        card += '<details class="run-changed"' + (run.changedFiles.length <= 5 ? " open" : "") + '>' +
+          '<summary>Changed files (' + run.changedFiles.length + ')</summary>' +
+          '<ul class="run-changed-list">' +
+            run.changedFiles.map(f => '<li>' + briefHtml(f) + '</li>').join("") +
+          '</ul>' +
+        '</details>';
+      }
+
+      card += '</div>';
+      return card;
+    }
+
+    // Plumbing for WEBD-63 (advisory state) — sets a class on the inspector
+    // panel based on the latest proof status. WEBD-63 adds the CSS treatment.
+    function updateProofState() {
+      const panel = document.getElementById("inspector-panel");
+      if (!panel) return;
+      panel.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
+      const latest = proofRuns[0];
+      if (!latest) {
+        panel.classList.add("proof-none");
+        return;
+      }
+      if (latest.status === "failed") {
+        panel.classList.add("proof-failed");
+        return;
+      }
+      // Passed: stale if app source has changed since proof's checkpoint
+      if (latest.checkpointHash && currentHash && latest.checkpointHash.slice(0, 7) !== currentHash.slice(0, 7)) {
+        panel.classList.add("proof-stale");
+      } else {
+        panel.classList.add("proof-passed");
+      }
+    }
+
     // --- Screen List ---
     let domTrees = {}; // screen name -> tree data
 
@@ -624,6 +786,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       updateScreenList();
       updateInspector();
       if (domTrees[name]) updateLayersTree(name);
+      if (proofLoaded) renderProofRuns();
     }
 
     function deselectCard() {
@@ -632,6 +795,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       selectedElement = null;
       updateScreenList();
       updateInspector();
+      if (proofLoaded) renderProofRuns();
     }
 
     // --- Inspector (Pencil-style sections) ---
@@ -1036,6 +1200,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
             }
           });
           renderCards(screens, true);
+          // Proof state can become stale when source changes — refresh classification
+          if (proofLoaded) updateProofState();
         }
       } catch {}
     }

@@ -928,6 +928,204 @@ export const CANVAS_CSS = `
     color: rgba(124,144,112,0.85);
   }
 
+  /* Run timeline (WEBD-66) — lives in inspector "Run" tab */
+  .run-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .run-loading,
+  .run-error {
+    padding: 1.5rem 1rem;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+  .run-error { color: rgba(255,107,107,0.85); }
+
+  .run-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    color: rgba(255,255,255,0.45);
+    text-align: center;
+  }
+  .run-empty-icon {
+    font-size: 1.75rem;
+    color: rgba(255,255,255,0.2);
+  }
+  .run-empty-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+  .run-empty-hint {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    max-width: 18rem;
+  }
+
+  .run-section {
+    padding: 0.625rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .run-section:last-child { border-bottom: none; }
+
+  .run-section-title {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.25rem 0.875rem 0.4375rem;
+  }
+
+  .run-item {
+    padding: 0.5rem 0.875rem;
+    border-left: 2px solid transparent;
+  }
+  .run-item.passed { border-left-color: rgba(124,144,112,0.5); }
+  .run-item.failed { border-left-color: rgba(255,107,107,0.5); }
+  .run-item.latest { background: rgba(255,255,255,0.025); }
+
+  .run-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .run-status-pip {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .run-status-pip.passed { background: var(--s-sage); }
+  .run-status-pip.failed { background: var(--s-coral); }
+
+  .run-screen {
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .run-vp {
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .run-time {
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.4);
+    flex-shrink: 0;
+  }
+
+  .run-screenshot {
+    display: block;
+    margin: 0.5rem 0 0.4375rem;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #1a1917;
+  }
+  .run-screenshot img {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: top center;
+    max-height: 220px;
+  }
+  .run-screenshot:hover { border-color: rgba(255,107,107,0.5); }
+
+  .run-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.3125rem;
+    font-size: 0.6875rem;
+  }
+  .run-meta-label {
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .run-meta-mono {
+    font-family: var(--s-mono);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .run-failure {
+    margin-top: 0.4375rem;
+    padding: 0.5rem 0.625rem;
+    background: rgba(255,107,107,0.08);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 4px;
+  }
+  .run-failure-stage {
+    font-size: 0.6875rem;
+    color: rgba(255,107,107,0.85);
+    margin-bottom: 0.25rem;
+  }
+  .run-failure-error {
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-height: 8rem;
+    overflow-y: auto;
+  }
+
+  .run-changed {
+    margin-top: 0.4375rem;
+    font-size: 0.75rem;
+  }
+  .run-changed > summary {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    padding: 0.1875rem 0;
+    list-style: none;
+    user-select: none;
+  }
+  .run-changed > summary::-webkit-details-marker { display: none; }
+  .run-changed > summary::before {
+    content: "▸ ";
+    color: rgba(255,255,255,0.3);
+  }
+  .run-changed[open] > summary::before {
+    content: "▾ ";
+  }
+  .run-changed-list {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.6);
+  }
+  .run-changed-list li {
+    padding: 0.125rem 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* Inspector panel (right) */
   .inspector-panel {
     width: 280px;
