@@ -742,6 +742,192 @@ export const CANVAS_CSS = `
     text-overflow: ellipsis;
   }
 
+  /* Design Brief panel (WEBD-60) — lives in left-panel "Brief" tab */
+  .brief-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .brief-loading,
+  .brief-error {
+    padding: 1.5rem 1rem;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+
+  .brief-error { color: rgba(255,107,107,0.85); }
+
+  .brief-retry {
+    margin-left: 0.5rem;
+    background: transparent;
+    border: 1px solid rgba(255,107,107,0.4);
+    color: var(--s-coral);
+    padding: 0.125rem 0.625rem;
+    border-radius: 0.25rem;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .brief-retry:hover { background: rgba(255,107,107,0.1); }
+
+  .brief-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .brief-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .brief-status-dot.saved { background: var(--s-sage); }
+  .brief-status-dot.new { background: var(--s-gold); }
+
+  .brief-section {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .brief-section-title {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4375rem;
+  }
+
+  .brief-input,
+  .brief-textarea,
+  .brief-chip-input {
+    width: 100%;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.9);
+    border-radius: 4px;
+    padding: 0.4375rem 0.5625rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .brief-input:focus,
+  .brief-textarea:focus,
+  .brief-chip-input:focus {
+    outline: none;
+    border-color: rgba(255,107,107,0.5);
+    background: rgba(0,0,0,0.3);
+  }
+
+  .brief-textarea {
+    resize: vertical;
+    min-height: 4rem;
+    font-family: inherit;
+  }
+
+  .brief-input::placeholder,
+  .brief-textarea::placeholder,
+  .brief-chip-input::placeholder {
+    color: rgba(255,255,255,0.25);
+  }
+
+  .brief-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3125rem;
+    margin-bottom: 0.4375rem;
+    min-height: 0;
+  }
+  .brief-chips:empty { margin-bottom: 0; }
+
+  .brief-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    background: rgba(255,107,107,0.12);
+    color: var(--s-coral);
+    border: 1px solid rgba(255,107,107,0.25);
+    padding: 0.1875rem 0.4375rem 0.1875rem 0.5625rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    max-width: 100%;
+  }
+
+  .brief-chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 11rem;
+  }
+
+  .brief-chip-remove {
+    background: none;
+    border: none;
+    color: rgba(255,107,107,0.7);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .brief-chip-remove:hover { background: rgba(255,107,107,0.25); color: white; }
+
+  .brief-chip-input {
+    font-size: 0.75rem;
+    padding: 0.3125rem 0.5625rem;
+    background: rgba(0,0,0,0.15);
+    border-style: dashed;
+  }
+
+  .brief-save-bar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    background: linear-gradient(to top, #242320 70%, rgba(36,35,32,0.85));
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 5;
+  }
+
+  .brief-save-btn {
+    background: var(--s-coral);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .brief-save-btn:hover:not(:disabled) { background: var(--s-orange); }
+  .brief-save-btn:disabled { opacity: 0.4; cursor: default; }
+
+  .brief-saved {
+    font-size: 0.6875rem;
+    color: rgba(124,144,112,0.85);
+  }
+
   /* Inspector panel (right) */
   .inspector-panel {
     width: 280px;

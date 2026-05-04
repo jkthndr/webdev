@@ -47,11 +47,17 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       </button>
     </div>
 
-    <!-- Left panel: Screens / Layers -->
+    <!-- Left panel: Brief / Screens / Layers -->
     <div class="left-panel" id="left-panel">
       <div class="panel-tabs">
+        <button class="panel-tab" data-tab="brief" onclick="switchLeftTab('brief')">Brief</button>
         <button class="panel-tab active" data-tab="screens" onclick="switchLeftTab('screens')">Screens</button>
         <button class="panel-tab" data-tab="layers" onclick="switchLeftTab('layers')">Layers</button>
+      </div>
+      <div id="tab-brief" class="tab-content">
+        <div class="brief-panel" id="brief-panel">
+          <div class="brief-loading">Loading brief…</div>
+        </div>
       </div>
       <div id="tab-screens" class="tab-content active">
         <div id="screen-list" class="screen-list"></div>
@@ -346,7 +352,214 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       document.querySelector('[data-tab="' + tab + '"]').classList.add("active");
       document.querySelectorAll(".left-panel .tab-content").forEach(t => t.classList.remove("active"));
       document.getElementById("tab-" + tab).classList.add("active");
+      if (tab === "brief" && !briefLoaded) loadDesignBrief();
     }
+
+    // --- Design Brief Panel (WEBD-60) ---
+    let briefState = null;
+    let briefExists = false;
+    let briefLoaded = false;
+    let briefDirty = false;
+    let briefSaveTimer = null;
+
+    const BRIEF_CHIP_FIELDS = ["goals", "tone", "mustHaves", "avoid", "inspiration"];
+    const BRIEF_CHIP_LABELS = {
+      goals: "Goals",
+      tone: "Tone",
+      mustHaves: "Must-haves",
+      avoid: "Avoid",
+      inspiration: "Inspiration",
+    };
+    const BRIEF_CHIP_PLACEHOLDERS = {
+      goals: "+ add goal (Enter)",
+      tone: "+ add tone (Enter)",
+      mustHaves: "+ add must-have (Enter)",
+      avoid: "+ add avoid (Enter)",
+      inspiration: "+ link or reference (Enter)",
+    };
+
+    function emptyBrief() {
+      return {
+        title: "", summary: "", audience: "",
+        goals: [], tone: [], mustHaves: [], avoid: [], inspiration: [],
+        routes: [], notes: "",
+        createdAt: "", updatedAt: "",
+      };
+    }
+
+    async function loadDesignBrief() {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/design-brief");
+        const data = await res.json();
+        briefState = data.brief || emptyBrief();
+        briefExists = !!data.exists;
+        briefLoaded = true;
+        briefDirty = false;
+        renderBriefPanel();
+      } catch {
+        document.getElementById("brief-panel").innerHTML =
+          '<div class="brief-error">Could not load brief. <button class="brief-retry" onclick="loadDesignBrief()">Retry</button></div>';
+      }
+    }
+
+    function renderBriefPanel() {
+      const panel = document.getElementById("brief-panel");
+      const b = briefState || emptyBrief();
+      const status = briefExists
+        ? '<span class="brief-status-dot saved"></span><span class="brief-status-text">Saved ' + briefRelativeTime(b.updatedAt) + '</span>'
+        : '<span class="brief-status-dot new"></span><span class="brief-status-text">No brief yet — fill out and save</span>';
+
+      let html = '<div class="brief-status">' + status + '</div>';
+
+      html += briefSection("Title", '<input class="brief-input" id="brief-title" placeholder="Project title" value="' + briefAttr(b.title) + '"/>');
+      html += briefSection("Summary", '<textarea class="brief-textarea" id="brief-summary" rows="3" placeholder="What we are building, why, for whom">' + briefHtml(b.summary) + '</textarea>');
+      html += briefSection("Audience", '<input class="brief-input" id="brief-audience" placeholder="Who is the user?" value="' + briefAttr(b.audience) + '"/>');
+
+      BRIEF_CHIP_FIELDS.forEach(function(field) {
+        html += briefSection(BRIEF_CHIP_LABELS[field], renderBriefChips(field, b[field] || []));
+      });
+
+      html += briefSection("Notes", '<textarea class="brief-textarea" id="brief-notes" rows="3" placeholder="Anything else worth noting">' + briefHtml(b.notes) + '</textarea>');
+
+      html += '<div class="brief-save-bar">' +
+        '<button class="brief-save-btn" id="brief-save-btn" onclick="saveBrief()" disabled>Save brief</button>' +
+        '<span class="brief-saved" id="brief-saved"></span>' +
+      '</div>';
+
+      panel.innerHTML = html;
+      attachBriefHandlers();
+    }
+
+    function briefSection(title, body) {
+      return '<div class="brief-section">' +
+        '<div class="brief-section-title">' + title + '</div>' +
+        body +
+      '</div>';
+    }
+
+    function renderBriefChips(field, values) {
+      const chips = values.map(function(v, i) {
+        return '<span class="brief-chip" data-field="' + field + '" data-idx="' + i + '">' +
+          '<span class="brief-chip-text">' + briefHtml(v) + '</span>' +
+          '<button class="brief-chip-remove" onclick="removeBriefChip(\\'' + field + '\\', ' + i + ')" aria-label="Remove">&times;</button>' +
+        '</span>';
+      }).join("");
+      return '<div class="brief-chips">' + chips + '</div>' +
+        '<input class="brief-chip-input" data-field="' + field + '" placeholder="' + BRIEF_CHIP_PLACEHOLDERS[field] + '"/>';
+    }
+
+    function attachBriefHandlers() {
+      ["brief-title", "brief-summary", "brief-audience", "brief-notes"].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", markBriefDirty);
+      });
+      document.querySelectorAll(".brief-chip-input").forEach(function(input) {
+        input.addEventListener("keydown", function(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const value = input.value.trim();
+            if (!value) return;
+            addBriefChip(input.dataset.field, value);
+            input.value = "";
+          }
+        });
+      });
+    }
+
+    function markBriefDirty() {
+      briefDirty = true;
+      const btn = document.getElementById("brief-save-btn");
+      if (btn) btn.disabled = false;
+      const saved = document.getElementById("brief-saved");
+      if (saved) saved.textContent = "";
+    }
+
+    function addBriefChip(field, value) {
+      if (!briefState) briefState = emptyBrief();
+      briefState[field] = (briefState[field] || []).concat([value]);
+      markBriefDirty();
+      // Re-render only the affected section to preserve focus on input
+      flushBriefScalars();
+      renderBriefPanel();
+      const input = document.querySelector('.brief-chip-input[data-field="' + field + '"]');
+      if (input) input.focus();
+    }
+
+    function removeBriefChip(field, idx) {
+      if (!briefState || !Array.isArray(briefState[field])) return;
+      briefState[field] = briefState[field].filter(function(_, i) { return i !== idx; });
+      markBriefDirty();
+      flushBriefScalars();
+      renderBriefPanel();
+    }
+
+    function flushBriefScalars() {
+      // Capture current input values into briefState before re-render
+      const titleEl = document.getElementById("brief-title");
+      const summaryEl = document.getElementById("brief-summary");
+      const audienceEl = document.getElementById("brief-audience");
+      const notesEl = document.getElementById("brief-notes");
+      if (!briefState) briefState = emptyBrief();
+      if (titleEl) briefState.title = titleEl.value;
+      if (summaryEl) briefState.summary = summaryEl.value;
+      if (audienceEl) briefState.audience = audienceEl.value;
+      if (notesEl) briefState.notes = notesEl.value;
+    }
+
+    async function saveBrief() {
+      flushBriefScalars();
+      const btn = document.getElementById("brief-save-btn");
+      const saved = document.getElementById("brief-saved");
+      if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/design-brief", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: briefState.title || "",
+            summary: briefState.summary || "",
+            audience: briefState.audience || "",
+            goals: briefState.goals || [],
+            tone: briefState.tone || [],
+            mustHaves: briefState.mustHaves || [],
+            avoid: briefState.avoid || [],
+            inspiration: briefState.inspiration || [],
+            notes: briefState.notes || "",
+          }),
+        });
+        if (!res.ok) throw new Error("save failed");
+        const data = await res.json();
+        briefState = data.brief;
+        briefExists = true;
+        briefDirty = false;
+        if (btn) { btn.textContent = "Save brief"; btn.disabled = true; }
+        if (saved) saved.textContent = "Saved";
+        // Update only the status header, preserve form focus
+        const statusEl = document.querySelector(".brief-status");
+        if (statusEl) {
+          statusEl.innerHTML =
+            '<span class="brief-status-dot saved"></span>' +
+            '<span class="brief-status-text">Saved ' + briefRelativeTime(briefState.updatedAt) + '</span>';
+        }
+      } catch (e) {
+        if (btn) { btn.textContent = "Save brief"; btn.disabled = false; }
+        if (saved) saved.textContent = "Save failed";
+      }
+    }
+
+    function briefRelativeTime(iso) {
+      if (!iso) return "";
+      const then = new Date(iso).getTime();
+      if (!then) return "";
+      const diff = Date.now() - then;
+      if (diff < 30 * 1000) return "just now";
+      if (diff < 60 * 60 * 1000) return Math.round(diff / 60000) + "m ago";
+      if (diff < 24 * 60 * 60 * 1000) return Math.round(diff / 3600000) + "h ago";
+      return new Date(iso).toLocaleDateString();
+    }
+
+    function briefHtml(s) { return String(s || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function briefAttr(s) { return String(s || "").replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
     // --- Screen List ---
     let domTrees = {}; // screen name -> tree data
