@@ -162,6 +162,27 @@ function createMcpServerWithTools(): McpServer {
     }
   );
 
+  // Tool 5: get_generation_context
+  mcp.tool(
+    "get_generation_context",
+    "Get the context agents should use before generating or revising a screen: design brief, current screen code, and unresolved Studio feedback.",
+    {
+      project: z.string().describe("Project name"),
+      screen: z.string().optional().describe("Optional screen name to scope code and feedback"),
+    },
+    async ({ project, screen }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(pm.getGenerationContext(project, screen), null, 2),
+        }],
+      };
+    }
+  );
+
   // Tool 2: create_screen
   mcp.tool(
     "create_screen",

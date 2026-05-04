@@ -166,6 +166,16 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     }
   });
 
+  router.get("/projects/:project/generation-context", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const screen = typeof req.query.screen === "string" ? req.query.screen : null;
+    res.json(pm.getGenerationContext(project, screen));
+  });
+
   // Screen thumbnail
   router.get("/projects/:project/screens/:screen/thumbnail", async (req: Request, res: Response) => {
     const project = String(req.params.project);

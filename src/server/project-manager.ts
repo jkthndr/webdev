@@ -1,11 +1,13 @@
 import { ProjectWorkspaceService, type ProjectInfo } from "./workspace.js";
 import { ProjectCheckpointService } from "./checkpoint.js";
 import { DesignBriefService, type DesignBrief, type DesignBriefInput } from "./design-brief.js";
+import { GenerationContextService, type GenerationContext } from "./generation-context.js";
 import { ProjectProofService, type ProofRun, type ProofRunOptions } from "./proof.js";
 import { PreviewRuntimeService } from "./preview-runtime.js";
 
 export type { ProjectInfo };
 export type { DesignBrief, DesignBriefInput };
+export type { GenerationContext };
 export type { ProofRun, ProofRunOptions };
 
 /**
@@ -16,6 +18,7 @@ export class ProjectManager {
   readonly workspace: ProjectWorkspaceService;
   readonly checkpoints: ProjectCheckpointService;
   readonly designBriefs: DesignBriefService;
+  readonly generationContext: GenerationContextService;
   readonly runtime: PreviewRuntimeService;
   readonly proofs: ProjectProofService;
 
@@ -23,6 +26,7 @@ export class ProjectManager {
     this.workspace = new ProjectWorkspaceService();
     this.checkpoints = new ProjectCheckpointService(this.workspace);
     this.designBriefs = new DesignBriefService(this.workspace);
+    this.generationContext = new GenerationContextService(this.workspace);
     this.runtime = new PreviewRuntimeService(this.workspace);
     this.proofs = new ProjectProofService(this.workspace, this.runtime, this.checkpoints);
   }
@@ -69,6 +73,13 @@ export class ProjectManager {
 
   saveDesignBrief(projectName: string, input: DesignBriefInput): DesignBrief {
     return this.designBriefs.saveDesignBrief(projectName, input);
+  }
+
+  getGenerationContext(projectName: string, screenName?: string | null): GenerationContext {
+    return this.generationContext.buildContext(projectName, {
+      screen: screenName,
+      designBrief: this.getDesignBrief(projectName),
+    });
   }
 
   // --- Proof run delegates ---
