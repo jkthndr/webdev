@@ -137,6 +137,34 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     res.json({ ok: true });
   });
 
+  // Persistent design brief
+  router.get("/projects/:project/design-brief", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const existing = pm.getDesignBrief(project);
+    res.json({
+      exists: existing !== null,
+      brief: existing ?? pm.getOrCreateDesignBrief(project),
+    });
+  });
+
+  router.put("/projects/:project/design-brief", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    try {
+      const brief = pm.saveDesignBrief(project, req.body || {});
+      res.json({ ok: true, brief });
+    } catch (e) {
+      res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
   // Screen thumbnail
   router.get("/projects/:project/screens/:screen/thumbnail", async (req: Request, res: Response) => {
     const project = String(req.params.project);

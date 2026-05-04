@@ -10,6 +10,12 @@ export interface DesignBriefRoute {
   status: "planned" | "draft" | "approved";
 }
 
+export interface DesignBriefRouteInput {
+  name: string;
+  purpose?: string;
+  status?: DesignBriefRoute["status"];
+}
+
 export interface DesignBrief {
   version: typeof DESIGN_BRIEF_VERSION;
   project: string;
@@ -27,7 +33,9 @@ export interface DesignBrief {
   updatedAt: string;
 }
 
-export type DesignBriefInput = Partial<Omit<DesignBrief, "version" | "project" | "createdAt" | "updatedAt">>;
+export type DesignBriefInput = Partial<Omit<DesignBrief, "version" | "project" | "routes" | "createdAt" | "updatedAt">> & {
+  routes?: DesignBriefRouteInput[];
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);

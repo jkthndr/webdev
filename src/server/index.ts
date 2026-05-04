@@ -13,6 +13,25 @@ import { createProxyRouter, setupWebSocketProxy } from "./studio/proxy.js";
 
 const pm = new ProjectManager();
 
+const designBriefRouteSchema = z.object({
+  name: z.string().describe("Route/screen name, e.g. dashboard"),
+  purpose: z.string().optional().describe("What this route should help the user do"),
+  status: z.enum(["planned", "draft", "approved"]).optional().describe("Route design status"),
+});
+
+const designBriefInputSchema = {
+  title: z.string().optional().describe("Short product/design brief title"),
+  summary: z.string().optional().describe("Plain-language summary of the desired experience"),
+  audience: z.string().optional().describe("Who this design is for"),
+  goals: z.array(z.string()).optional().describe("Product/design goals"),
+  tone: z.array(z.string()).optional().describe("Visual and UX tone words"),
+  mustHaves: z.array(z.string()).optional().describe("Required content, components, or behaviors"),
+  avoid: z.array(z.string()).optional().describe("Things the generated design should avoid"),
+  routes: z.array(designBriefRouteSchema).optional().describe("Routes/screens the project should include"),
+  inspiration: z.array(z.string()).optional().describe("References, products, or design cues to consider"),
+  notes: z.string().optional().describe("Additional notes for future generation runs"),
+};
+
 // --- MCP Server Factory ---
 
 function createMcpServerWithTools(): McpServer {
@@ -47,6 +66,51 @@ function createMcpServerWithTools(): McpServer {
           isError: true,
         };
       }
+    }
+  );
+
+  // Tool 2: get_design_brief
+  mcp.tool(
+    "get_design_brief",
+    "Get the persistent design brief for a project. Returns an empty brief if none has been saved yet.",
+    { project: z.string().describe("Project name") },
+    async ({ project }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(pm.getOrCreateDesignBrief(project), null, 2),
+        }],
+      };
+    }
+  );
+
+  // Tool 3: set_design_brief
+  mcp.tool(
+    "set_design_brief",
+    "Create or update the persistent design brief for a project. Only supplied fields are changed.",
+    {
+      project: z.string().describe("Project name"),
+      ...designBriefInputSchema,
+    },
+    async ({ project, ...input }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      const brief = pm.saveDesignBrief(project, input);
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            saved: true,
+            project,
+            updatedAt: brief.updatedAt,
+            brief,
+          }, null, 2),
+        }],
+      };
     }
   );
 
