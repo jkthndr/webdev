@@ -2,7 +2,7 @@
 
 Run this checklist before moving a generated landing page from draft to proof. Anything in the AI tells section is a soft block; anything in the structural section is a hard block.
 
-## AI tells (soft block — fix before approval)
+## AI tells (soft block - fix before approval)
 
 - Purple or violet gradients. Default landing palette is warm coral, not synthetic purple.
 - Emoji used as feature-block icons. Use lucide icons or omit the icon.
@@ -13,7 +13,7 @@ Run this checklist before moving a generated landing page from draft to proof. A
 - Three-paragraph CTAs. One sentence is enough.
 - Six feature columns. Three is enough; four if the brief justifies it.
 
-## Structural (hard block — fix before approval)
+## Structural (hard block - fix before approval)
 
 - Headline does not say what the product is. The hero must answer "what is this" in plain words.
 - Two competing primary CTAs. The hero should have one primary and at most one secondary.

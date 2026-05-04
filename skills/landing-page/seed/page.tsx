@@ -1,4 +1,4 @@
-// Landing page seed — webdev landing-page skill.
+// Landing page seed - webdev landing-page skill.
 // Replace placeholder copy with values from the design brief before rendering.
 // Section order and structure can stay; words and feature mapping are the work.
 
@@ -109,7 +109,7 @@ function Features() {
             <div key={feature.title} className="rounded-lg border border-border bg-card p-6">
               <div className="mb-4 inline-flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-primary">
                 {/* Replace with a meaningful icon. Lucide is available in the template. */}
-                <span className="text-sm font-semibold">·</span>
+                <span className="text-sm font-semibold">.</span>
               </div>
               <h3 className="text-lg font-semibold">{feature.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{feature.body}</p>
@@ -128,8 +128,8 @@ function SocialProof() {
     <section className="border-b border-border bg-secondary/40">
       <div className="mx-auto max-w-4xl px-6 py-20 text-center">
         <blockquote className="text-2xl font-medium leading-snug tracking-tight md:text-3xl">
-          “A real quote from a real user, kept short and specific. Cut placeholder
-          superlatives — they signal generated copy.”
+          "A real quote from a real user, kept short and specific. Cut placeholder
+          superlatives - they signal generated copy."
         </blockquote>
         <p className="mt-6 text-sm text-muted-foreground">
           Real name, real role, real company. Omit this section if you do not have one.
@@ -236,7 +236,7 @@ function Footer() {
   return (
     <footer>
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-6 py-10 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p>© {new Date().getFullYear()} Product. Replace with real entity.</p>
+        <p>(c) {new Date().getFullYear()} Product. Replace with real entity.</p>
         <nav className="flex items-center gap-6">
           <a href="#privacy" className="hover:text-foreground">Privacy</a>
           <a href="#terms" className="hover:text-foreground">Terms</a>

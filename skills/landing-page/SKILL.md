@@ -6,7 +6,7 @@ Goal: turn a brief into a single TSX route that renders a believable production-
 
 ## When to use
 
-Use this skill when the design brief's `surface` is `landing` and the brief covers a product or service. Skip for dashboards, internal tools, auth flows, or doc pages — those have their own skills.
+Use this skill when the design brief's `surface` is `landing` and the brief covers a product or service. Skip for dashboards, internal tools, auth flows, or doc pages; those have their own skills.
 
 ## Output shape
 
