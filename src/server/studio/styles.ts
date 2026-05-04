@@ -1344,6 +1344,19 @@ export const CANVAS_CSS = `
     background: rgba(245,197,66,0.2);
     color: var(--s-gold);
   }
+  .sc-proof-status.blocked {
+    background: rgba(255,107,107,0.2);
+    color: var(--s-coral);
+  }
+
+  .sc-proof-warning {
+    padding: 0.4375rem 0.625rem;
+    background: rgba(255,107,107,0.1);
+    border-top: 1px solid rgba(255,107,107,0.25);
+    color: rgba(255,107,107,0.95);
+    font-size: 0.6875rem;
+    line-height: 1.45;
+  }
 
   .sc-proof-meta-mono {
     font-family: var(--s-mono);

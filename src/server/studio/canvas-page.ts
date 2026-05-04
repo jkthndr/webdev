@@ -815,21 +815,38 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       }
 
       proofBtn.disabled = false;
-      proofBtn.title = "Latest production proof (authoritative) — " + briefRelativeTime(run.completedAt);
       const screenshotUrl = "/api/projects/" + PROJECT + "/proof-runs/" + run.id + "/screenshot";
       const vp = run.viewport ? run.viewport.width + "×" + run.viewport.height : "—";
       const checkpoint = run.checkpointHash ? run.checkpointHash.slice(0, 7) : "—";
       const ago = briefRelativeTime(run.completedAt);
-      const isStale = screenProofStatus[name] === "stale";
+
+      // Trust hierarchy: when the LATEST proof for this screen is failed,
+      // an older passing artifact is still inspectable but must NOT be
+      // labeled "Current". Failed dominates over older passing.
+      // (Codex review finding on wave 1 — Penny seconded.)
+      const status = screenProofStatus[name];
+      const isFailed = status === "failed";
+      const isStale = status === "stale";
+      const badgeClass = isFailed ? "blocked" : isStale ? "stale" : "current";
+      const badgeLabel = isFailed ? "Last passing proof"
+        : isStale ? "Stale proof"
+        : "Current proof";
+      proofBtn.title = isFailed
+        ? "Last passing proof (latest run failed — see Run tab)"
+        : "Latest production proof (authoritative), " + ago;
+
+      let warning = "";
+      if (isFailed) {
+        warning = '<div class="sc-proof-warning">Latest proof failed. Showing the last passing artifact for inspection only — not authoritative.</div>';
+      }
 
       proofView.innerHTML =
         '<a class="sc-proof-img" href="' + screenshotUrl + '" target="_blank" title="Open proof screenshot">' +
           '<img src="' + screenshotUrl + '" alt="Proof screenshot of ' + briefAttr(name) + '" loading="lazy"/>' +
         '</a>' +
+        warning +
         '<div class="sc-proof-meta">' +
-          '<span class="sc-proof-status ' + (isStale ? "stale" : "current") + '">' +
-            (isStale ? "Stale proof" : "Current proof") +
-          '</span>' +
+          '<span class="sc-proof-status ' + badgeClass + '">' + badgeLabel + '</span>' +
           '<span class="sc-proof-meta-mono">' + checkpoint + '</span>' +
           '<span class="sc-proof-meta-mono">' + vp + '</span>' +
           '<span class="sc-proof-meta-time">' + ago + '</span>' +
