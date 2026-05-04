@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdev Design Tool - Visual Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --coral: #ff6b6b;
+      --coral-soft: #ff8e8e;
+      --coral-dark: #d94d4d;
+      --orange: #e8773a;
+      --orange-dark: #c85f2c;
+      --gold: #f5c542;
+      --sage: #7c9070;
+      --sage-dark: #53684b;
+      --sky: #4c8f9f;
+      --bg: #fff5f2;
+      --paper: #fffdf8;
+      --paper-warm: #fff9f0;
+      --ink: #191817;
+      --ink-soft: #49443f;
+      --ink-muted: #6e665f;
+      --border: #f2cfc3;
+      --border-soft: #ffe6dd;
+      --shadow-sm: 0 1px 3px rgba(200, 95, 44, 0.07);
+      --shadow-md: 0 7px 22px rgba(200, 95, 44, 0.12);
+      --shadow-lg: 0 18px 55px rgba(200, 95, 44, 0.16);
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(920px 460px at 9% -8%, rgba(255, 107, 107, 0.10), transparent 62%),
+        radial-gradient(780px 430px at 104% 0%, rgba(245, 197, 66, 0.14), transparent 58%),
+        linear-gradient(180deg, #fff8f3 0%, var(--bg) 38%, #fff7eb 100%);
+    }
+
+    a {
+      color: var(--orange-dark);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    code {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--border-soft);
+      color: var(--coral-dark);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 46px 0 100px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 22px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .hero-mark {
+      width: 66px;
+      height: 66px;
+      border-radius: 19px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, var(--coral), var(--orange) 64%, var(--gold));
+      box-shadow: var(--shadow-md);
+    }
+
+    .hero-mark svg {
+      width: 38px;
+      height: 38px;
+      fill: none;
+      stroke: #fffdf8;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--orange-dark);
+    }
+
+    h1, h2, h3 {
+      font-family: "Bricolage Grotesque", "Manrope", sans-serif;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 0.98;
+      font-weight: 800;
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      color: var(--ink-muted);
+      font-size: 16px;
+      line-height: 1.55;
+      max-width: 760px;
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .verdict {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 20px 22px;
+      background: linear-gradient(135deg, #fff9e8, var(--paper));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .verdict-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--gold);
+      color: var(--ink);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(25, 24, 23, 0.08);
+    }
+
+    .verdict strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16px;
+      color: var(--ink);
+    }
+
+    .verdict p {
+      margin: 0;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      font-size: 14.5px;
+    }
+
+    .quick-links {
+      padding: 18px 18px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quick-links h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .link-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .file-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--paper-warm);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      color: var(--ink-soft);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .file-link span {
+      color: var(--orange-dark);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      padding: 16px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      min-height: 128px;
+      display: grid;
+      align-content: space-between;
+      gap: 14px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .stat-value {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 34px;
+      line-height: 0.95;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .stat-value.small {
+      font-size: 22px;
+      line-height: 1.05;
+    }
+
+    .stat-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--ink-muted);
+    }
+
+    .tabs {
+      position: sticky;
+      top: 12px;
+      z-index: 30;
+      display: flex;
+      gap: 6px;
+      padding: 5px;
+      margin: 0 0 26px;
+      background: rgba(255, 253, 248, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: saturate(140%) blur(8px);
+      overflow-x: auto;
+    }
+
+    .tab {
+      flex: 1;
+      min-width: max-content;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 10px 17px;
+      transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .tab:hover { color: var(--ink); }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--coral), var(--orange));
+      color: #fffdf8;
+      box-shadow: 0 3px 10px rgba(232, 119, 58, 0.32);
+    }
+
+    .tab .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--border-soft);
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tab.active .count {
+      background: rgba(255, 255, 255, 0.24);
+      color: #fffdf8;
+    }
+
+    .panel { display: none; }
+    .panel.active {
+      display: block;
+      animation: panelIn 180ms ease-out;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 0 0 14px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 34px);
+      line-height: 1.05;
+    }
+
+    .section-head p {
+      margin: 0;
+      max-width: 540px;
+      color: var(--ink-muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .pill.coral { background: var(--coral); color: #fffdf8; }
+    .pill.orange { background: var(--orange); color: #fffdf8; }
+    .pill.sage { background: #e7efe0; color: var(--sage-dark); }
+    .pill.gold { background: var(--gold); color: var(--ink); }
+    .pill.muted { background: var(--border-soft); color: var(--ink-soft); }
+    .pill.sky { background: #e2f2f0; color: #286d77; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card:hover {
+      border-color: var(--coral-soft);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card h3 {
+      margin: 12px 0 8px;
+      font-size: 21px;
+      line-height: 1.15;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 14.5px;
+      line-height: 1.62;
+    }
+
+    .card ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card li { margin: 6px 0; }
+
+    .wide { grid-column: 1 / -1; }
+
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 9px;
+      padding: 14px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 22px;
+    }
+
+    .loop-step {
+      position: relative;
+      padding: 14px 12px;
+      min-height: 118px;
+      background: var(--paper-warm);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+    }
+
+    .loop-step::after {
+      content: "";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      width: 10px;
+      height: 2px;
+      background: var(--border);
+    }
+
+    .loop-step:last-child::after { display: none; }
+
+    .loop-num {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      background: var(--coral);
+      color: #fffdf8;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .loop-step strong {
+      display: block;
+      font-size: 13.5px;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .loop-step span {
+      display: block;
+      margin-top: 6px;
+      color: var(--ink-muted);
+      font-size: 11.5px;
+      line-height: 1.4;
+    }
+
+    .compare-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      background: var(--paper);
+      margin-bottom: 22px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #fff3e8;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { font-weight: 900; color: var(--ink); }
+    td { color: var(--ink-soft); line-height: 1.55; }
+
+    .target-cell {
+      background: #f4f8ef;
+      color: #364d2d;
+      font-weight: 700;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .milestone {
+      display: grid;
+      grid-template-columns: 92px 1fr auto;
+      gap: 16px;
+      align-items: start;
+      padding: 18px 20px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .milestone strong {
+      display: block;
+      margin-bottom: 4px;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 19px;
+      line-height: 1.1;
+    }
+
+    .milestone p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .milestone ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--ink-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .phase {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--orange-dark);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cutline {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .cutline .card { min-height: 100%; }
+
+    .check-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .check {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 9px;
+      align-items: start;
+      color: var(--ink-soft);
+      font-size: 13.5px;
+      line-height: 1.45;
+    }
+
+    .check::before {
+      content: "";
+      width: 15px;
+      height: 15px;
+      margin-top: 2px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: inset 0 0 0 4px #eaf1e3;
+    }
+
+    .check.warn::before {
+      background: var(--gold);
+      box-shadow: inset 0 0 0 4px #fff4c6;
+    }
+
+    .check.stop::before {
+      background: var(--coral);
+      box-shadow: inset 0 0 0 4px #ffe0df;
+    }
+
+    .quote {
+      padding: 18px 20px;
+      background: linear-gradient(135deg, #edf5e7, var(--paper));
+      border: 1px solid #cadabd;
+      border-radius: var(--radius);
+      color: var(--ink-soft);
+      font-size: 14.5px;
+      line-height: 1.65;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quote strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--sage-dark);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .source-row a {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .status-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+      padding: 18px 20px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 12px;
+    }
+
+    .status-card h3 {
+      margin: 0 0 6px;
+      font-size: 19px;
+    }
+
+    .status-card p {
+      margin: 0;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--sage-dark);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .status-dot::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 0 4px #e8f0e1;
+    }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    @media (max-width: 940px) {
+      .topline,
+      .card-grid,
+      .cutline {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .loop {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .loop-step::after { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(100% - 26px, 1120px);
+        padding-top: 28px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .hero-mark {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+      }
+
+      .stats,
+      .loop {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        top: 6px;
+      }
+
+      .tab {
+        padding: 9px 13px;
+        font-size: 13px;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head p {
+        margin-top: 8px;
+      }
+
+      .milestone,
+      .status-card {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="hero-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3l7.4 4.3v8.4L12 20l-7.4-4.3V7.3L12 3z" />
+          <path d="M8.4 9.1h7.2M8.4 12h7.2M8.4 14.9h4.5" />
+        </svg>
+      </div>
+      <div>
+        <p class="eyebrow">Visual strategy brief - May 4, 2026</p>
+        <h1>webdev as a design-to-code studio</h1>
+        <p>This is the readable version of the research: what to borrow from Open Design, what to avoid, and the smallest useful MVP path for web design only.</p>
+      </div>
+    </header>
+
+    <section class="topline" aria-label="Bottom line and files">
+      <div class="verdict">
+        <div class="verdict-badge">1</div>
+        <div>
+          <strong>The product should stay narrow.</strong>
+          <p>webdev should not become a broad creative suite. The strongest path is production web UI: brief in, real TSX out, live real-app preview, Playwright screenshot, pinned feedback, git checkpoint, then iterate.</p>
+        </div>
+      </div>
+
+      <aside class="quick-links">
+        <h2>Source docs</h2>
+        <div class="link-grid">
+          <a class="file-link" href="./open-design-webdev-analysis.md">Open Design analysis <span>MD</span></a>
+          <a class="file-link" href="./webdev-v1-product-requirements.md">V1 PRD / spec <span>MD</span></a>
+          <a class="file-link" href="./license-boundary.md">Clean-room boundary <span>MD</span></a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="stats" aria-label="Key numbers and decisions">
+      <div class="stat">
+        <div>
+          <div class="stat-label">Open Design scan</div>
+          <div class="stat-value">63</div>
+          <div class="stat-sub">Skill folders inspected in the repo snapshot.</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="stat-label">Design-system catalog</div>
+          <div class="stat-value">138</div>
+          <div class="stat-sub">Design-system directories found. Useful pattern, not safe content to copy.</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="stat-label">webdev edge</div>
+          <div class="stat-value small">Real TSX</div>
+          <div class="stat-sub">The source of truth is production code, not a screenshot or HTML-only artifact.</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="stat-label">First build target</div>
+          <div class="stat-value small">Thin loop</div>
+          <div class="stat-sub">Prove one excellent screen generation loop before platform work.</div>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Visual brief tabs">
+      <button class="tab active" data-tab="snapshot">Snapshot <span class="count">4</span></button>
+      <button class="tab" data-tab="compare">Compare <span class="count">9</span></button>
+      <button class="tab" data-tab="build">Build Order <span class="count">5</span></button>
+      <button class="tab" data-tab="guardrails">Guardrails <span class="count">6</span></button>
+      <button class="tab" data-tab="bridge">Bridge <span class="count">3</span></button>
+    </nav>
+
+    <section id="snapshot" class="panel active" aria-labelledby="snapshot-title">
+      <div class="section-head">
+        <div>
+          <span class="pill coral">Strategy</span>
+          <h2 id="snapshot-title">What this tool is, and what it is not</h2>
+        </div>
+        <p>Open Design has good workflow ideas. webdev has a better production-fidelity foundation. The win is combining those without cloning the broader product.</p>
+      </div>
+
+      <div class="card-grid">
+        <article class="card">
+          <span class="pill sage">This is webdev</span>
+          <h3>Self-hosted web UI design-to-code</h3>
+          <p>An agent takes a brief, creates real React/TSX screens, shows a live preview from the running app, captures Playwright approval screenshots, checkpoints with git, and hands off the code.</p>
+          <ul>
+            <li>Next.js + Tailwind + shadcn/ui output</li>
+            <li>Studio for screenshots, comments, diffs, and approval</li>
+            <li>MCP/API surface for agents</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <span class="pill muted">This is not webdev</span>
+          <h3>Not a general creative studio</h3>
+          <p>Do not chase decks, office docs, image generation, video, audio, or a Figma-style vector editor. Those broaden the surface before the core loop is even lovable.</p>
+          <ul>
+            <li>No slide deck generator</li>
+            <li>No generic HTML artifact playground</li>
+            <li>No bundled brand-replica design systems</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <span class="pill orange">Borrow the workflow</span>
+          <h3>Guided brief, skills, run progress</h3>
+          <p>Open Design proves that users need taste scaffolding: short discovery, design-system context, style recipes, visible run status, and critique before approval.</p>
+          <ul>
+            <li>Structured brief before generation</li>
+            <li>User-owned <code>DESIGN.md</code></li>
+            <li>Design lint and review gates</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <span class="pill gold">Keep the edge</span>
+          <h3>Do not lose the TSX source of truth</h3>
+          <p>The strongest webdev differentiator is that the design is already the code. The product should make that loop easier to drive, not introduce a separate design format.</p>
+          <ul>
+            <li>Code is the deliverable</li>
+            <li>Screenshots prove render fidelity</li>
+            <li>Git checkpoints make iteration safe</li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="loop" aria-label="Recommended MVP loop">
+        <div class="loop-step"><span class="loop-num">1</span><strong>Brief</strong><span>Capture surface, audience, tone, constraints.</span></div>
+        <div class="loop-step"><span class="loop-num">2</span><strong>Generate</strong><span>Create one TSX screen from the brief.</span></div>
+        <div class="loop-step"><span class="loop-num">3</span><strong>Live preview</strong><span>Show the real proxied Next route in Studio.</span></div>
+        <div class="loop-step"><span class="loop-num">4</span><strong>Screenshot</strong><span>Build, then prove it with Playwright.</span></div>
+        <div class="loop-step"><span class="loop-num">5</span><strong>Checkpoint</strong><span>Commit the generated state with git.</span></div>
+        <div class="loop-step"><span class="loop-num">6</span><strong>Feedback</strong><span>Pin comments, regenerate, approve.</span></div>
+      </div>
+    </section>
+
+    <section id="compare" class="panel" aria-labelledby="compare-title">
+      <div class="section-head">
+        <div>
+          <span class="pill sky">Comparison</span>
+          <h2 id="compare-title">webdev vs Open Design</h2>
+        </div>
+        <p>Only the web-design portions matter here. Decks, docs, image/video/audio, and broad creative workflows are intentionally ignored.</p>
+      </div>
+
+      <div class="compare-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>webdev today</th>
+              <th>Open Design</th>
+              <th>Target for webdev</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Core thesis</td>
+              <td>Designs are real Next/TSX screens.</td>
+              <td>Artifacts are generated files, often HTML/JSX/CSS.</td>
+              <td class="target-cell">Keep TSX as the source of truth. Add guided product workflow around it.</td>
+            </tr>
+            <tr>
+              <td>Interface</td>
+              <td>MCP authoring tools plus Studio pages.</td>
+              <td>Chat UI, daemon, agent picker, skill picker, preview.</td>
+              <td class="target-cell">Studio becomes chat + canvas + code/screenshot review.</td>
+            </tr>
+            <tr>
+              <td>Rendering</td>
+              <td>Playwright screenshot of the real app, plus an existing preview runtime/proxy.</td>
+              <td>Sandboxed iframe preview.</td>
+              <td class="target-cell">Make live preview mandatory, but point it at the real proxied Next route. Playwright remains the approval proof. No separate <code>srcdoc</code> artifact path.</td>
+            </tr>
+            <tr>
+              <td>Discovery</td>
+              <td>No required design brief.</td>
+              <td>Structured question form before creation.</td>
+              <td class="target-cell">Add one short guided brief path before create-from-prompt.</td>
+            </tr>
+            <tr>
+              <td>Design systems</td>
+              <td>Hardcoded shadcn/Tailwind template.</td>
+              <td>Markdown <code>DESIGN.md</code> catalog with many systems.</td>
+              <td class="target-cell">Support user-owned <code>DESIGN.md</code>, then convert to tokens.</td>
+            </tr>
+            <tr>
+              <td>Skills/templates</td>
+              <td>No first-class skill catalog.</td>
+              <td>Large catalog across many creative surfaces.</td>
+              <td class="target-cell">Small web-only TSX skills: landing, dashboard, auth, settings, pricing.</td>
+            </tr>
+            <tr>
+              <td>Feedback</td>
+              <td>Studio feedback pins exist.</td>
+              <td>Comments and artifact workspace.</td>
+              <td class="target-cell">Turn pins into run context and targeted patch requests.</td>
+            </tr>
+            <tr>
+              <td>Persistence</td>
+              <td>Filesystem projects, git checkpoints, Studio JSON.</td>
+              <td>SQLite plus files.</td>
+              <td class="target-cell">Add minimal run/brief/comment state only after the loop proves it needs it.</td>
+            </tr>
+            <tr>
+              <td>Commercial risk</td>
+              <td>Clean direction but incomplete MVP.</td>
+              <td>Apache-2.0 repo with broad borrowed/brand-like catalog risk.</td>
+              <td class="target-cell">Clean-room implementation with original templates and provenance.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="quote">
+        <strong>Decision</strong>
+        Borrow product patterns, not content. The concepts are fair game: guided brief, file-based skills, markdown design systems, progress events, linting, and read-only handoff. The source files, prompts, templates, brand systems, and UX copy are not.
+      </div>
+
+      <div class="card wide">
+        <span class="pill coral">Rendering decision</span>
+        <h3>Live preview is real app preview</h3>
+        <p>Studio can embed an iframe, but that iframe should load <code>/proxy/&lt;project&gt;/screens/&lt;screen&gt;</code>, which proxies the running Next app. Playwright screenshots are still generated after build/start and become the approval, diff, QA, and handoff artifact.</p>
+      </div>
+    </section>
+
+    <section id="build" class="panel" aria-labelledby="build-title">
+      <div class="section-head">
+        <div>
+          <span class="pill orange">Roadmap</span>
+          <h2 id="build-title">The fastest MVP path</h2>
+        </div>
+        <p>Penny pushed on this usefully: do the vertical loop first. Make one screen generation cycle feel real before building a platform around it.</p>
+      </div>
+
+      <div class="timeline">
+        <article class="milestone">
+          <div class="phase">M0</div>
+          <div>
+            <strong>Align the running environment</strong>
+            <p>Resolve the current deployment/Tailscale mismatch and e2e port collision. This avoids building on a confusing base.</p>
+            <ul>
+              <li>Pick canonical host: <code>100.115.18.15</code> or <code>100.102.138.90</code>.</li>
+              <li>Keep Docker, local dev, and tests from fighting over ports.</li>
+            </ul>
+          </div>
+          <span class="pill gold">First</span>
+        </article>
+
+        <article class="milestone">
+          <div class="phase">M1</div>
+          <div>
+            <strong>Prove the vertical loop</strong>
+            <p>Capture a brief, generate one TSX screen, build, screenshot, checkpoint, and collect pinned feedback.</p>
+            <ul>
+              <li>Add <code>create_screen_from_brief</code>.</li>
+              <li>Show run status and changed files in Studio.</li>
+            </ul>
+          </div>
+          <span class="pill coral">MVP core</span>
+        </article>
+
+        <article class="milestone">
+          <div class="phase">M2</div>
+          <div>
+            <strong>Wrap the proven loop</strong>
+            <p>Add minimal persistence, project home, user-owned <code>DESIGN.md</code>, original style recipes, and a small web skill registry.</p>
+          </div>
+          <span class="pill sage">After proof</span>
+        </article>
+
+        <article class="milestone">
+          <div class="phase">M3</div>
+          <div>
+            <strong>Feedback, quality, and handoff</strong>
+            <p>Turn feedback pins into agent tasks, add design lint, approval states, visual diffs, and read-only handoff MCP tools.</p>
+          </div>
+          <span class="pill sky">Quality</span>
+        </article>
+
+        <article class="milestone">
+          <div class="phase">M4</div>
+          <div>
+            <strong>Commercial hardening</strong>
+            <p>Original template library, auth/workspace model, billing hooks, and import/export polish. Keep this behind MVP proof.</p>
+          </div>
+          <span class="pill muted">Later</span>
+        </article>
+      </div>
+
+      <div class="cutline">
+        <article class="card">
+          <span class="pill sage">Must have</span>
+          <h3>V1 core</h3>
+          <div class="check-list">
+            <div class="check">One guided brief path for one web screen.</div>
+            <div class="check">Real TSX output in the existing scaffold.</div>
+            <div class="check">Build, screenshot, checkpoint after generation.</div>
+            <div class="check">Pinned feedback available to the next run.</div>
+          </div>
+        </article>
+        <article class="card">
+          <span class="pill gold">Defer</span>
+          <h3>Earn their way in</h3>
+          <div class="check-list">
+            <div class="check warn">Full SQLite history beyond run/feedback basics.</div>
+            <div class="check warn">Rich design-system editor/API.</div>
+            <div class="check warn">Large skill marketplace or registry UI.</div>
+            <div class="check warn">Claude Design ZIP import.</div>
+          </div>
+        </article>
+        <article class="card">
+          <span class="pill coral">Do not build</span>
+          <h3>Out of scope</h3>
+          <div class="check-list">
+            <div class="check stop">Slides, docs, social graphics, audio, video.</div>
+            <div class="check stop">Figma-style vector editing.</div>
+            <div class="check stop">Broad agent-orchestration playground.</div>
+            <div class="check stop">Bundled third-party brand systems.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="guardrails" class="panel" aria-labelledby="guardrails-title">
+      <div class="section-head">
+        <div>
+          <span class="pill gold">Commercial safety</span>
+          <h2 id="guardrails-title">Clean-room rules</h2>
+        </div>
+        <p>The goal is to learn from the market while keeping webdev original enough for a future paid product.</p>
+      </div>
+
+      <div class="card-grid">
+        <article class="card">
+          <span class="pill coral">Never copy</span>
+          <h3>Protected product material</h3>
+          <p>No Open Design source code, prompts, skill bodies, template files, design-system markdown, generated examples, assets, or UX copy.</p>
+        </article>
+
+        <article class="card">
+          <span class="pill sage">Allowed</span>
+          <h3>General product patterns</h3>
+          <p>It is fine to independently implement common ideas: guided brief capture, run history, screenshot review, design lint, and read-only handoff tools.</p>
+        </article>
+
+        <article class="card">
+          <span class="pill orange">Original content</span>
+          <h3>Templates and style recipes</h3>
+          <p>Every bundled template, style recipe, prompt, and sample screen should be authored for webdev and carry provenance metadata.</p>
+        </article>
+
+        <article class="card">
+          <span class="pill sky">User content</span>
+          <h3>Imports and design systems</h3>
+          <p>User-provided screenshots, imported ZIPs, and company <code>DESIGN.md</code> files can guide a project, but should not become redistributed boilerplate.</p>
+        </article>
+      </div>
+
+      <div class="card wide">
+        <span class="pill muted">Provenance example</span>
+        <h3>What every bundled recipe should carry</h3>
+        <p><code>author: webdev</code> <code>license: project-license</code> <code>created: 2026-05-04</code> <code>notes: Original work. No third-party source copied.</code></p>
+      </div>
+    </section>
+
+    <section id="bridge" class="panel" aria-labelledby="bridge-title">
+      <div class="section-head">
+        <div>
+          <span class="pill sage">Agent bridge</span>
+          <h2 id="bridge-title">Coordination status</h2>
+        </div>
+        <p>The bridge thread is active, Penny has reviewed the plan, and Claude has been explicitly mentioned for review.</p>
+      </div>
+
+      <article class="status-card">
+        <div>
+          <h3>Thread created</h3>
+          <p><code>webdev-design-tool-v1-plan</code> was opened in agent-bridge with Penny and Claude. The plan and updated docs were posted there.</p>
+        </div>
+        <span class="status-dot">Active</span>
+      </article>
+
+      <article class="status-card">
+        <div>
+          <h3>Penny's key pushback</h3>
+          <p>Milestone 1 was too platform-heavy. She recommended proving the core loop first: brief -> TSX -> live real-app preview -> Playwright screenshot -> human feedback -> git checkpoint. That feedback is now folded into the PRD.</p>
+        </div>
+        <span class="status-dot">Applied</span>
+      </article>
+
+      <article class="status-card">
+        <div>
+          <h3>Next technical move</h3>
+          <p>Start with Milestone 0, then build the vertical slice. The best first implementation target is <code>create_screen_from_brief</code> plus Studio run status and screenshot feedback wiring.</p>
+        </div>
+        <span class="status-dot">Queued</span>
+      </article>
+
+      <div class="source-row" aria-label="External sources">
+        <a href="https://github.com/nexu-io/open-design">Open Design repo</a>
+        <a href="https://www.anthropic.com/news/claude-design-anthropic-labs">Claude Design announcement</a>
+        <a href="https://support.claude.com/en/articles/14604416-get-started-with-claude-design">Claude Design help center</a>
+      </div>
+    </section>
+
+    <footer>
+      Built as a visual companion to the markdown specs in <code>C:\Users\olive\Projects\webdev\docs</code>. Scope is web design only.
+    </footer>
+  </main>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+    const panels = Array.from(document.querySelectorAll(".panel"));
+
+    function activateTab(id) {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.tab === id;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", String(active));
+      });
+      panels.forEach((panel) => {
+        panel.classList.toggle("active", panel.id === id);
+      });
+      if (location.hash !== "#" + id) {
+        history.replaceState(null, "", "#" + id);
+      }
+    }
+
+    tabs.forEach((tab) => {
+      tab.setAttribute("role", "tab");
+      tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+    });
+
+    panels.forEach((panel) => panel.setAttribute("role", "tabpanel"));
+
+    const initial = location.hash.replace("#", "");
+    if (initial && document.getElementById(initial)) {
+      activateTab(initial);
+    }
+  </script>
+</body>
+</html>

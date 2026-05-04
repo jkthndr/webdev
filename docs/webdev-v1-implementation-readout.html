@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdev V1 - Implementation Readout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --coral: #ff6b6b;
+      --coral-soft: #ff8e8e;
+      --coral-dark: #d94d4d;
+      --orange: #e8773a;
+      --orange-dark: #c85f2c;
+      --gold: #f5c542;
+      --sage: #7c9070;
+      --sage-dark: #53684b;
+      --teal: #4c8f9f;
+      --bg: #fff5f2;
+      --paper: #fffdf8;
+      --paper-warm: #fff9f0;
+      --ink: #191817;
+      --ink-soft: #49443f;
+      --ink-muted: #6e665f;
+      --border: #f2cfc3;
+      --border-soft: #ffe6dd;
+      --shadow-sm: 0 1px 3px rgba(200, 95, 44, 0.07);
+      --shadow-md: 0 7px 22px rgba(200, 95, 44, 0.12);
+      --shadow-lg: 0 18px 55px rgba(200, 95, 44, 0.16);
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 450px at 8% -8%, rgba(255, 107, 107, 0.10), transparent 62%),
+        radial-gradient(760px 420px at 104% 0%, rgba(245, 197, 66, 0.14), transparent 58%),
+        linear-gradient(180deg, #fff8f3 0%, var(--bg) 40%, #fff7eb 100%);
+    }
+
+    a {
+      color: var(--orange-dark);
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    code {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.88em;
+      background: var(--border-soft);
+      color: var(--coral-dark);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+
+    .shell {
+      width: min(1160px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 46px 0 100px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 22px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .hero-mark {
+      width: 66px;
+      height: 66px;
+      border-radius: 19px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--coral), var(--orange) 64%, var(--gold));
+      box-shadow: var(--shadow-md);
+    }
+
+    .hero-mark svg {
+      width: 38px;
+      height: 38px;
+      fill: none;
+      stroke: #fffdf8;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--orange-dark);
+    }
+
+    h1, h2, h3 {
+      font-family: "Bricolage Grotesque", "Manrope", sans-serif;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 0.98;
+      font-weight: 800;
+    }
+
+    .hero p {
+      margin: 10px 0 0;
+      color: var(--ink-muted);
+      font-size: 16px;
+      line-height: 1.55;
+      max-width: 780px;
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: 1.65fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .verdict,
+    .panel-card,
+    .stat,
+    .lane,
+    .ticket,
+    .dependency,
+    .branch-card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .verdict {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 20px 22px;
+      background: linear-gradient(135deg, #fff9e8, var(--paper));
+    }
+
+    .verdict-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--gold);
+      color: var(--ink);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(25, 24, 23, 0.08);
+    }
+
+    .verdict strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16px;
+      color: var(--ink);
+    }
+
+    .verdict p,
+    .panel-card p,
+    .lane p,
+    .ticket p,
+    .dependency p,
+    .branch-card p {
+      margin: 0;
+      color: var(--ink-soft);
+      line-height: 1.6;
+      font-size: 14.5px;
+    }
+
+    .quick-links {
+      padding: 18px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quick-links h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .link-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .file-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--paper-warm);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      color: var(--ink-soft);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .file-link span {
+      color: var(--orange-dark);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      padding: 16px;
+      min-height: 128px;
+      display: grid;
+      align-content: space-between;
+      gap: 14px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-muted);
+    }
+
+    .stat-value {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 34px;
+      line-height: 0.95;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .stat-value.small {
+      font-size: 22px;
+      line-height: 1.05;
+    }
+
+    .stat-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--ink-muted);
+    }
+
+    .tabs {
+      position: sticky;
+      top: 12px;
+      z-index: 30;
+      display: flex;
+      gap: 6px;
+      padding: 5px;
+      margin: 0 0 26px;
+      background: rgba(255, 253, 248, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: saturate(140%) blur(8px);
+      overflow-x: auto;
+    }
+
+    .tab {
+      flex: 1;
+      min-width: max-content;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ink-muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 10px 17px;
+      transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .tab:hover { color: var(--ink); }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--coral), var(--orange));
+      color: #fffdf8;
+      box-shadow: 0 3px 10px rgba(232, 119, 58, 0.32);
+    }
+
+    .tab .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--border-soft);
+      color: var(--ink-muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tab.active .count {
+      background: rgba(255, 255, 255, 0.24);
+      color: #fffdf8;
+    }
+
+    .panel { display: none; }
+
+    .panel.active {
+      display: block;
+      animation: panelIn 180ms ease-out;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 0 0 14px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 34px);
+      line-height: 1.05;
+    }
+
+    .section-head p {
+      margin: 0;
+      max-width: 540px;
+      color: var(--ink-muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .pill.coral { background: var(--coral); color: #fffdf8; }
+    .pill.orange { background: var(--orange); color: #fffdf8; }
+    .pill.sage { background: #e7efe0; color: var(--sage-dark); }
+    .pill.gold { background: var(--gold); color: var(--ink); }
+    .pill.muted { background: var(--border-soft); color: var(--ink-soft); }
+    .pill.teal { background: #e2f2f0; color: #286d77; }
+    .pill.critical { background: #ffe0df; color: var(--coral-dark); }
+
+    .lane-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .lane {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .lane h3,
+    .ticket h3,
+    .dependency h3,
+    .branch-card h3,
+    .panel-card h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .lane-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ticket-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 25px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--paper-warm);
+      border: 1px solid var(--border-soft);
+      color: var(--ink-soft);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .chip.codex { background: #fff0e8; color: var(--orange-dark); }
+    .chip.claude { background: #e7efe0; color: var(--sage-dark); }
+    .chip.blocker { background: #ffe0df; color: var(--coral-dark); }
+
+    .ticket-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .ticket {
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .ticket:hover,
+    .lane:hover,
+    .dependency:hover,
+    .branch-card:hover {
+      border-color: var(--coral-soft);
+      box-shadow: var(--shadow-md);
+    }
+
+    .ticket-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .ticket-id {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--orange-dark);
+    }
+
+    .branch {
+      display: inline-flex;
+      width: fit-content;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--ink-muted);
+      background: var(--paper-warm);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 5px 7px;
+    }
+
+    .owner-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .dependency-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .dependency {
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .path {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .path .arrow {
+      color: var(--ink-muted);
+      font-weight: 900;
+    }
+
+    .branch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .branch-card {
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      background: var(--paper);
+      margin-bottom: 22px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 920px;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    th, td {
+      padding: 13px 15px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    th {
+      background: #fff3e8;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td { color: var(--ink-soft); line-height: 1.5; }
+    td:first-child { font-family: "JetBrains Mono", monospace; font-weight: 900; color: var(--orange-dark); white-space: nowrap; }
+
+    .note {
+      padding: 18px 20px;
+      background: linear-gradient(135deg, #edf5e7, var(--paper));
+      border: 1px solid #cadabd;
+      border-radius: var(--radius);
+      color: var(--ink-soft);
+      font-size: 14.5px;
+      line-height: 1.65;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 22px;
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--sage-dark);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .panel-card {
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+
+    .panel-card h3 { margin-bottom: 8px; }
+
+    footer {
+      margin-top: 48px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      color: var(--ink-muted);
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .topline,
+      .lane-grid,
+      .dependency-grid,
+      .branch-grid,
+      .ticket-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .shell {
+        width: min(100% - 26px, 1160px);
+        padding-top: 28px;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .hero-mark {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head p {
+        margin-top: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="hero-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 6.5h16M4 12h16M4 17.5h16" />
+          <path d="M7 4.5v4M13 10v4M18 15.5v4" />
+        </svg>
+      </div>
+      <div>
+        <p class="eyebrow">Implementation readout - Playbook WEBD-55 to WEBD-70</p>
+        <h1>webdev V1 work split</h1>
+        <p>A visual map of who owns what, how the branches should split, and how the tickets build toward the V1 loop: brief -> TSX -> real-app preview -> Playwright proof -> feedback -> checkpoint.</p>
+      </div>
+    </header>
+
+    <section class="topline" aria-label="Bottom line and source links">
+      <div class="verdict">
+        <div class="verdict-badge">16</div>
+        <div>
+          <strong>Small tasks, frequent finish lines.</strong>
+          <p>The work is split into feature-branch-sized tickets. Codex owns ops, storage, proof, failure handling, feedback context, provenance, and smoke testing. Claude owns Studio-facing UI, live preview, generation shell, run timeline, and the first skill seed. Penny stays in the loop for scope review.</p>
+        </div>
+      </div>
+
+      <aside class="quick-links">
+        <h2>Where this lives</h2>
+        <div class="link-grid">
+          <a class="file-link" href="http://100.102.138.90:3095">Playbook 3095 <span>APP</span></a>
+          <a class="file-link" href="./webdev-v1-product-requirements.md">V1 PRD <span>MD</span></a>
+          <a class="file-link" href="./webdev-design-tool-visual-brief.html">Visual brief <span>HTML</span></a>
+          <a class="file-link" href="../AGENTS.md">Agent notes <span>OPS</span></a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="stats" aria-label="Implementation stats">
+      <div class="stat">
+        <div>
+          <div class="stat-label">Tickets created</div>
+          <div class="stat-value">16</div>
+          <div class="stat-sub">WEBD-55 through WEBD-70 in Playbook.</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="stat-label">Codex owns</div>
+          <div class="stat-value">10</div>
+          <div class="stat-sub">Ops, persistence, proof path, feedback, smoke tests.</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="stat-label">Claude owns</div>
+          <div class="stat-value">6</div>
+          <div class="stat-sub">Studio UI, preview, generation shell, run timeline, seed.</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div>
+          <div class="stat-label">Proof rule</div>
+          <div class="stat-value small">Prod wins</div>
+          <div class="stat-sub">Dev preview is advisory. Playwright proof is authoritative.</div>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Implementation tabs">
+      <button class="tab active" data-tab="lanes">Lanes <span class="count">6</span></button>
+      <button class="tab" data-tab="owners">Owners <span class="count">16</span></button>
+      <button class="tab" data-tab="sequence">Sequence <span class="count">5</span></button>
+      <button class="tab" data-tab="branches">Branches <span class="count">3</span></button>
+    </nav>
+
+    <section id="lanes" class="panel active" aria-labelledby="lanes-title">
+      <div class="section-head">
+        <div>
+          <span class="pill orange">Work lanes</span>
+          <h2 id="lanes-title">How the work is grouped</h2>
+        </div>
+        <p>Each lane has a clear outcome and contains small tickets. The lanes are not giant phases; they are coordination buckets.</p>
+      </div>
+
+      <div class="lane-grid">
+        <article class="lane">
+          <div class="lane-top">
+            <h3>Ops and readiness</h3>
+            <span class="pill muted">Foundation</span>
+          </div>
+          <p>Remove session friction: future agents know Playbook, deploy target is clear, and e2e/dev ports stop colliding.</p>
+          <div class="ticket-strip">
+            <span class="chip codex">WEBD-55</span>
+            <span class="chip codex">WEBD-56</span>
+            <span class="chip codex">WEBD-57</span>
+          </div>
+        </article>
+
+        <article class="lane">
+          <div class="lane-top">
+            <h3>Brief capture</h3>
+            <span class="pill sage">Input</span>
+          </div>
+          <p>Create the small structured brief layer the generation loop needs, without jumping into full platform persistence.</p>
+          <div class="ticket-strip">
+            <span class="chip codex">WEBD-58</span>
+            <span class="chip codex">WEBD-59</span>
+            <span class="chip claude">WEBD-60</span>
+          </div>
+        </article>
+
+        <article class="lane">
+          <div class="lane-top">
+            <h3>Generation and preview</h3>
+            <span class="pill teal">Build surface</span>
+          </div>
+          <p>Add the first create-from-brief path and embed the real generated Next route as the live preview.</p>
+          <div class="ticket-strip">
+            <span class="chip claude">WEBD-61</span>
+            <span class="chip claude">WEBD-62</span>
+            <span class="chip claude">WEBD-63</span>
+          </div>
+        </article>
+
+        <article class="lane">
+          <div class="lane-top">
+            <h3>Proof pipeline</h3>
+            <span class="pill critical">Critical</span>
+          </div>
+          <p>Make production build/start plus Playwright screenshot the only approval path, then surface run details in Studio.</p>
+          <div class="ticket-strip">
+            <span class="chip codex">WEBD-64</span>
+            <span class="chip codex">WEBD-65</span>
+            <span class="chip claude">WEBD-66</span>
+          </div>
+        </article>
+
+        <article class="lane">
+          <div class="lane-top">
+            <h3>Feedback and clean-room seed</h3>
+            <span class="pill gold">Iteration</span>
+          </div>
+          <p>Feed pinned comments into the next run and add one original web skill seed with provenance metadata.</p>
+          <div class="ticket-strip">
+            <span class="chip codex">WEBD-67</span>
+            <span class="chip claude">WEBD-68</span>
+            <span class="chip codex">WEBD-69</span>
+          </div>
+        </article>
+
+        <article class="lane">
+          <div class="lane-top">
+            <h3>End-to-end validation</h3>
+            <span class="pill coral">Proof</span>
+          </div>
+          <p>Smoke test the full V1 loop so we know the pieces work together before expanding scope.</p>
+          <div class="ticket-strip">
+            <span class="chip codex">WEBD-70</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="note">
+        <strong>Coordination rule</strong>
+        Penny can be pulled in for product and scope judgment, especially if a task tries to grow beyond the vertical loop. Claude can help implement, but the branches should stay disjoint so integration is boring in the good way.
+      </div>
+    </section>
+
+    <section id="owners" class="panel" aria-labelledby="owners-title">
+      <div class="section-head">
+        <div>
+          <span class="pill sage">Ownership</span>
+          <h2 id="owners-title">Who owns each task</h2>
+        </div>
+        <p>These are intentionally short-ish tasks. Each one should have a visible result and a branch that can be reviewed independently.</p>
+      </div>
+
+      <div class="ticket-grid">
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-55</span><span class="pill muted">Codex</span></div>
+          <h3>Record Playbook/3095 agent ops</h3>
+          <p>Outcome: future Codex agents know the Playbook URL, project id, auth method, and task workflow.</p>
+          <span class="branch">codex/playbook-agent-ops</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-56</span><span class="pill muted">Codex</span></div>
+          <h3>Resolve canonical deploy target</h3>
+          <p>Outcome: docs and health checks agree on the real webdev Tailscale/IP target.</p>
+          <span class="branch">codex/webdev-deploy-target</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-57</span><span class="pill muted">Codex</span></div>
+          <h3>Fix e2e/dev port collisions</h3>
+          <p>Outcome: local e2e tests run without colliding with Docker preview ports.</p>
+          <span class="branch">codex/webdev-e2e-ports</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-58</span><span class="pill muted">Codex</span></div>
+          <h3>Add DesignBrief storage</h3>
+          <p>Outcome: projects persist one active brief without full SQLite platform work.</p>
+          <span class="branch">codex/design-brief-storage</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-59</span><span class="pill muted">Codex</span></div>
+          <h3>Add brief MCP and API</h3>
+          <p>Outcome: agents and Studio can read/update the active project brief through typed endpoints.</p>
+          <span class="branch">codex/design-brief-api</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-60</span><span class="pill sage">Claude</span></div>
+          <h3>Build Studio brief panel</h3>
+          <p>Outcome: Studio shows, edits, and saves guided brief fields before generation.</p>
+          <span class="branch">claude/studio-brief-panel</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-61</span><span class="pill sage">Claude</span></div>
+          <h3>Add create_screen_from_brief shell</h3>
+          <p>Outcome: a new entrypoint creates a screen from the active brief using existing services.</p>
+          <span class="branch">claude/create-screen-from-brief</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-62</span><span class="pill sage">Claude</span></div>
+          <h3>Add real-app live preview panel</h3>
+          <p>Outcome: Studio embeds <code>/proxy/&lt;project&gt;/screens/&lt;screen&gt;</code> with starting/live/error states.</p>
+          <span class="branch">claude/real-app-live-preview</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-63</span><span class="pill sage">Claude</span></div>
+          <h3>Mark dev preview as advisory</h3>
+          <p>Outcome: UI distinguishes unverified live preview from approved Playwright proof.</p>
+          <span class="branch">claude/advisory-preview-state</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-64</span><span class="pill muted">Codex</span></div>
+          <h3>Implement proof run pipeline</h3>
+          <p>Outcome: fresh production build/start, Playwright screenshot, then checkpoint only on success.</p>
+          <span class="branch">codex/proof-run-pipeline</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-65</span><span class="pill muted">Codex</span></div>
+          <h3>Fail run when prod proof fails</h3>
+          <p>Outcome: prod failure is a failed run, even when dev preview looked correct.</p>
+          <span class="branch">codex/proof-failure-state</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-66</span><span class="pill sage">Claude</span></div>
+          <h3>Show run timeline and changed files</h3>
+          <p>Outcome: Studio surfaces run step, plan, changed files, logs, screenshot, and checkpoint.</p>
+          <span class="branch">claude/studio-run-timeline</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-67</span><span class="pill muted">Codex</span></div>
+          <h3>Feed pinned comments into runs</h3>
+          <p>Outcome: existing feedback pins become structured context for generation and patch runs.</p>
+          <span class="branch">codex/feedback-run-context</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-68</span><span class="pill sage">Claude</span></div>
+          <h3>Add minimal landing skill seed</h3>
+          <p>Outcome: one original web-only skill/style seed proves brief-to-TSX without a full registry.</p>
+          <span class="branch">claude/landing-skill-seed</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-69</span><span class="pill muted">Codex</span></div>
+          <h3>Add provenance metadata</h3>
+          <p>Outcome: bundled seeds include author, license, date, and source notes.</p>
+          <span class="branch">codex/provenance-metadata</span>
+        </article>
+
+        <article class="ticket">
+          <div class="ticket-head"><span class="ticket-id">WEBD-70</span><span class="pill muted">Codex</span></div>
+          <h3>Smoke test the V1 loop</h3>
+          <p>Outcome: scripted check proves brief creation, generation, preview, proof, checkpoint, and feedback path.</p>
+          <span class="branch">codex/v1-loop-smoke-test</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="sequence" class="panel" aria-labelledby="sequence-title">
+      <div class="section-head">
+        <div>
+          <span class="pill teal">Dependency map</span>
+          <h2 id="sequence-title">What should happen first</h2>
+        </div>
+        <p>This is the suggested execution order. Some work can happen in parallel, but these are the integration dependencies to respect.</p>
+      </div>
+
+      <div class="dependency-grid">
+        <article class="dependency">
+          <h3>Start immediately</h3>
+          <p>These reduce friction and can run without waiting on product code.</p>
+          <div class="path">
+            <span class="chip codex">WEBD-55</span><span class="arrow">+</span>
+            <span class="chip codex">WEBD-56</span><span class="arrow">+</span>
+            <span class="chip codex">WEBD-57</span>
+          </div>
+        </article>
+
+        <article class="dependency">
+          <h3>Brief path</h3>
+          <p>Storage unlocks API, API unlocks Studio panel and generation context.</p>
+          <div class="path">
+            <span class="chip codex">WEBD-58</span><span class="arrow">-&gt;</span>
+            <span class="chip codex">WEBD-59</span><span class="arrow">-&gt;</span>
+            <span class="chip claude">WEBD-60</span>
+          </div>
+        </article>
+
+        <article class="dependency">
+          <h3>Generation path</h3>
+          <p>The create-from-brief shell needs the brief API. The seed can be built in parallel, then plugged in.</p>
+          <div class="path">
+            <span class="chip codex">WEBD-59</span><span class="arrow">-&gt;</span>
+            <span class="chip claude">WEBD-61</span><span class="arrow">+</span>
+            <span class="chip claude">WEBD-68</span>
+          </div>
+        </article>
+
+        <article class="dependency">
+          <h3>Preview path</h3>
+          <p>Live preview can start from the existing proxy. Advisory status sits on top of it.</p>
+          <div class="path">
+            <span class="chip claude">WEBD-62</span><span class="arrow">-&gt;</span>
+            <span class="chip claude">WEBD-63</span>
+          </div>
+        </article>
+
+        <article class="dependency">
+          <h3>Proof path</h3>
+          <p>The production proof pipeline is the core trust boundary. Failure behavior and timeline UI follow it.</p>
+          <div class="path">
+            <span class="chip codex blocker">WEBD-64</span><span class="arrow">-&gt;</span>
+            <span class="chip codex">WEBD-65</span><span class="arrow">-&gt;</span>
+            <span class="chip claude">WEBD-66</span>
+          </div>
+        </article>
+
+        <article class="dependency">
+          <h3>Final integration</h3>
+          <p>Feedback context and provenance can land before the final smoke test. The smoke test is the V1 gate.</p>
+          <div class="path">
+            <span class="chip codex">WEBD-67</span><span class="arrow">+</span>
+            <span class="chip codex">WEBD-69</span><span class="arrow">-&gt;</span>
+            <span class="chip codex blocker">WEBD-70</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="note">
+        <strong>Critical path</strong>
+        The tightest path is WEBD-58 -> WEBD-59 -> WEBD-61 -> WEBD-64 -> WEBD-65 -> WEBD-66 -> WEBD-70. That path proves the actual product loop. Everything else should support that, not compete with it.
+      </div>
+    </section>
+
+    <section id="branches" class="panel" aria-labelledby="branches-title">
+      <div class="section-head">
+        <div>
+          <span class="pill gold">Branch strategy</span>
+          <h2 id="branches-title">How to divide development work</h2>
+        </div>
+        <p>Use one feature branch per ticket where practical. Keep Claude and Codex write scopes separate until integration.</p>
+      </div>
+
+      <div class="branch-grid">
+        <article class="branch-card">
+          <span class="pill muted">Codex branches</span>
+          <h3>Services, proof, ops</h3>
+          <p>Codex should work in service and integration layers: brief storage/API, proof pipeline, failure state, feedback context, provenance, and smoke tests.</p>
+          <div class="ticket-strip">
+            <span class="chip codex">codex/design-brief-storage</span>
+            <span class="chip codex">codex/proof-run-pipeline</span>
+            <span class="chip codex">codex/v1-loop-smoke-test</span>
+          </div>
+        </article>
+
+        <article class="branch-card">
+          <span class="pill sage">Claude branches</span>
+          <h3>Studio and generation UI</h3>
+          <p>Claude should take Studio-visible slices: brief panel, create-from-brief shell, live preview panel, advisory preview state, run timeline, and seed content.</p>
+          <div class="ticket-strip">
+            <span class="chip claude">claude/studio-brief-panel</span>
+            <span class="chip claude">claude/real-app-live-preview</span>
+            <span class="chip claude">claude/studio-run-timeline</span>
+          </div>
+        </article>
+
+        <article class="branch-card">
+          <span class="pill coral">Integration rule</span>
+          <h3>Small merges only</h3>
+          <p>Merge the smallest useful branch, verify it, then proceed. If a branch starts becoming "phase 1", split it back into another WEBD ticket.</p>
+          <div class="ticket-strip">
+            <span class="chip blocker">No giant phase branches</span>
+            <span class="chip blocker">No hidden platform work</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket</th>
+              <th>Owner</th>
+              <th>Suggested branch</th>
+              <th>Done means</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>WEBD-55</td><td>Codex</td><td><code>codex/playbook-agent-ops</code></td><td>Agent ops are documented in repo instructions.</td></tr>
+            <tr><td>WEBD-56</td><td>Codex</td><td><code>codex/webdev-deploy-target</code></td><td>Canonical webdev host is clear and verified.</td></tr>
+            <tr><td>WEBD-57</td><td>Codex</td><td><code>codex/webdev-e2e-ports</code></td><td>E2e can run without preview port collision.</td></tr>
+            <tr><td>WEBD-58</td><td>Codex</td><td><code>codex/design-brief-storage</code></td><td>Project has persisted active brief data.</td></tr>
+            <tr><td>WEBD-59</td><td>Codex</td><td><code>codex/design-brief-api</code></td><td>MCP/API can read and write the active brief.</td></tr>
+            <tr><td>WEBD-60</td><td>Claude</td><td><code>claude/studio-brief-panel</code></td><td>Studio can edit and save guided brief fields.</td></tr>
+            <tr><td>WEBD-61</td><td>Claude</td><td><code>claude/create-screen-from-brief</code></td><td>Create-from-brief entrypoint exists and calls existing screen services.</td></tr>
+            <tr><td>WEBD-62</td><td>Claude</td><td><code>claude/real-app-live-preview</code></td><td>Studio shows the real proxied app route.</td></tr>
+            <tr><td>WEBD-63</td><td>Claude</td><td><code>claude/advisory-preview-state</code></td><td>Live preview is visibly not approval proof.</td></tr>
+            <tr><td>WEBD-64</td><td>Codex</td><td><code>codex/proof-run-pipeline</code></td><td>Build/start/screenshot/checkpoint works in order.</td></tr>
+            <tr><td>WEBD-65</td><td>Codex</td><td><code>codex/proof-failure-state</code></td><td>Prod proof failures fail the run with logs.</td></tr>
+            <tr><td>WEBD-66</td><td>Claude</td><td><code>claude/studio-run-timeline</code></td><td>Studio shows run step, files, logs, screenshot, checkpoint.</td></tr>
+            <tr><td>WEBD-67</td><td>Codex</td><td><code>codex/feedback-run-context</code></td><td>Pinned feedback flows into the next run context.</td></tr>
+            <tr><td>WEBD-68</td><td>Claude</td><td><code>claude/landing-skill-seed</code></td><td>One original landing-page seed can drive a test generation.</td></tr>
+            <tr><td>WEBD-69</td><td>Codex</td><td><code>codex/provenance-metadata</code></td><td>Bundled seeds carry clean-room provenance metadata.</td></tr>
+            <tr><td>WEBD-70</td><td>Codex</td><td><code>codex/v1-loop-smoke-test</code></td><td>Smoke test proves the full V1 loop works.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-card">
+        <h3>Recommended first moves</h3>
+        <p>Start WEBD-55, WEBD-56, WEBD-57 immediately. In parallel, start WEBD-58. Once WEBD-58 lands, WEBD-59 and WEBD-60 can move. Claude can start WEBD-62 early because the preview proxy already exists, but it should avoid expanding proxy scope.</p>
+      </div>
+    </section>
+
+    <footer>
+      Built from the Playbook task split in project <code>migrated_webd</code>. Keep the loop small: brief -> TSX -> real preview -> Playwright proof -> feedback -> checkpoint.
+    </footer>
+  </main>
+
+  <script>
+    const tabs = Array.from(document.querySelectorAll(".tab"));
+    const panels = Array.from(document.querySelectorAll(".panel"));
+
+    function activateTab(id) {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.tab === id;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", String(active));
+      });
+      panels.forEach((panel) => {
+        panel.classList.toggle("active", panel.id === id);
+      });
+      if (location.hash !== "#" + id) {
+        history.replaceState(null, "", "#" + id);
+      }
+    }
+
+    tabs.forEach((tab) => {
+      tab.setAttribute("role", "tab");
+      tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+    });
+
+    panels.forEach((panel) => panel.setAttribute("role", "tabpanel"));
+
+    const initial = location.hash.replace("#", "");
+    if (initial && document.getElementById(initial)) {
+      activateTab(initial);
+    }
+  </script>
+</body>
+</html>
