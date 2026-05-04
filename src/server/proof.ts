@@ -23,16 +23,18 @@ export interface ProofRun {
   project: string;
   screen: string;
   route: string;
-  url: string;
-  status: "passed";
+  url: string | null;
+  status: "passed" | "failed";
   runtimeMode: "production";
   viewport: ProofViewport;
   fullPage: boolean;
   startedAt: string;
   completedAt: string;
   changedFiles: string[];
-  screenshotPath: string;
-  checkpointHash: string;
+  screenshotPath: string | null;
+  checkpointHash: string | null;
+  failureStage?: "build_start" | "screenshot" | "checkpoint";
+  error?: string;
 }
 
 function proofRunId(): string {
@@ -65,6 +67,21 @@ function ensureProofRunsIgnored(projectDir: string): void {
   fs.appendFileSync(excludeFile, `${existing.endsWith("\n") || existing.length === 0 ? "" : "\n"}${ignoreLine}\n`);
 }
 
+function writeRun(projectDir: string, run: ProofRun): void {
+  const root = path.join(projectDir, ".studio", "proof-runs");
+  const runDir = path.join(root, run.id);
+  fs.mkdirSync(runDir, { recursive: true });
+  fs.writeFileSync(path.join(runDir, "run.json"), `${JSON.stringify(run, null, 2)}\n`);
+  fs.writeFileSync(path.join(root, "latest.json"), `${JSON.stringify(run, null, 2)}\n`);
+}
+
+export class ProofRunFailedError extends Error {
+  constructor(readonly run: ProofRun) {
+    super(run.error || "Proof run failed");
+    this.name = "ProofRunFailedError";
+  }
+}
+
 export class ProjectProofService {
   constructor(
     private workspace: ProjectWorkspaceService,
@@ -81,50 +98,73 @@ export class ProjectProofService {
       throw new Error(`Screen '${screenName}' not found in project '${projectName}'`);
     }
 
+    const id = proofRunId();
     const startedAt = new Date().toISOString();
     const viewport = options.viewport ?? { width: 1280, height: 800 };
     const fullPage = options.fullPage ?? true;
     const filesBeforeProofArtifact = changedFiles(projectDir);
     ensureProofRunsIgnored(projectDir);
-    const port = await this.runtime.startProductionServer(projectName);
     const route = `/screens/${screenName}`;
-    const url = `http://localhost:${port}${route}`;
-    const screenshot = await takeScreenshot({ url, viewport, fullPage });
+    let url: string | null = null;
+    let failureStage: ProofRun["failureStage"] = "build_start";
 
-    const id = proofRunId();
-    const runDir = path.join(projectDir, ".studio", "proof-runs", id);
-    fs.mkdirSync(runDir, { recursive: true });
-    const screenshotAbs = path.join(runDir, "screenshot.png");
-    fs.writeFileSync(screenshotAbs, screenshot);
+    try {
+      const port = await this.runtime.startProductionServer(projectName);
+      url = `http://localhost:${port}${route}`;
+      failureStage = "screenshot";
+      const screenshot = await takeScreenshot({ url, viewport, fullPage });
 
-    const completedAt = new Date().toISOString();
-    const runWithoutHash = {
-      id,
-      project: projectName,
-      screen: screenName,
-      route,
-      url,
-      status: "passed" as const,
-      runtimeMode: "production" as const,
-      viewport,
-      fullPage,
-      startedAt,
-      completedAt,
-      changedFiles: filesBeforeProofArtifact,
-      screenshotPath: relativePath(projectDir, screenshotAbs),
-    };
+      const runDir = path.join(projectDir, ".studio", "proof-runs", id);
+      fs.mkdirSync(runDir, { recursive: true });
+      const screenshotAbs = path.join(runDir, "screenshot.png");
+      fs.writeFileSync(screenshotAbs, screenshot);
 
-    fs.writeFileSync(path.join(runDir, "run.json"), `${JSON.stringify(runWithoutHash, null, 2)}\n`);
-    const checkpointHash = this.checkpoints.checkpoint(
-      projectName,
-      options.message || `Proof ${screenName}: production screenshot`,
-    );
+      failureStage = "checkpoint";
+      const checkpointHash = this.checkpoints.checkpoint(
+        projectName,
+        options.message || `Proof ${screenName}: production screenshot`,
+      );
 
-    const run: ProofRun = { ...runWithoutHash, checkpointHash };
-    fs.writeFileSync(path.join(runDir, "run.json"), `${JSON.stringify(run, null, 2)}\n`);
-    fs.writeFileSync(path.join(projectDir, ".studio", "proof-runs", "latest.json"), `${JSON.stringify(run, null, 2)}\n`);
-
-    return run;
+      const run: ProofRun = {
+        id,
+        project: projectName,
+        screen: screenName,
+        route,
+        url,
+        status: "passed",
+        runtimeMode: "production",
+        viewport,
+        fullPage,
+        startedAt,
+        completedAt: new Date().toISOString(),
+        changedFiles: filesBeforeProofArtifact,
+        screenshotPath: relativePath(projectDir, screenshotAbs),
+        checkpointHash,
+      };
+      writeRun(projectDir, run);
+      return run;
+    } catch (e) {
+      const run: ProofRun = {
+        id,
+        project: projectName,
+        screen: screenName,
+        route,
+        url,
+        status: "failed",
+        runtimeMode: "production",
+        viewport,
+        fullPage,
+        startedAt,
+        completedAt: new Date().toISOString(),
+        changedFiles: filesBeforeProofArtifact,
+        screenshotPath: null,
+        checkpointHash: null,
+        failureStage,
+        error: e instanceof Error ? e.message : String(e),
+      };
+      writeRun(projectDir, run);
+      throw new ProofRunFailedError(run);
+    }
   }
 
   listProofRuns(projectName: string): ProofRun[] {
@@ -150,7 +190,7 @@ export class ProjectProofService {
 
   getProofScreenshotPath(projectName: string, id: string): string | null {
     const run = this.getProofRun(projectName, id);
-    if (!run) return null;
+    if (!run?.screenshotPath) return null;
     const file = path.join(this.workspace.projectDir(projectName), run.screenshotPath);
     return fs.existsSync(file) ? file : null;
   }

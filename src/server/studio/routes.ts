@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import * as fs from "fs";
 import * as path from "path";
 import type { ProjectManager } from "../project-manager.js";
+import { ProofRunFailedError } from "../proof.js";
 import { ScreenshotCache } from "./screenshot-cache.js";
 import { galleryPage, projectPage, screenPage } from "./pages.js";
 import { canvasPage } from "./canvas-page.js";
@@ -248,6 +249,10 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
         screenshotUrl: `/api/projects/${project}/proof-runs/${run.id}/screenshot`,
       });
     } catch (e) {
+      if (e instanceof ProofRunFailedError) {
+        res.status(500).json({ ok: false, error: e.message, proofRun: e.run });
+        return;
+      }
       res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
     }
   });

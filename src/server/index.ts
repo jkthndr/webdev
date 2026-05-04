@@ -7,6 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import express from "express";
 import { ProjectManager } from "./project-manager.js";
+import { ProofRunFailedError } from "./proof.js";
 import { takeScreenshot, closeBrowser } from "./screenshot.js";
 import { createStudioRouter, createStudioApiRouter } from "./studio/routes.js";
 import { createProxyRouter, setupWebSocketProxy } from "./studio/proxy.js";
@@ -144,6 +145,15 @@ function createMcpServerWithTools(): McpServer {
           }],
         };
       } catch (e) {
+        if (e instanceof ProofRunFailedError) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({ proofRun: e.run, error: e.message }, null, 2),
+            }],
+            isError: true,
+          };
+        }
         return {
           content: [{ type: "text" as const, text: `Proof failed: ${e instanceof Error ? e.message : String(e)}` }],
           isError: true,
