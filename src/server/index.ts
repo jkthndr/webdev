@@ -183,6 +183,31 @@ function createMcpServerWithTools(): McpServer {
     }
   );
 
+  // Tool 6: get_bundled_seed_provenance
+  mcp.tool(
+    "get_bundled_seed_provenance",
+    "List clean-room provenance metadata for bundled project templates, web skills, and style recipes.",
+    {
+      id: z.string().optional().describe("Optional bundled seed id to fetch one item"),
+    },
+    async ({ id }) => {
+      if (id) {
+        const item = pm.getBundledSeedProvenance(id);
+        if (!item) {
+          return { content: [{ type: "text" as const, text: `Error: Bundled seed '${id}' not found.` }], isError: true };
+        }
+        return { content: [{ type: "text" as const, text: JSON.stringify(item, null, 2) }] };
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(pm.getBundledSeedProvenanceReport(), null, 2),
+        }],
+      };
+    }
+  );
+
   // Tool 2: create_screen
   mcp.tool(
     "create_screen",
@@ -502,6 +527,21 @@ app.get("/api/health", (_req, res) => {
     screens: totalScreens,
     version: "0.1.0",
   });
+});
+
+app.get("/api/provenance", (req, res) => {
+  const id = typeof req.query.id === "string" ? req.query.id : null;
+  if (id) {
+    const item = pm.getBundledSeedProvenance(id);
+    if (!item) {
+      res.status(404).json({ error: "Bundled seed provenance not found" });
+      return;
+    }
+    res.json(item);
+    return;
+  }
+
+  res.json(pm.getBundledSeedProvenanceReport());
 });
 
 // Projects list

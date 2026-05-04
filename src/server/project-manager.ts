@@ -2,12 +2,14 @@ import { ProjectWorkspaceService, type ProjectInfo } from "./workspace.js";
 import { ProjectCheckpointService } from "./checkpoint.js";
 import { DesignBriefService, type DesignBrief, type DesignBriefInput } from "./design-brief.js";
 import { GenerationContextService, type GenerationContext } from "./generation-context.js";
+import { BundledProvenanceService, type BundledSeedProvenance, type BundledSeedProvenanceReport } from "./provenance.js";
 import { ProjectProofService, type ProofRun, type ProofRunOptions } from "./proof.js";
 import { PreviewRuntimeService } from "./preview-runtime.js";
 
 export type { ProjectInfo };
 export type { DesignBrief, DesignBriefInput };
 export type { GenerationContext };
+export type { BundledSeedProvenance, BundledSeedProvenanceReport };
 export type { ProofRun, ProofRunOptions };
 
 /**
@@ -19,6 +21,7 @@ export class ProjectManager {
   readonly checkpoints: ProjectCheckpointService;
   readonly designBriefs: DesignBriefService;
   readonly generationContext: GenerationContextService;
+  readonly provenance: BundledProvenanceService;
   readonly runtime: PreviewRuntimeService;
   readonly proofs: ProjectProofService;
 
@@ -27,6 +30,7 @@ export class ProjectManager {
     this.checkpoints = new ProjectCheckpointService(this.workspace);
     this.designBriefs = new DesignBriefService(this.workspace);
     this.generationContext = new GenerationContextService(this.workspace);
+    this.provenance = new BundledProvenanceService();
     this.runtime = new PreviewRuntimeService(this.workspace);
     this.proofs = new ProjectProofService(this.workspace, this.runtime, this.checkpoints);
   }
@@ -80,6 +84,16 @@ export class ProjectManager {
       screen: screenName,
       designBrief: this.getDesignBrief(projectName),
     });
+  }
+
+  // --- Bundled seed provenance delegates ---
+
+  getBundledSeedProvenanceReport(): BundledSeedProvenanceReport {
+    return this.provenance.loadReport();
+  }
+
+  getBundledSeedProvenance(id: string): BundledSeedProvenance | null {
+    return this.provenance.getItem(id);
   }
 
   // --- Proof run delegates ---
