@@ -703,6 +703,13 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
     // Per-screen latest proof state — keyed by screen name.
     // Values: "passed" | "failed" | "stale" | "none"
     let screenProofStatus = {};
+    // Latest *passed* run per screen; the proof-mode card uses it to source
+    // the screenshot URL + meta. Distinct from screenProofStatus because a
+    // screen can be classified "stale" while still having a viewable older
+    // proof artifact.
+    let screenLatestPassedProof = {};
+    // Per-card view mode: "live" (iframe/thumb) or "proof" (screenshot).
+    let cardModes = {};
 
     function classifyProof(run, sourceHash) {
       if (!run) return "none";
@@ -721,10 +728,15 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
       // Compute per-screen latest run + classify
       const latestByScreen = {};
+      const latestPassedByScreen = {};
       for (const run of proofRuns) {
         if (!latestByScreen[run.screen]) latestByScreen[run.screen] = run;
+        if (run.status === "passed" && !latestPassedByScreen[run.screen]) {
+          latestPassedByScreen[run.screen] = run;
+        }
       }
       screenProofStatus = {};
+      screenLatestPassedProof = latestPassedByScreen;
       for (const screen of screens) {
         screenProofStatus[screen] = classifyProof(latestByScreen[screen], currentHash);
       }
@@ -754,16 +766,16 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         card.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
         card.classList.add("proof-" + status);
 
-        // Add/update advisory chip on the frame label
-        const label = card.querySelector(".sc-frame-label");
-        if (!label) return;
-        let chip = label.querySelector(".sc-advisory-chip");
+        // Add/update advisory chip on the frame label name span
+        const labelName = card.querySelector(".sc-frame-label-name");
+        if (!labelName) return;
+        let chip = labelName.querySelector(".sc-advisory-chip");
         const needsChip = status === "stale" || status === "none" || status === "failed";
         if (needsChip) {
           if (!chip) {
             chip = document.createElement("span");
             chip.className = "sc-advisory-chip";
-            label.appendChild(chip);
+            labelName.appendChild(chip);
           }
           chip.classList.remove("stale", "none", "failed");
           chip.classList.add(status);
@@ -773,6 +785,65 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
         } else if (chip) {
           chip.remove();
         }
+
+        // WEBD-62: refresh proof view + toggle availability
+        updateCardProofView(name);
+      });
+    }
+
+    // WEBD-62: populate proof view + enable/disable Proof toggle on a card
+    function updateCardProofView(name) {
+      const card = cardEls[name];
+      if (!card) return;
+      const proofView = card.querySelector(".sc-view-proof");
+      const proofBtn = card.querySelector('.sc-mode-btn[data-mode="proof"]');
+      if (!proofView || !proofBtn) return;
+      const run = screenLatestPassedProof[name];
+
+      if (!run) {
+        proofBtn.disabled = true;
+        proofBtn.title = "No passing proof yet — run proof to capture";
+        proofView.innerHTML =
+          '<div class="sc-proof-empty">' +
+            '<div class="sc-proof-empty-icon">⊙</div>' +
+            '<div class="sc-proof-empty-msg">No passing proof yet</div>' +
+            '<div class="sc-proof-empty-hint">Run proof to capture an authoritative screenshot.</div>' +
+          '</div>';
+        // If currently in proof mode but no proof exists, fall back to live
+        if (cardModes[name] === "proof") setCardMode(name, "live");
+        return;
+      }
+
+      proofBtn.disabled = false;
+      proofBtn.title = "Latest production proof (authoritative) — " + briefRelativeTime(run.completedAt);
+      const screenshotUrl = "/api/projects/" + PROJECT + "/proof-runs/" + run.id + "/screenshot";
+      const vp = run.viewport ? run.viewport.width + "×" + run.viewport.height : "—";
+      const checkpoint = run.checkpointHash ? run.checkpointHash.slice(0, 7) : "—";
+      const ago = briefRelativeTime(run.completedAt);
+      const isStale = screenProofStatus[name] === "stale";
+
+      proofView.innerHTML =
+        '<a class="sc-proof-img" href="' + screenshotUrl + '" target="_blank" title="Open proof screenshot">' +
+          '<img src="' + screenshotUrl + '" alt="Proof screenshot of ' + briefAttr(name) + '" loading="lazy"/>' +
+        '</a>' +
+        '<div class="sc-proof-meta">' +
+          '<span class="sc-proof-status ' + (isStale ? "stale" : "current") + '">' +
+            (isStale ? "Stale proof" : "Current proof") +
+          '</span>' +
+          '<span class="sc-proof-meta-mono">' + checkpoint + '</span>' +
+          '<span class="sc-proof-meta-mono">' + vp + '</span>' +
+          '<span class="sc-proof-meta-time">' + ago + '</span>' +
+        '</div>';
+    }
+
+    function setCardMode(name, mode) {
+      const card = cardEls[name];
+      if (!card) return;
+      cardModes[name] = mode;
+      card.classList.remove("mode-live", "mode-proof");
+      card.classList.add("mode-" + mode);
+      card.querySelectorAll(".sc-mode-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === mode);
       });
     }
 
@@ -1020,29 +1091,98 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
     function createCard(name, pos, animate) {
       const card = document.createElement("div");
-      card.className = "screen-card" + (animate ? " entering" : "");
+      card.className = "screen-card mode-live" + (animate ? " entering" : "");
       card.dataset.screen = name;
       card.style.left = pos.x + "px";
       card.style.top = pos.y + "px";
+      cardModes[name] = "live";
 
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
       const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
       const IFRAME_H = 700;
+
+      const labelHtml =
+        '<span class="sc-frame-label-name">' + name + newBadge + '</span>' +
+        '<span class="sc-mode-toggle" data-screen="' + name + '">' +
+          '<button class="sc-mode-btn active" data-mode="live" title="Live preview (advisory)">Live</button>' +
+          '<button class="sc-mode-btn" data-mode="proof" title="Latest production proof (authoritative)" disabled>Proof</button>' +
+        '</span>';
+
+      let liveHtml;
       if (RUNNING) {
-        card.innerHTML =
-          '<div class="sc-frame-label">' + name + newBadge + '</div>' +
-          '<div class="sc-frame-content">' +
-            '<div class="sc-iframe-wrap" style="height:' + IFRAME_H + 'px">' +
-              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + CARD_W + 'px;height:' + IFRAME_H + 'px" loading="lazy"></iframe>' +
+        liveHtml =
+          '<div class="sc-iframe-wrap" style="height:' + IFRAME_H + 'px">' +
+            '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + CARD_W + 'px;height:' + IFRAME_H + 'px" loading="lazy"></iframe>' +
+            '<div class="sc-frame-overlay sc-frame-starting hidden">' +
+              '<div class="sc-overlay-spin"></div>' +
+              '<div class="sc-overlay-msg">Starting preview…</div>' +
+            '</div>' +
+            '<div class="sc-frame-overlay sc-frame-error hidden">' +
+              '<div class="sc-overlay-msg">Preview failed to load</div>' +
+              '<button class="sc-overlay-retry" data-screen="' + name + '">Retry</button>' +
             '</div>' +
           '</div>';
       } else {
         const thumbUrl = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
-        card.innerHTML =
-          '<div class="sc-frame-label">' + name + '</div>' +
-          '<div class="sc-frame-content">' +
-            '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>' +
-          '</div>';
+        liveHtml =
+          '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>';
+      }
+
+      const proofHtml =
+        '<div class="sc-proof-view sc-proof-empty">' +
+          '<div class="sc-proof-empty-icon">⊙</div>' +
+          '<div class="sc-proof-empty-msg">No passing proof yet</div>' +
+          '<div class="sc-proof-empty-hint">Run proof to capture an authoritative screenshot.</div>' +
+        '</div>';
+
+      card.innerHTML =
+        '<div class="sc-frame-label">' + labelHtml + '</div>' +
+        '<div class="sc-frame-content">' +
+          '<div class="sc-view sc-view-live">' + liveHtml + '</div>' +
+          '<div class="sc-view sc-view-proof">' + proofHtml + '</div>' +
+        '</div>';
+
+      // Mode toggle handlers
+      card.querySelectorAll(".sc-mode-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (btn.disabled) return;
+          setCardMode(name, btn.dataset.mode);
+        });
+        btn.addEventListener("mousedown", (e) => e.stopPropagation());
+      });
+
+      // Iframe load/error handling for starting/error states
+      const iframe = card.querySelector(".sc-iframe");
+      if (iframe) {
+        let loadTimer = setTimeout(() => {
+          const overlay = card.querySelector(".sc-frame-starting");
+          if (overlay) overlay.classList.remove("hidden");
+        }, 600);
+        iframe.addEventListener("load", () => {
+          clearTimeout(loadTimer);
+          const startingOv = card.querySelector(".sc-frame-starting");
+          const errorOv = card.querySelector(".sc-frame-error");
+          if (startingOv) startingOv.classList.add("hidden");
+          if (errorOv) errorOv.classList.add("hidden");
+        });
+        iframe.addEventListener("error", () => {
+          clearTimeout(loadTimer);
+          const startingOv = card.querySelector(".sc-frame-starting");
+          const errorOv = card.querySelector(".sc-frame-error");
+          if (startingOv) startingOv.classList.add("hidden");
+          if (errorOv) errorOv.classList.remove("hidden");
+        });
+      }
+      const retryBtn = card.querySelector(".sc-overlay-retry");
+      if (retryBtn) {
+        retryBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const f = card.querySelector(".sc-iframe");
+          if (f) f.src = f.src;
+          const errorOv = card.querySelector(".sc-frame-error");
+          if (errorOv) errorOv.classList.add("hidden");
+        });
       }
 
       // Click → select card (Pencil-style, no preview overlay)

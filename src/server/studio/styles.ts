@@ -1230,6 +1230,207 @@ export const CANVAS_CSS = `
     border: 1px solid rgba(255,107,107,0.4);
   }
 
+  /* Live | Proof toggle (WEBD-62) — per-card mode swap */
+  .screen-card .sc-frame-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .screen-card .sc-frame-label-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sc-mode-toggle {
+    display: inline-flex;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 2px;
+    flex-shrink: 0;
+    cursor: default;
+  }
+
+  .sc-mode-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-family: inherit;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.2;
+  }
+  .sc-mode-btn:hover:not(:disabled):not(.active) { color: rgba(255,255,255,0.8); }
+  .sc-mode-btn:disabled { color: rgba(255,255,255,0.2); cursor: not-allowed; }
+  .sc-mode-btn.active {
+    background: rgba(255,107,107,0.2);
+    color: var(--s-coral);
+  }
+  /* Proof button is the authoritative mode — make it visually weightier */
+  .sc-mode-btn[data-mode="proof"].active {
+    background: var(--s-sage);
+    color: white;
+  }
+  .sc-mode-btn[data-mode="proof"].active.proof-stale {
+    background: var(--s-gold);
+  }
+  .sc-mode-btn[data-mode="proof"].active.proof-failed {
+    background: var(--s-coral);
+  }
+
+  /* Mode switching — show the right view per card class */
+  .screen-card .sc-view { display: none; }
+  .screen-card.mode-live .sc-view-live { display: block; }
+  .screen-card.mode-proof .sc-view-proof { display: block; }
+
+  /* When in proof mode the desaturation rules don't apply (proof is current
+     by definition for "passed", or shown explicitly stale with chip). Reset. */
+  .screen-card.mode-proof .sc-iframe,
+  .screen-card.mode-proof .sc-thumb { filter: none; }
+
+  /* Proof view layout */
+  .sc-proof-view {
+    position: relative;
+    background: #0f0e0d;
+    overflow: hidden;
+  }
+
+  .sc-proof-img {
+    display: block;
+    cursor: zoom-in;
+  }
+  .sc-proof-img img {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: top center;
+    max-height: 700px;
+  }
+
+  .sc-proof-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.625rem;
+    background: rgba(0,0,0,0.4);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.55);
+    flex-wrap: wrap;
+  }
+
+  .sc-proof-status {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.625rem;
+    padding: 0.125rem 0.4375rem;
+    border-radius: 999px;
+  }
+  .sc-proof-status.current {
+    background: rgba(124,144,112,0.2);
+    color: var(--s-sage);
+  }
+  .sc-proof-status.stale {
+    background: rgba(245,197,66,0.2);
+    color: var(--s-gold);
+  }
+
+  .sc-proof-meta-mono {
+    font-family: var(--s-mono);
+    color: rgba(255,255,255,0.7);
+  }
+  .sc-proof-meta-time {
+    margin-left: auto;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .sc-proof-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4rem 1.5rem;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    background: #1a1917;
+  }
+  .sc-proof-empty-icon {
+    font-size: 2rem;
+    color: rgba(255,255,255,0.2);
+  }
+  .sc-proof-empty-msg {
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    font-size: 0.875rem;
+  }
+  .sc-proof-empty-hint {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    max-width: 18rem;
+  }
+
+  /* Iframe starting / error overlays (WEBD-62 starting/live/error states) */
+  .sc-frame-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: rgba(15,14,13,0.92);
+    color: rgba(255,255,255,0.8);
+    font-size: 0.8125rem;
+    z-index: 5;
+    padding: 1rem;
+    text-align: center;
+  }
+  .sc-frame-overlay.hidden { display: none; }
+
+  .sc-frame-error {
+    color: rgba(255,107,107,0.95);
+  }
+
+  .sc-overlay-msg {
+    font-size: 0.8125rem;
+    color: inherit;
+  }
+
+  .sc-overlay-spin {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: var(--s-gold);
+    border-radius: 50%;
+    animation: scOverlaySpin 0.9s linear infinite;
+  }
+  @keyframes scOverlaySpin { to { transform: rotate(360deg); } }
+
+  .sc-overlay-retry {
+    background: rgba(255,107,107,0.15);
+    border: 1px solid rgba(255,107,107,0.4);
+    color: var(--s-coral);
+    padding: 0.3125rem 0.875rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sc-overlay-retry:hover {
+    background: rgba(255,107,107,0.25);
+  }
+
   /* Inspector panel (right) */
   .inspector-panel {
     width: 280px;
