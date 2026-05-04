@@ -95,6 +95,38 @@ Core product decision:
 - Live preview must render the real generated app through webdev's proxy and is advisory.
 - Playwright proof is the acceptance artifact: build/start the generated app, open the route, screenshot it, record changed files/status, then checkpoint.
 
+## V1 Branch Strategy
+
+Use `dev` as the stable upstream base and keep V1 work in small, mergeable feature branches.
+
+Current integration base:
+
+- `codex/v1-backend-foundation`
+- Purpose: shared base containing completed V1 docs, design brief storage/API/MCP, generation context, production proof runs, failed proof state, and preview port hardening.
+- Claude should branch UI work from this branch, not from older task branches.
+
+Recommended active branches:
+
+- Claude UI branch: `claude/v1-studio-workbench`
+  - Owns `src/server/studio/canvas-page.ts` and `src/server/studio/styles.ts`.
+  - Can call the already-built APIs for brief, generation context, proof runs, screenshots, and advisory preview state.
+- Codex backend/ops branches: keep using task-specific `codex/<short-task-name>` branches from `codex/v1-backend-foundation`.
+  - Avoid editing Claude-owned Studio UI files unless coordinating on bridge first.
+
+Completed task branches kept for traceability:
+
+- `codex/playbook-agent-ops`
+- `codex/design-brief-storage`
+- `codex/design-brief-api`
+- `codex/proof-run-pipeline`
+- `codex/proof-failure-state`
+- `codex/feedback-run-context`
+
+Conflict rule:
+
+- Before starting a new branch, post intended task IDs and file ownership to bridge thread `webdev-design-tool-v1-plan`.
+- If a task needs shared files, pick one owner and have the other agent review or add follow-up patches after the first branch lands.
+
 ## Approval Courtesy
 
 If a future command/tool approval request might put Codex idle waiting on Oliver:
