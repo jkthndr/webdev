@@ -1126,6 +1126,110 @@ export const CANVAS_CSS = `
     white-space: nowrap;
   }
 
+  /* Trust hierarchy / advisory state (WEBD-63) — proof state coloring
+     for the inspector rail and the screen-card frame. Goal: the user
+     can never confuse a passing live preview for a passing proof. */
+
+  /* Inspector rail: 3px left edge tinted by proof state. */
+  .inspector-panel {
+    position: relative;
+    transition: border-color 0.2s ease;
+  }
+  .inspector-panel::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 3px;
+    background: transparent;
+    transition: background 0.2s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .inspector-panel.proof-passed::before { background: var(--s-sage); }
+  .inspector-panel.proof-stale::before  { background: var(--s-gold); }
+  .inspector-panel.proof-failed::before { background: var(--s-coral); }
+  .inspector-panel.proof-none::before   { background: rgba(255,255,255,0.08); }
+
+  /* Inspector header proof-state label (small lozenge near the tabs).
+     Rendered in JS via updateProofState(); CSS gives it the right
+     visual weight. */
+  .inspector-panel .panel-tabs::after {
+    content: "";
+    align-self: center;
+    margin-right: 0.5rem;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .inspector-panel.proof-passed .panel-tabs::after { background: var(--s-sage); }
+  .inspector-panel.proof-stale  .panel-tabs::after { background: var(--s-gold); }
+  .inspector-panel.proof-failed .panel-tabs::after { background: var(--s-coral); }
+  .inspector-panel.proof-none   .panel-tabs::after { background: rgba(255,255,255,0.15); }
+
+  /* Screen card: frame outline + iframe desaturation when proof not current */
+  .screen-card.proof-passed .sc-frame-content {
+    border-color: rgba(124,144,112,0.4);
+  }
+  .screen-card.proof-stale .sc-frame-content {
+    border-color: rgba(245,197,66,0.45);
+  }
+  .screen-card.proof-failed .sc-frame-content {
+    border-color: rgba(255,107,107,0.45);
+  }
+  .screen-card.proof-none .sc-frame-content {
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  /* Desaturate live preview when proof is stale, missing, or failed.
+     Restore full color only when proof is current and passing. */
+  .screen-card.proof-stale .sc-iframe,
+  .screen-card.proof-stale .sc-thumb,
+  .screen-card.proof-none .sc-iframe,
+  .screen-card.proof-none .sc-thumb,
+  .screen-card.proof-failed .sc-iframe,
+  .screen-card.proof-failed .sc-thumb {
+    filter: saturate(0.7);
+    transition: filter 0.2s ease;
+  }
+  .screen-card.proof-passed .sc-iframe,
+  .screen-card.proof-passed .sc-thumb {
+    filter: none;
+    transition: filter 0.2s ease;
+  }
+  /* Hover restores full color so reviewers can do quick visual checks */
+  .screen-card:hover .sc-iframe,
+  .screen-card:hover .sc-thumb { filter: none; }
+
+  /* Advisory chip on the frame label */
+  .sc-advisory-chip {
+    display: inline-block;
+    margin-left: 0.4375rem;
+    padding: 0.0625rem 0.4375rem;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    vertical-align: middle;
+    line-height: 1.4;
+  }
+  .sc-advisory-chip.stale {
+    background: rgba(245,197,66,0.15);
+    color: var(--s-gold);
+    border: 1px solid rgba(245,197,66,0.35);
+  }
+  .sc-advisory-chip.none {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .sc-advisory-chip.failed {
+    background: rgba(255,107,107,0.18);
+    color: var(--s-coral);
+    border: 1px solid rgba(255,107,107,0.4);
+  }
+
   /* Inspector panel (right) */
   .inspector-panel {
     width: 280px;

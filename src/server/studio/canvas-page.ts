@@ -700,27 +700,80 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       return card;
     }
 
-    // Plumbing for WEBD-63 (advisory state) — sets a class on the inspector
-    // panel based on the latest proof status. WEBD-63 adds the CSS treatment.
+    // Per-screen latest proof state — keyed by screen name.
+    // Values: "passed" | "failed" | "stale" | "none"
+    let screenProofStatus = {};
+
+    function classifyProof(run, sourceHash) {
+      if (!run) return "none";
+      if (run.status === "failed") return "failed";
+      if (run.checkpointHash && sourceHash && run.checkpointHash.slice(0, 7) !== sourceHash.slice(0, 7)) {
+        return "stale";
+      }
+      return "passed";
+    }
+
+    // Sets proof-state class on the inspector panel + each screen card,
+    // and toggles the Advisory chip on cards whose proof is stale/missing
+    // (WEBD-63: trust-hierarchy treatment).
     function updateProofState() {
       const panel = document.getElementById("inspector-panel");
-      if (!panel) return;
-      panel.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
-      const latest = proofRuns[0];
-      if (!latest) {
-        panel.classList.add("proof-none");
-        return;
+
+      // Compute per-screen latest run + classify
+      const latestByScreen = {};
+      for (const run of proofRuns) {
+        if (!latestByScreen[run.screen]) latestByScreen[run.screen] = run;
       }
-      if (latest.status === "failed") {
-        panel.classList.add("proof-failed");
-        return;
+      screenProofStatus = {};
+      for (const screen of screens) {
+        screenProofStatus[screen] = classifyProof(latestByScreen[screen], currentHash);
       }
-      // Passed: stale if app source has changed since proof's checkpoint
-      if (latest.checkpointHash && currentHash && latest.checkpointHash.slice(0, 7) !== currentHash.slice(0, 7)) {
-        panel.classList.add("proof-stale");
-      } else {
-        panel.classList.add("proof-passed");
+
+      // Inspector rail: reflects the most concerning state across screens —
+      // failed > stale > none > passed. (Pessimistic so the rail doesn't
+      // read green when any screen is broken.)
+      const summary = (() => {
+        const states = Object.values(screenProofStatus);
+        if (states.includes("failed")) return "failed";
+        if (states.includes("stale")) return "stale";
+        if (states.length === 0 || states.every(s => s === "none")) return "none";
+        if (states.includes("none")) return "stale";
+        return "passed";
+      })();
+
+      if (panel) {
+        panel.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
+        panel.classList.add("proof-" + summary);
       }
+
+      // Per-card advisory state
+      Object.keys(cardEls).forEach(name => {
+        const card = cardEls[name];
+        if (!card) return;
+        const status = screenProofStatus[name] || "none";
+        card.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
+        card.classList.add("proof-" + status);
+
+        // Add/update advisory chip on the frame label
+        const label = card.querySelector(".sc-frame-label");
+        if (!label) return;
+        let chip = label.querySelector(".sc-advisory-chip");
+        const needsChip = status === "stale" || status === "none" || status === "failed";
+        if (needsChip) {
+          if (!chip) {
+            chip = document.createElement("span");
+            chip.className = "sc-advisory-chip";
+            label.appendChild(chip);
+          }
+          chip.classList.remove("stale", "none", "failed");
+          chip.classList.add(status);
+          chip.textContent = status === "failed" ? "Proof failed"
+            : status === "stale" ? "Advisory · proof stale"
+            : "Advisory · no proof";
+        } else if (chip) {
+          chip.remove();
+        }
+      });
     }
 
     // --- Screen List ---
@@ -962,6 +1015,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
       updateMinimap();
       updateScreenList();
+      if (proofLoaded) updateProofState();
     }
 
     function createCard(name, pos, animate) {
