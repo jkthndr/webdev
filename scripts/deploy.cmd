@@ -15,6 +15,7 @@ docker compose up -d --force-recreate >> deploy.log 2>&1
 
 ping -n 15 127.0.0.1 >nul
 curl.exe -sf http://localhost:4500/api/health >> deploy.log 2>&1
+curl.exe -sf http://100.115.18.15:4500/api/health >> deploy.log 2>&1
 if errorlevel 1 (
     echo [%date% %time%] HEALTH CHECK FAILED >> deploy.log 2>&1
     exit /b 1

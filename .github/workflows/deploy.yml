@@ -1,4 +1,4 @@
-name: Deploy to HP Laptop
+name: Deploy to Dell Laptop
 
 on:
   push:
@@ -48,4 +48,5 @@ jobs:
         run: |
           ping -n 12 127.0.0.1 >nul
           curl.exe -sf http://localhost:4500/api/health || exit /b 1
+          curl.exe -sf http://100.115.18.15:4500/api/health || exit /b 1
           echo Deploy successful
