@@ -1,7 +1,11 @@
 FROM node:22-slim
 
-# Install Playwright system dependencies
-RUN npx playwright install-deps chromium
+# Install git (used by workspace.ts for per-project checkpoint repos)
+# and Playwright system dependencies
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git \
+  && rm -rf /var/lib/apt/lists/* \
+  && npx playwright install-deps chromium
 
 WORKDIR /app
 
