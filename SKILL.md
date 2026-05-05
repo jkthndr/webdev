@@ -55,9 +55,9 @@ import { Label } from "@/components/ui/label";
 
 ## Infrastructure
 
-- **MCP Server**: `http://100.102.138.90:4500`
+- **MCP Server**: `http://100.115.18.15:4500`
 - **Health**: `GET /api/health`
-- **Preview**: Ports 4501+ (per-project)
+- **Preview**: Real generated routes are reviewed through `/proxy/<project>/...` on port `4500`; per-project preview ports are internal runtime details.
 
 ## Architectural Rules
 

@@ -72,6 +72,7 @@ Important local references:
 
 - Product/technical analysis: `docs/open-design-webdev-analysis.md`
 - V1 requirements: `docs/webdev-v1-product-requirements.md`
+- Canonical deploy target: `docs/webdev-deploy-target.md`
 - Implementation task visual: `docs/webdev-v1-implementation-readout.html`
 - User journey visual: `docs/webdev-user-journey-visual.html`
 - Clean-room/commercial guardrails: `docs/license-boundary.md`
@@ -94,6 +95,14 @@ Core product decision:
 
 - Live preview must render the real generated app through webdev's proxy and is advisory.
 - Playwright proof is the acceptance artifact: build/start the generated app, open the route, screenshot it, record changed files/status, then checkpoint.
+
+Canonical runtime target:
+
+- webdev runs on the Dell laptop at `http://100.115.18.15:4500`.
+- Health check: `http://100.115.18.15:4500/api/health`.
+- `http://localhost:4500` is equivalent only when running on the Dell host.
+- Playbook remains separate on the HP laptop at `http://100.102.138.90:3095`.
+- Do not use `100.102.138.90:4500` for webdev unless `docs/webdev-deploy-target.md` has been updated in the same change.
 
 ## V1 Branch Strategy
 

@@ -365,8 +365,9 @@ Acceptance criteria:
 
 ### Milestone 0: Align the running environment
 
-- Resolve active Tailscale/deploy target mismatch.
-- Decide whether `100.115.18.15` or `100.102.138.90` is canonical.
+- Canonical webdev runtime target is the Dell laptop at `http://100.115.18.15:4500`.
+- Health checks should use `http://100.115.18.15:4500/api/health` for the Tailscale URL and `http://localhost:4500/api/health` only on the Dell host.
+- `100.102.138.90` remains the Playbook/3095 host, not the webdev runtime host.
 - Merge or rebase `dev` deployment updates.
 - Make e2e tests run without colliding with Docker ports.
 

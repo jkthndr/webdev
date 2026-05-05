@@ -3,6 +3,8 @@
 > Use this prompt to kick off a planning session. Paste it into a fresh Claude Code conversation
 > in the target project directory once you're ready to begin.
 
+> 2026-05-04 note: this is older planning context. The canonical webdev runtime target is now the Dell laptop at `http://100.115.18.15:4500`. HP `100.102.138.90` is Playbook/3095, not the webdev runtime.
+
 ---
 
 ## Prompt
@@ -36,17 +38,15 @@ I need to plan and build an **agent-native design tool** — a system that lets 
 
 ### Technical Constraints
 
-- **Host machine**: HP Laptop on Tailscale (`jake-dev-win-hp` / `100.102.138.90`)
-  - Windows 11 Pro, 32GB RAM, 3.7TB disk
-  - Docker Desktop 29.2.1
-  - Node.js 22.22.2 (via fnm), Git 2.53.0, Java 17
-  - GitHub Actions runner on this machine (`hp-android` — Android builds, may cause resource contention)
-  - Also runs: TaskQ (port 3090)
-  - SSH: `ssh -i ~/.ssh/hp_laptop_key oliver@100.102.138.90`
+- **Host machine**: Dell laptop on Tailscale (`100.115.18.15`)
+  - Local repo: `C:\Users\olive\Projects\webdev`
+  - Runs webdev Studio/API/MCP on port `4500`
+  - Also runs Agent Bridge on port `3100`
+  - HP `100.102.138.90` is Playbook/3095, not the webdev runtime
 - **Deployment pattern**: GitHub Actions + Tailscale SSH (same as SmithBuilder, HolaCan, Coral Money). Push to `main` → workflow SSHes in → docker compose up. Work on `dev` branch, PR to `main`.
 - **Tech stack**: Next.js/React/TypeScript + shadcn/ui + Tailwind (locked per research)
 - **Integration targets**: Claude Code (MCP server — stdio local, HTTP remote), potentially other AI agents later.
-- **Ports**: 4500 (MCP server), 4501 (preview server). Health check: `curl -sf http://100.102.138.90:4500/api/health`
+- **Ports**: 4500 (Studio/API/MCP). Live previews route through `/proxy/<project>/...`; per-project preview ports are internal. Health check: `curl -sf http://100.115.18.15:4500/api/health`
 
 ### Competitive Landscape (Pre-Researched)
 
@@ -134,7 +134,7 @@ These were validated during research and third-party review. They are non-negoti
 - **Approach**: Option C — "Designs ARE code"
 - **Rendering**: React SSR + Playwright (81/100 score, ~200-500ms warm cycle, ~1GB memory)
 - **File format**: TSX + Tailwind + shadcn/ui (validated by v0.dev at commercial scale)
-- **Hosting**: Docker on HP laptop (jake-dev-win-hp, 100.102.138.90, ports 4500-4501)
+- **Hosting**: Docker on Dell laptop (`100.115.18.15`, port 4500)
 
 ### Phase 0.5: Validation Spikes (Before Full Build)
 
@@ -192,7 +192,7 @@ Produce the plan as a **single self-contained interactive HTML file** (no build 
 - **Architecture diagram** — Interactive flow diagram showing how the agent, MCP server, rendering engine, component library, and design state connect. Clickable nodes that expand to show detail.
 - **Component breakdown** — What to build, in what order. Visual build sequence (dependency graph or timeline).
 - **Tech stack** — Recommendation with rationale for each choice.
-- **Hosting plan** — How it deploys to the HP laptop (Docker? bare Node? ports?).
+- **Hosting plan** — How it deploys to the Dell laptop (Docker? bare Node? ports?).
 - **Risk assessment** — What could go wrong, what's hardest, what has unknowns.
 - **Phase breakdown** — MVP → v1 → future, with clear scope boundaries per phase.
 - **MCP tool inventory** — Side-by-side comparison of Pencil's tools, Stitch's tools, and Paper's tools, with a column for "our tool" showing proposed equivalents.
