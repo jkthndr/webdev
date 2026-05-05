@@ -97,8 +97,15 @@ export class ProjectWorkspaceService {
     if (!hasNodeModules) {
       // Use npm ci for reproducible installs when lockfile exists
       const hasLockfile = fs.existsSync(path.join(dir, "package-lock.json"));
-      const installCmd = hasLockfile ? "npm ci" : "npm install";
-      await execAsync(installCmd, { cwd: dir, timeout: 120000 });
+      const installCmd = hasLockfile ? "npm ci --include=dev" : "npm install --include=dev";
+      // Force NODE_ENV=development for the install so devDependencies (tailwindcss,
+      // @tailwindcss/postcss, etc.) come along even when the host container runs
+      // with NODE_ENV=production. The Next build inside the project needs them.
+      await execAsync(installCmd, {
+        cwd: dir,
+        timeout: 120000,
+        env: { ...process.env, NODE_ENV: "development" },
+      });
     }
 
     return this.getProjectInfo(name)!;
