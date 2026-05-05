@@ -1,5 +1,6 @@
 services:
   mcp-server:
+    image: ghcr.io/jkthndr/webdev:latest
     build: .
     container_name: webdev-mcp
     restart: unless-stopped
@@ -7,14 +8,17 @@ services:
       - "4500:4500"
       - "4501-4510:4501-4510"
     volumes:
-      - ./projects:/app/projects
+      - webdev-projects:/app/projects
     environment:
       - HTTP_PORT=4500
       - NODE_ENV=production
     mem_limit: 2048m
     shm_size: 2gb
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:4500/api/health"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:4500/api/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 3
+
+volumes:
+  webdev-projects:

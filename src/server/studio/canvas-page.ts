@@ -47,11 +47,17 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       </button>
     </div>
 
-    <!-- Left panel: Screens / Layers -->
+    <!-- Left panel: Brief / Screens / Layers -->
     <div class="left-panel" id="left-panel">
       <div class="panel-tabs">
+        <button class="panel-tab" data-tab="brief" onclick="switchLeftTab('brief')">Brief</button>
         <button class="panel-tab active" data-tab="screens" onclick="switchLeftTab('screens')">Screens</button>
         <button class="panel-tab" data-tab="layers" onclick="switchLeftTab('layers')">Layers</button>
+      </div>
+      <div id="tab-brief" class="tab-content">
+        <div class="brief-panel" id="brief-panel">
+          <div class="brief-loading">Loading brief…</div>
+        </div>
       </div>
       <div id="tab-screens" class="tab-content active">
         <div id="screen-list" class="screen-list"></div>
@@ -81,15 +87,23 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
     </div>
 
-    <!-- Right panel: Inspector -->
+    <!-- Right panel: Inspector + Run -->
     <div class="inspector-panel" id="inspector-panel">
       <div class="panel-tabs">
-        <button class="panel-tab active">Design</button>
+        <button class="panel-tab" data-rtab="run" onclick="switchInspectorTab('run')">Run</button>
+        <button class="panel-tab active" data-rtab="design" onclick="switchInspectorTab('design')">Design</button>
       </div>
-      <div id="inspector-content" class="inspector-content">
-        <div class="inspector-empty">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
-          <p>Click a screen to inspect</p>
+      <div id="rtab-design" class="tab-content active">
+        <div id="inspector-content" class="inspector-content">
+          <div class="inspector-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+            <p>Click a screen to inspect</p>
+          </div>
+        </div>
+      </div>
+      <div id="rtab-run" class="tab-content">
+        <div id="run-content" class="run-content">
+          <div class="run-loading">Loading proof runs…</div>
         </div>
       </div>
     </div>
@@ -279,6 +293,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       }, { passive: false, capture: true });
 
       loadLayoutThenRender();
+      loadProofRuns(); // WEBD-66: prime proof state for the Run tab + advisory plumbing
       setInterval(pollForChanges, 3000);
       window.addEventListener("beforeunload", saveLayout);
 
@@ -346,6 +361,507 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       document.querySelector('[data-tab="' + tab + '"]').classList.add("active");
       document.querySelectorAll(".left-panel .tab-content").forEach(t => t.classList.remove("active"));
       document.getElementById("tab-" + tab).classList.add("active");
+      if (tab === "brief" && !briefLoaded) loadDesignBrief();
+    }
+
+    // --- Design Brief Panel (WEBD-60) ---
+    let briefState = null;
+    let briefExists = false;
+    let briefLoaded = false;
+    let briefDirty = false;
+    let briefSaveTimer = null;
+
+    const BRIEF_CHIP_FIELDS = ["goals", "tone", "mustHaves", "avoid", "inspiration"];
+    const BRIEF_CHIP_LABELS = {
+      goals: "Goals",
+      tone: "Tone",
+      mustHaves: "Must-haves",
+      avoid: "Avoid",
+      inspiration: "Inspiration",
+    };
+    const BRIEF_CHIP_PLACEHOLDERS = {
+      goals: "+ add goal (Enter)",
+      tone: "+ add tone (Enter)",
+      mustHaves: "+ add must-have (Enter)",
+      avoid: "+ add avoid (Enter)",
+      inspiration: "+ link or reference (Enter)",
+    };
+
+    function emptyBrief() {
+      return {
+        title: "", summary: "", audience: "",
+        goals: [], tone: [], mustHaves: [], avoid: [], inspiration: [],
+        routes: [], notes: "",
+        createdAt: "", updatedAt: "",
+      };
+    }
+
+    async function loadDesignBrief() {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/design-brief");
+        const data = await res.json();
+        briefState = data.brief || emptyBrief();
+        briefExists = !!data.exists;
+        briefLoaded = true;
+        briefDirty = false;
+        renderBriefPanel();
+      } catch {
+        document.getElementById("brief-panel").innerHTML =
+          '<div class="brief-error">Could not load brief. <button class="brief-retry" onclick="loadDesignBrief()">Retry</button></div>';
+      }
+    }
+
+    function renderBriefPanel() {
+      const panel = document.getElementById("brief-panel");
+      const b = briefState || emptyBrief();
+      const status = briefExists
+        ? '<span class="brief-status-dot saved"></span><span class="brief-status-text">Saved ' + briefRelativeTime(b.updatedAt) + '</span>'
+        : '<span class="brief-status-dot new"></span><span class="brief-status-text">No brief yet — fill out and save</span>';
+
+      let html = '<div class="brief-status">' + status + '</div>';
+
+      html += briefSection("Title", '<input class="brief-input" id="brief-title" placeholder="Project title" value="' + briefAttr(b.title) + '"/>');
+      html += briefSection("Summary", '<textarea class="brief-textarea" id="brief-summary" rows="3" placeholder="What we are building, why, for whom">' + briefHtml(b.summary) + '</textarea>');
+      html += briefSection("Audience", '<input class="brief-input" id="brief-audience" placeholder="Who is the user?" value="' + briefAttr(b.audience) + '"/>');
+
+      BRIEF_CHIP_FIELDS.forEach(function(field) {
+        html += briefSection(BRIEF_CHIP_LABELS[field], renderBriefChips(field, b[field] || []));
+      });
+
+      html += briefSection("Notes", '<textarea class="brief-textarea" id="brief-notes" rows="3" placeholder="Anything else worth noting">' + briefHtml(b.notes) + '</textarea>');
+
+      html += '<div class="brief-save-bar">' +
+        '<button class="brief-save-btn" id="brief-save-btn" onclick="saveBrief()" disabled>Save brief</button>' +
+        '<span class="brief-saved" id="brief-saved"></span>' +
+      '</div>';
+
+      panel.innerHTML = html;
+      attachBriefHandlers();
+    }
+
+    function briefSection(title, body) {
+      return '<div class="brief-section">' +
+        '<div class="brief-section-title">' + title + '</div>' +
+        body +
+      '</div>';
+    }
+
+    function renderBriefChips(field, values) {
+      const chips = values.map(function(v, i) {
+        return '<span class="brief-chip" data-field="' + field + '" data-idx="' + i + '">' +
+          '<span class="brief-chip-text">' + briefHtml(v) + '</span>' +
+          '<button class="brief-chip-remove" onclick="removeBriefChip(\\'' + field + '\\', ' + i + ')" aria-label="Remove">&times;</button>' +
+        '</span>';
+      }).join("");
+      return '<div class="brief-chips">' + chips + '</div>' +
+        '<input class="brief-chip-input" data-field="' + field + '" placeholder="' + BRIEF_CHIP_PLACEHOLDERS[field] + '"/>';
+    }
+
+    function attachBriefHandlers() {
+      ["brief-title", "brief-summary", "brief-audience", "brief-notes"].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", markBriefDirty);
+      });
+      document.querySelectorAll(".brief-chip-input").forEach(function(input) {
+        input.addEventListener("keydown", function(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const value = input.value.trim();
+            if (!value) return;
+            addBriefChip(input.dataset.field, value);
+            input.value = "";
+          }
+        });
+      });
+    }
+
+    function markBriefDirty() {
+      briefDirty = true;
+      const btn = document.getElementById("brief-save-btn");
+      if (btn) btn.disabled = false;
+      const saved = document.getElementById("brief-saved");
+      if (saved) saved.textContent = "";
+    }
+
+    function addBriefChip(field, value) {
+      if (!briefState) briefState = emptyBrief();
+      briefState[field] = (briefState[field] || []).concat([value]);
+      markBriefDirty();
+      // Re-render only the affected section to preserve focus on input
+      flushBriefScalars();
+      renderBriefPanel();
+      const input = document.querySelector('.brief-chip-input[data-field="' + field + '"]');
+      if (input) input.focus();
+    }
+
+    function removeBriefChip(field, idx) {
+      if (!briefState || !Array.isArray(briefState[field])) return;
+      briefState[field] = briefState[field].filter(function(_, i) { return i !== idx; });
+      markBriefDirty();
+      flushBriefScalars();
+      renderBriefPanel();
+    }
+
+    function flushBriefScalars() {
+      // Capture current input values into briefState before re-render
+      const titleEl = document.getElementById("brief-title");
+      const summaryEl = document.getElementById("brief-summary");
+      const audienceEl = document.getElementById("brief-audience");
+      const notesEl = document.getElementById("brief-notes");
+      if (!briefState) briefState = emptyBrief();
+      if (titleEl) briefState.title = titleEl.value;
+      if (summaryEl) briefState.summary = summaryEl.value;
+      if (audienceEl) briefState.audience = audienceEl.value;
+      if (notesEl) briefState.notes = notesEl.value;
+    }
+
+    async function saveBrief() {
+      flushBriefScalars();
+      const btn = document.getElementById("brief-save-btn");
+      const saved = document.getElementById("brief-saved");
+      if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/design-brief", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: briefState.title || "",
+            summary: briefState.summary || "",
+            audience: briefState.audience || "",
+            goals: briefState.goals || [],
+            tone: briefState.tone || [],
+            mustHaves: briefState.mustHaves || [],
+            avoid: briefState.avoid || [],
+            inspiration: briefState.inspiration || [],
+            notes: briefState.notes || "",
+          }),
+        });
+        if (!res.ok) throw new Error("save failed");
+        const data = await res.json();
+        briefState = data.brief;
+        briefExists = true;
+        briefDirty = false;
+        if (btn) { btn.textContent = "Save brief"; btn.disabled = true; }
+        if (saved) saved.textContent = "Saved";
+        // Update only the status header, preserve form focus
+        const statusEl = document.querySelector(".brief-status");
+        if (statusEl) {
+          statusEl.innerHTML =
+            '<span class="brief-status-dot saved"></span>' +
+            '<span class="brief-status-text">Saved ' + briefRelativeTime(briefState.updatedAt) + '</span>';
+        }
+      } catch (e) {
+        if (btn) { btn.textContent = "Save brief"; btn.disabled = false; }
+        if (saved) saved.textContent = "Save failed";
+      }
+    }
+
+    function briefRelativeTime(iso) {
+      if (!iso) return "";
+      const then = new Date(iso).getTime();
+      if (!then) return "";
+      const diff = Date.now() - then;
+      if (diff < 30 * 1000) return "just now";
+      if (diff < 60 * 60 * 1000) return Math.round(diff / 60000) + "m ago";
+      if (diff < 24 * 60 * 60 * 1000) return Math.round(diff / 3600000) + "h ago";
+      return new Date(iso).toLocaleDateString();
+    }
+
+    function briefHtml(s) { return String(s || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function briefAttr(s) { return String(s || "").replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+    // --- Proof Runs / Run Timeline (WEBD-66) ---
+    let proofRuns = [];
+    let proofLoaded = false;
+    let proofPollTimer = null;
+    let activeInspectorTab = "design";
+
+    function switchInspectorTab(tab) {
+      activeInspectorTab = tab;
+      document.querySelectorAll(".inspector-panel .panel-tab").forEach(t => t.classList.remove("active"));
+      const btn = document.querySelector('[data-rtab="' + tab + '"]');
+      if (btn) btn.classList.add("active");
+      document.querySelectorAll(".inspector-panel .tab-content").forEach(t => t.classList.remove("active"));
+      document.getElementById("rtab-" + tab).classList.add("active");
+      if (tab === "run") {
+        if (!proofLoaded) loadProofRuns();
+        startProofPolling();
+      } else {
+        stopProofPolling();
+      }
+    }
+
+    function startProofPolling() {
+      if (proofPollTimer) return;
+      proofPollTimer = setInterval(loadProofRuns, 8000);
+    }
+
+    function stopProofPolling() {
+      if (proofPollTimer) { clearInterval(proofPollTimer); proofPollTimer = null; }
+    }
+
+    async function loadProofRuns() {
+      try {
+        const res = await fetch("/api/projects/" + PROJECT + "/proof-runs");
+        const data = await res.json();
+        proofRuns = Array.isArray(data.proofRuns) ? data.proofRuns : [];
+        proofLoaded = true;
+        renderProofRuns();
+        updateProofState();
+      } catch {
+        const el = document.getElementById("run-content");
+        if (el) el.innerHTML = '<div class="run-error">Could not load proof runs. <button class="brief-retry" onclick="loadProofRuns()">Retry</button></div>';
+      }
+    }
+
+    function renderProofRuns() {
+      const el = document.getElementById("run-content");
+      if (!el) return;
+
+      // Filter to current screen if one is selected; otherwise show all
+      const filtered = selectedCard
+        ? proofRuns.filter(r => r.screen === selectedCard)
+        : proofRuns;
+
+      if (filtered.length === 0) {
+        const hint = selectedCard
+          ? 'No proof runs for <strong>' + briefHtml(selectedCard) + '</strong> yet.'
+          : 'No proof runs in this project yet.';
+        el.innerHTML = '<div class="run-empty">' +
+          '<div class="run-empty-icon">⊙</div>' +
+          '<div class="run-empty-title">No proof yet</div>' +
+          '<div class="run-empty-hint">' + hint + '</div>' +
+          '<div class="run-empty-hint">Run proof on a screen to capture the production-build screenshot. Live preview is advisory until then.</div>' +
+        '</div>';
+        return;
+      }
+
+      const latest = filtered[0];
+      const history = filtered.slice(1);
+
+      let html = '<div class="run-section run-section-latest">' +
+        '<div class="run-section-title">Latest run</div>' +
+        renderProofRunCard(latest, true) +
+      '</div>';
+
+      if (history.length > 0) {
+        html += '<div class="run-section">' +
+          '<div class="run-section-title">History (' + history.length + ')</div>' +
+          history.map(r => renderProofRunCard(r, false)).join("") +
+        '</div>';
+      }
+
+      el.innerHTML = html;
+    }
+
+    function renderProofRunCard(run, isLatest) {
+      const passed = run.status === "passed";
+      const pipClass = "run-status-pip " + (passed ? "passed" : "failed");
+      const pipGlyph = passed ? "✓" : "✗";
+      const vp = run.viewport ? run.viewport.width + "×" + run.viewport.height : "—";
+      const time = run.completedAt || run.startedAt;
+      const ago = briefRelativeTime(time);
+
+      let card = '<div class="run-item' + (passed ? " passed" : " failed") + (isLatest ? " latest" : "") + '">';
+
+      card += '<div class="run-item-header">' +
+        '<span class="' + pipClass + '">' + pipGlyph + '</span>' +
+        '<span class="run-screen">' + briefHtml(run.screen) + '</span>' +
+        '<span class="run-vp">' + vp + '</span>' +
+        '<span class="run-time">' + ago + '</span>' +
+      '</div>';
+
+      if (passed) {
+        if (isLatest && run.screenshotPath) {
+          card += '<a class="run-screenshot" href="/api/projects/' + PROJECT + '/proof-runs/' + run.id + '/screenshot" target="_blank">' +
+            '<img src="/api/projects/' + PROJECT + '/proof-runs/' + run.id + '/screenshot" alt="Proof screenshot" loading="lazy"/>' +
+          '</a>';
+        }
+        if (run.checkpointHash) {
+          card += '<div class="run-meta-row"><span class="run-meta-label">Checkpoint</span><span class="run-meta-mono">' + run.checkpointHash.slice(0, 7) + '</span></div>';
+        }
+      } else {
+        card += '<div class="run-failure">' +
+          '<div class="run-failure-stage">Failed at: <span class="run-meta-mono">' + briefHtml(run.failureStage || "unknown") + '</span></div>' +
+          (run.error ? '<div class="run-failure-error">' + briefHtml(run.error) + '</div>' : '') +
+        '</div>';
+      }
+
+      if (Array.isArray(run.changedFiles) && run.changedFiles.length > 0 && isLatest) {
+        card += '<details class="run-changed"' + (run.changedFiles.length <= 5 ? " open" : "") + '>' +
+          '<summary>Changed files (' + run.changedFiles.length + ')</summary>' +
+          '<ul class="run-changed-list">' +
+            run.changedFiles.map(f => '<li>' + briefHtml(f) + '</li>').join("") +
+          '</ul>' +
+        '</details>';
+      }
+
+      card += '</div>';
+      return card;
+    }
+
+    // Per-screen latest proof state — keyed by screen name.
+    // Values: "passed" | "failed" | "stale" | "none"
+    let screenProofStatus = {};
+    // Latest *passed* run per screen; the proof-mode card uses it to source
+    // the screenshot URL + meta. Distinct from screenProofStatus because a
+    // screen can be classified "stale" while still having a viewable older
+    // proof artifact.
+    let screenLatestPassedProof = {};
+    // Per-card view mode: "live" (iframe/thumb) or "proof" (screenshot).
+    let cardModes = {};
+
+    function classifyProof(run, sourceHash) {
+      if (!run) return "none";
+      if (run.status === "failed") return "failed";
+      if (run.checkpointHash && sourceHash && run.checkpointHash.slice(0, 7) !== sourceHash.slice(0, 7)) {
+        return "stale";
+      }
+      return "passed";
+    }
+
+    // Sets proof-state class on the inspector panel + each screen card,
+    // and toggles the Advisory chip on cards whose proof is stale/missing
+    // (WEBD-63: trust-hierarchy treatment).
+    function updateProofState() {
+      const panel = document.getElementById("inspector-panel");
+
+      // Compute per-screen latest run + classify
+      const latestByScreen = {};
+      const latestPassedByScreen = {};
+      for (const run of proofRuns) {
+        if (!latestByScreen[run.screen]) latestByScreen[run.screen] = run;
+        if (run.status === "passed" && !latestPassedByScreen[run.screen]) {
+          latestPassedByScreen[run.screen] = run;
+        }
+      }
+      screenProofStatus = {};
+      screenLatestPassedProof = latestPassedByScreen;
+      for (const screen of screens) {
+        screenProofStatus[screen] = classifyProof(latestByScreen[screen], currentHash);
+      }
+
+      // Inspector rail: reflects the most concerning state across screens —
+      // failed > stale > none > passed. (Pessimistic so the rail doesn't
+      // read green when any screen is broken.)
+      const summary = (() => {
+        const states = Object.values(screenProofStatus);
+        if (states.includes("failed")) return "failed";
+        if (states.includes("stale")) return "stale";
+        if (states.length === 0 || states.every(s => s === "none")) return "none";
+        if (states.includes("none")) return "stale";
+        return "passed";
+      })();
+
+      if (panel) {
+        panel.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
+        panel.classList.add("proof-" + summary);
+      }
+
+      // Per-card advisory state
+      Object.keys(cardEls).forEach(name => {
+        const card = cardEls[name];
+        if (!card) return;
+        const status = screenProofStatus[name] || "none";
+        card.classList.remove("proof-passed", "proof-failed", "proof-stale", "proof-none");
+        card.classList.add("proof-" + status);
+
+        // Add/update advisory chip on the frame label name span
+        const labelName = card.querySelector(".sc-frame-label-name");
+        if (!labelName) return;
+        let chip = labelName.querySelector(".sc-advisory-chip");
+        const needsChip = status === "stale" || status === "none" || status === "failed";
+        if (needsChip) {
+          if (!chip) {
+            chip = document.createElement("span");
+            chip.className = "sc-advisory-chip";
+            labelName.appendChild(chip);
+          }
+          chip.classList.remove("stale", "none", "failed");
+          chip.classList.add(status);
+          chip.textContent = status === "failed" ? "Proof failed"
+            : status === "stale" ? "Advisory · proof stale"
+            : "Advisory · no proof";
+        } else if (chip) {
+          chip.remove();
+        }
+
+        // WEBD-62: refresh proof view + toggle availability
+        updateCardProofView(name);
+      });
+    }
+
+    // WEBD-62: populate proof view + enable/disable Proof toggle on a card
+    function updateCardProofView(name) {
+      const card = cardEls[name];
+      if (!card) return;
+      const proofView = card.querySelector(".sc-view-proof");
+      const proofBtn = card.querySelector('.sc-mode-btn[data-mode="proof"]');
+      if (!proofView || !proofBtn) return;
+      const run = screenLatestPassedProof[name];
+
+      if (!run) {
+        proofBtn.disabled = true;
+        proofBtn.title = "No passing proof yet — run proof to capture";
+        proofView.innerHTML =
+          '<div class="sc-proof-empty">' +
+            '<div class="sc-proof-empty-icon">⊙</div>' +
+            '<div class="sc-proof-empty-msg">No passing proof yet</div>' +
+            '<div class="sc-proof-empty-hint">Run proof to capture an authoritative screenshot.</div>' +
+          '</div>';
+        // If currently in proof mode but no proof exists, fall back to live
+        if (cardModes[name] === "proof") setCardMode(name, "live");
+        return;
+      }
+
+      proofBtn.disabled = false;
+      const screenshotUrl = "/api/projects/" + PROJECT + "/proof-runs/" + run.id + "/screenshot";
+      const vp = run.viewport ? run.viewport.width + "×" + run.viewport.height : "—";
+      const checkpoint = run.checkpointHash ? run.checkpointHash.slice(0, 7) : "—";
+      const ago = briefRelativeTime(run.completedAt);
+
+      // Trust hierarchy: when the LATEST proof for this screen is failed,
+      // an older passing artifact is still inspectable but must NOT be
+      // labeled "Current". Failed dominates over older passing.
+      // (Codex review finding on wave 1 — Penny seconded.)
+      const status = screenProofStatus[name];
+      const isFailed = status === "failed";
+      const isStale = status === "stale";
+      const badgeClass = isFailed ? "blocked" : isStale ? "stale" : "current";
+      const badgeLabel = isFailed ? "Last passing proof"
+        : isStale ? "Stale proof"
+        : "Current proof";
+      proofBtn.title = isFailed
+        ? "Last passing proof (latest run failed — see Run tab)"
+        : "Latest production proof (authoritative), " + ago;
+
+      let warning = "";
+      if (isFailed) {
+        warning = '<div class="sc-proof-warning">Latest proof failed. Showing the last passing artifact for inspection only — not authoritative.</div>';
+      }
+
+      proofView.innerHTML =
+        '<a class="sc-proof-img" href="' + screenshotUrl + '" target="_blank" title="Open proof screenshot">' +
+          '<img src="' + screenshotUrl + '" alt="Proof screenshot of ' + briefAttr(name) + '" loading="lazy"/>' +
+        '</a>' +
+        warning +
+        '<div class="sc-proof-meta">' +
+          '<span class="sc-proof-status ' + badgeClass + '">' + badgeLabel + '</span>' +
+          '<span class="sc-proof-meta-mono">' + checkpoint + '</span>' +
+          '<span class="sc-proof-meta-mono">' + vp + '</span>' +
+          '<span class="sc-proof-meta-time">' + ago + '</span>' +
+        '</div>';
+    }
+
+    function setCardMode(name, mode) {
+      const card = cardEls[name];
+      if (!card) return;
+      cardModes[name] = mode;
+      card.classList.remove("mode-live", "mode-proof");
+      card.classList.add("mode-" + mode);
+      card.querySelectorAll(".sc-mode-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === mode);
+      });
     }
 
     // --- Screen List ---
@@ -411,6 +927,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       updateScreenList();
       updateInspector();
       if (domTrees[name]) updateLayersTree(name);
+      if (proofLoaded) renderProofRuns();
     }
 
     function deselectCard() {
@@ -419,6 +936,7 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
       selectedElement = null;
       updateScreenList();
       updateInspector();
+      if (proofLoaded) renderProofRuns();
     }
 
     // --- Inspector (Pencil-style sections) ---
@@ -585,33 +1103,103 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
 
       updateMinimap();
       updateScreenList();
+      if (proofLoaded) updateProofState();
     }
 
     function createCard(name, pos, animate) {
       const card = document.createElement("div");
-      card.className = "screen-card" + (animate ? " entering" : "");
+      card.className = "screen-card mode-live" + (animate ? " entering" : "");
       card.dataset.screen = name;
       card.style.left = pos.x + "px";
       card.style.top = pos.y + "px";
+      cardModes[name] = "live";
 
       const proxyUrl = "/proxy/" + PROJECT + "/screens/" + name;
       const newBadge = animate ? '<span class="sc-new-badge">NEW</span>' : '';
       const IFRAME_H = 700;
+
+      const labelHtml =
+        '<span class="sc-frame-label-name">' + name + newBadge + '</span>' +
+        '<span class="sc-mode-toggle" data-screen="' + name + '">' +
+          '<button class="sc-mode-btn active" data-mode="live" title="Live preview (advisory)">Live</button>' +
+          '<button class="sc-mode-btn" data-mode="proof" title="Latest production proof (authoritative)" disabled>Proof</button>' +
+        '</span>';
+
+      let liveHtml;
       if (RUNNING) {
-        card.innerHTML =
-          '<div class="sc-frame-label">' + name + newBadge + '</div>' +
-          '<div class="sc-frame-content">' +
-            '<div class="sc-iframe-wrap" style="height:' + IFRAME_H + 'px">' +
-              '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + CARD_W + 'px;height:' + IFRAME_H + 'px" loading="lazy"></iframe>' +
+        liveHtml =
+          '<div class="sc-iframe-wrap" style="height:' + IFRAME_H + 'px">' +
+            '<iframe class="sc-iframe" src="' + proxyUrl + '" style="width:' + CARD_W + 'px;height:' + IFRAME_H + 'px" loading="lazy"></iframe>' +
+            '<div class="sc-frame-overlay sc-frame-starting hidden">' +
+              '<div class="sc-overlay-spin"></div>' +
+              '<div class="sc-overlay-msg">Starting preview…</div>' +
+            '</div>' +
+            '<div class="sc-frame-overlay sc-frame-error hidden">' +
+              '<div class="sc-overlay-msg">Preview failed to load</div>' +
+              '<button class="sc-overlay-retry" data-screen="' + name + '">Retry</button>' +
             '</div>' +
           '</div>';
       } else {
         const thumbUrl = "/api/projects/" + PROJECT + "/screens/" + name + "/thumbnail?t=" + Date.now();
-        card.innerHTML =
-          '<div class="sc-frame-label">' + name + '</div>' +
-          '<div class="sc-frame-content">' +
-            '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>' +
-          '</div>';
+        liveHtml =
+          '<img class="sc-thumb" src="' + thumbUrl + '" alt="' + name + '" onerror="this.outerHTML=\\'<div class=sc-thumb-empty>Not running</div>\\'"/>';
+      }
+
+      const proofHtml =
+        '<div class="sc-proof-view sc-proof-empty">' +
+          '<div class="sc-proof-empty-icon">⊙</div>' +
+          '<div class="sc-proof-empty-msg">No passing proof yet</div>' +
+          '<div class="sc-proof-empty-hint">Run proof to capture an authoritative screenshot.</div>' +
+        '</div>';
+
+      card.innerHTML =
+        '<div class="sc-frame-label">' + labelHtml + '</div>' +
+        '<div class="sc-frame-content">' +
+          '<div class="sc-view sc-view-live">' + liveHtml + '</div>' +
+          '<div class="sc-view sc-view-proof">' + proofHtml + '</div>' +
+        '</div>';
+
+      // Mode toggle handlers
+      card.querySelectorAll(".sc-mode-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (btn.disabled) return;
+          setCardMode(name, btn.dataset.mode);
+        });
+        btn.addEventListener("mousedown", (e) => e.stopPropagation());
+      });
+
+      // Iframe load/error handling for starting/error states
+      const iframe = card.querySelector(".sc-iframe");
+      if (iframe) {
+        let loadTimer = setTimeout(() => {
+          const overlay = card.querySelector(".sc-frame-starting");
+          if (overlay) overlay.classList.remove("hidden");
+        }, 600);
+        iframe.addEventListener("load", () => {
+          clearTimeout(loadTimer);
+          const startingOv = card.querySelector(".sc-frame-starting");
+          const errorOv = card.querySelector(".sc-frame-error");
+          if (startingOv) startingOv.classList.add("hidden");
+          if (errorOv) errorOv.classList.add("hidden");
+        });
+        iframe.addEventListener("error", () => {
+          clearTimeout(loadTimer);
+          const startingOv = card.querySelector(".sc-frame-starting");
+          const errorOv = card.querySelector(".sc-frame-error");
+          if (startingOv) startingOv.classList.add("hidden");
+          if (errorOv) errorOv.classList.remove("hidden");
+        });
+      }
+      const retryBtn = card.querySelector(".sc-overlay-retry");
+      if (retryBtn) {
+        retryBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const f = card.querySelector(".sc-iframe");
+          if (f) f.src = f.src;
+          const errorOv = card.querySelector(".sc-frame-error");
+          if (errorOv) errorOv.classList.add("hidden");
+        });
       }
 
       // Click → select card (Pencil-style, no preview overlay)
@@ -823,6 +1411,8 @@ export function canvasPage(project: ProjectInfo, running: boolean, starting: boo
             }
           });
           renderCards(screens, true);
+          // Proof state can become stale when source changes — refresh classification
+          if (proofLoaded) updateProofState();
         }
       } catch {}
     }

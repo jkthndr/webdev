@@ -973,7 +973,7 @@
     <p>This tool makes Claude Code a <span class="highlight">first-class design agent</span>. The agent writes real React/TSX components using shadcn/ui and Tailwind CSS, a Next.js dev server renders them, Playwright captures screenshots for human review, and the TSX source IS the production deliverable &mdash; zero translation gap.</p>
     <p>After evaluating 5 competing approaches (extending Penpot, building from scratch, wrapping Stitch, hybrid approaches), <span class="highlight">Option C: "Designs ARE Code"</span> wins decisively: 10/10 fidelity, 2-3 week MVP, minimal maintenance, zero vendor lock-in.</p>
     <div class="rec-box">
-      <strong>Recommended:</strong> Build a 7-tool MVP MCP server (expanding to 11+ in later phases) that manages design projects as Next.js apps. Validate with 3 spikes before building. Deploy on the HP laptop (<code>jake-dev-win-hp</code> / <code>100.102.138.90</code>) via Docker with GitHub Actions CI/CD. Strictly code-first &mdash; no independent design schema.
+      <strong>Recommended:</strong> Build a 7-tool MVP MCP server (expanding to 11+ in later phases) that manages design projects as Next.js apps. Validate with 3 spikes before building. Deploy on the Dell laptop (<code>100.115.18.15</code>) via Docker with GitHub Actions CI/CD. Strictly code-first &mdash; no independent design schema.
     </div>
   </div>
 </div>
@@ -2062,7 +2062,7 @@
       <div class="tech-card">
         <div class="tech-role">Runtime</div>
         <div class="tech-name">Node.js 22</div>
-        <div class="tech-why">Already installed on HP laptop. LTS with stable ESM support. Required for Next.js and Playwright.</div>
+        <div class="tech-why">Runs on the Dell laptop. LTS with stable ESM support. Required for Next.js and Playwright.</div>
       </div>
       <div class="tech-card">
         <div class="tech-role">MCP Server</div>
@@ -2102,7 +2102,7 @@
       <div class="tech-card">
         <div class="tech-role">Network</div>
         <div class="tech-name">Tailscale</div>
-        <div class="tech-why">Already connecting HP laptop and Dell laptop. Preview URLs accessible via Tailscale. 1-5ms latency.</div>
+        <div class="tech-why">Already connects Oliver's machines. webdev preview URLs are served from the Dell runtime over Tailscale.</div>
       </div>
       <div class="tech-card">
         <div class="tech-role">Containerization</div>
@@ -2139,9 +2139,9 @@
     </div>
 
     <div class="card">
-      <h3>Target Machine: jake-dev-win-hp</h3>
-      <p>Tailscale hostname: <code>jake-dev-win-hp</code> &bull; Tailscale IP: <code>100.102.138.90</code> &bull; SSH: <code>ssh -i ~/.ssh/hp_laptop_key oliver@100.102.138.90</code></p>
-      <p style="font-size:13px;color:var(--text-muted);margin-top:6px"><strong>Note:</strong> This machine also runs the GitHub Actions Android build runner (<code>hp-android</code>) and TaskQ (port 3090). See resource contention section below.</p>
+      <h3>Target Machine: Dell laptop</h3>
+      <p>Tailscale IP: <code>100.115.18.15</code> &bull; Repo: <code>C:\Users\olive\Projects\webdev</code> &bull; Service: <code>http://100.115.18.15:4500</code></p>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:6px"><strong>Note:</strong> Playbook remains separate on the HP laptop at <code>100.102.138.90:3095</code>. Do not use the HP IP as the webdev runtime target.</p>
     </div>
 
     <div class="hosting-grid">
@@ -2255,7 +2255,7 @@
     <div class="card" style="border-left:4px solid var(--sage);margin-top:16px">
       <h3 style="font-size:15px">Health Check</h3>
       <p style="font-size:13px;color:var(--text-muted)">Matches the pattern used by all other Docker apps in the runbook:</p>
-      <pre><code>curl -sf http://100.102.138.90:4500/api/health</code></pre>
+      <pre><code>curl -sf http://100.115.18.15:4500/api/health</code></pre>
       <p style="font-size:13px;color:var(--text-muted);margin-top:8px">Returns <code>{"status":"ok","screens":N,"projects":N}</code>. Add to the runbook health check loop alongside existing services.</p>
     </div>
 
@@ -2266,8 +2266,8 @@
       <ol style="font-size:13px;color:var(--text-muted);padding-left:20px;line-height:1.8">
         <li>Push to <code>main</code> triggers <code>.github/workflows/deploy.yml</code></li>
         <li>Workflow connects via Tailscale VPN</li>
-        <li>SSH into HP laptop: <code>ssh -i key oliver@100.102.138.90</code></li>
-        <li><code>cd ~/webdev && git pull origin main</code></li>
+        <li>Run on the Dell self-hosted runner in <code>C:\Users\olive\Projects\webdev</code></li>
+        <li><code>git fetch origin main && git reset --hard origin/main</code></li>
         <li><code>docker compose up -d --build</code></li>
         <li>Health check: <code>curl -sf http://localhost:4500/api/health</code></li>
         <li>Post result to Discord (optional, via webhook)</li>
@@ -2277,22 +2277,22 @@
 
     <!-- Resource Contention -->
     <div class="card" style="border-left:4px solid var(--coral);margin-top:16px">
-      <h3 style="font-size:15px">Resource Contention: Android Build Runner</h3>
-      <p style="font-size:13px;color:var(--text-muted)">The HP laptop runs a GitHub Actions runner (<code>hp-android</code>) for Android builds. Gradle builds are memory-intensive (~4-6GB). Mitigations:</p>
+      <h3 style="font-size:15px">Resource Contention</h3>
+      <p style="font-size:13px;color:var(--text-muted)">webdev shares the Dell with local agent services. Keep Docker limits and health checks explicit so the design tool is easy to diagnose. Mitigations:</p>
       <ul style="font-size:13px;color:var(--text-muted);padding-left:20px;line-height:1.8;margin-top:8px">
         <li><code>mem_limit: 1536m</code> on the preview container caps Chromium memory</li>
-        <li>Android builds are infrequent (manual trigger or push to main with <code>[build]</code> tag)</li>
+        <li>Keep expensive proof/screenshot work scoped to active projects</li>
         <li>Playwright uses a persistent browser context — no cold starts during builds</li>
-        <li>If contention occurs: pause the design tool containers during Android builds, or schedule builds off-hours</li>
-        <li>32GB RAM total: ~6GB Android build + ~1.5GB design tool + ~1GB TaskQ + OS = ~10GB peak. Plenty of headroom.</li>
+        <li>If contention occurs: pause inactive preview servers before running proof jobs</li>
+        <li>Playbook is on the HP laptop, so it does not consume Dell runtime resources.</li>
       </ul>
     </div>
 
     <div class="card" style="border-left:4px solid var(--sage)">
       <h3 style="font-size:15px">Dual Transport</h3>
       <ul>
-        <li><strong>stdio</strong> &mdash; When Claude Code runs on the HP laptop itself. Zero network latency. Configured in <code>.claude/settings.json</code>.</li>
-        <li><strong>HTTP (port 4500)</strong> &mdash; When Claude Code runs on the Dell laptop or any remote machine. Accessed via Tailscale at <code>http://jake-dev-win-hp.tail3b2a94.ts.net:4500</code> or <code>http://100.102.138.90:4500</code>.</li>
+        <li><strong>stdio</strong> &mdash; When an agent runs in the webdev repo on the Dell host. Zero network latency. Configured locally by the agent runtime.</li>
+        <li><strong>HTTP (port 4500)</strong> &mdash; When Claude Code or another agent runs remotely. Accessed via Tailscale at <code>http://100.115.18.15:4500</code>.</li>
       </ul>
     </div>
   </div>
@@ -2408,7 +2408,7 @@
             <li>Playwright screenshot pipeline (deterministic)</li>
             <li>Preview server over Tailscale</li>
             <li>Git-based checkpoint system with TTL</li>
-            <li>Docker deployment on HP laptop</li>
+            <li>Docker deployment on Dell laptop</li>
           </ul>
         </div>
       </div>
@@ -2499,7 +2499,7 @@
       <div class="risk-icon med">4</div>
       <div>
         <h4 style="font-size:15px;margin-bottom:4px">Playwright Resource Usage</h4>
-        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">Chromium is memory-hungry (~700MB). On the 32GB HP laptop this is fine, but could be an issue on smaller machines.</p>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">Chromium is memory-hungry (~700MB). Keep proof runs scoped and stop inactive preview servers on smaller machines.</p>
         <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Persistent browser context &mdash; launch once, reuse for all screenshots. Single Chromium instance, not one per screenshot.</p>
       </div>
       <span class="risk-sev med">Medium</span>
@@ -2529,7 +2529,7 @@
       <div class="risk-icon low">7</div>
       <div>
         <h4 style="font-size:15px;margin-bottom:4px">Network Latency</h4>
-        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">MCP server on HP laptop, Claude Code on Dell laptop. Tailscale adds network hop for every tool call.</p>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.6">MCP server on Dell laptop, with remote agents connecting over Tailscale when needed. Tailscale adds a small network hop for remote tool calls.</p>
         <p style="font-size:13px;color:var(--sage);margin-top:6px"><strong>Mitigation:</strong> Tailscale adds only 1-5ms. Negligible vs. screenshot render time (200-500ms). Can also run via stdio locally.</p>
       </div>
       <span class="risk-sev low">Low</span>
@@ -2790,7 +2790,7 @@
     },
     'nextjs': {
       title: 'Next.js Dev Server',
-      desc: 'Renders the TSX components in a real browser environment with full CSS support (Grid, Flexbox, Tailwind). Uses Turbopack for fast HMR. Serves on port 4501 for preview. This is what Playwright screenshots and what Oliver sees.'
+      desc: 'Renders the TSX components in a real browser environment with full CSS support (Grid, Flexbox, Tailwind). Uses Turbopack for fast HMR. Studio shows live routes through the webdev proxy on port 4500; Playwright screenshots remain the approval proof.'
     },
     'screenshot': {
       title: 'Screenshot Service',

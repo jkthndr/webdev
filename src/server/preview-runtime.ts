@@ -6,8 +6,8 @@ import type { ProjectWorkspaceService } from "./workspace.js";
 
 const execAsync = promisify(exec);
 
-const PORT_RANGE_START = 4501;
-const PORT_RANGE_END = 4510;
+const PORT_RANGE_START = parseInt(process.env.WEBDEV_PREVIEW_PORT_START || "4501", 10);
+const PORT_RANGE_END = parseInt(process.env.WEBDEV_PREVIEW_PORT_END || "4599", 10);
 const READINESS_TIMEOUT_MS = 30000;
 const READINESS_TIMEOUT_DEV_MS = 15000;
 const READINESS_POLL_MS = 500;
@@ -36,33 +36,46 @@ export class PreviewRuntimeService {
   }
 
   async startDevServer(projectName: string): Promise<number> {
+    return this.startProductionServer(projectName);
+  }
+
+  /** Build and serve the project in production mode. Replaces an advisory dev server if needed. */
+  async startProductionServer(projectName: string): Promise<number> {
     const existing = this.devServers.get(projectName);
-    if (existing) return existing.port;
+    if (existing?.mode === "production") return existing.port;
     if (this.starting.has(projectName)) return -1; // already starting
 
     this.starting.add(projectName);
 
-    const port = await this.findOpenPort();
+    const port = existing?.port ?? await this.findOpenPort();
     const dir = this.workspace.projectDir(projectName);
 
-    // Build first for production-mode serving (deterministic screenshots)
-    await execAsync("npm run build", { cwd: dir, timeout: 120000 });
-
-    const srv = this.spawnServer(dir, port, "production");
-    this.devServers.set(projectName, srv);
-
-    const ready = await this.waitForReady(port);
-    this.starting.delete(projectName);
-    if (!ready) {
-      this.killProcess(srv.process);
+    if (existing) {
+      this.killProcess(existing.process);
       this.devServers.delete(projectName);
-      const logs = srv.stderr.slice(-20).join("\n");
-      throw new Error(
-        `Preview server for '${projectName}' failed to become ready on port ${port} within ${READINESS_TIMEOUT_MS / 1000}s.\nRecent stderr:\n${logs}`
-      );
     }
 
-    return port;
+    try {
+      // Build first for production-mode serving (deterministic screenshots)
+      await execAsync("npm run build", { cwd: dir, timeout: 120000 });
+
+      const srv = this.spawnServer(dir, port, "production");
+      this.devServers.set(projectName, srv);
+
+      const ready = await this.waitForReady(port);
+      if (!ready) {
+        this.killProcess(srv.process);
+        this.devServers.delete(projectName);
+        const logs = srv.stderr.slice(-20).join("\n");
+        throw new Error(
+          `Preview server for '${projectName}' failed to become ready on port ${port} within ${READINESS_TIMEOUT_MS / 1000}s.\nRecent stderr:\n${logs}`
+        );
+      }
+
+      return port;
+    } finally {
+      this.starting.delete(projectName);
+    }
   }
 
   /** Start or switch to a dev server with HMR (no build step, fast reload). */
@@ -170,10 +183,17 @@ export class PreviewRuntimeService {
   }
 
   private isPortAvailable(port: number): Promise<boolean> {
+    return this.canListen(port, "0.0.0.0")
+      .then((ipv4) => ipv4 ? this.canListen(port, "::") : false);
+  }
+
+  private canListen(port: number, host: string): Promise<boolean> {
     return new Promise((resolve) => {
       const srv = createServer();
-      srv.once("error", () => resolve(false));
-      srv.listen(port, "0.0.0.0", () => {
+      srv.once("error", (err: NodeJS.ErrnoException) => {
+        resolve(err.code === "EAFNOSUPPORT");
+      });
+      srv.listen(port, host, () => {
         srv.close(() => resolve(true));
       });
     });

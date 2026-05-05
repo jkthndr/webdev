@@ -742,6 +742,708 @@ export const CANVAS_CSS = `
     text-overflow: ellipsis;
   }
 
+  /* Design Brief panel (WEBD-60) — lives in left-panel "Brief" tab */
+  .brief-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .brief-loading,
+  .brief-error {
+    padding: 1.5rem 1rem;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+
+  .brief-error { color: rgba(255,107,107,0.85); }
+
+  .brief-retry {
+    margin-left: 0.5rem;
+    background: transparent;
+    border: 1px solid rgba(255,107,107,0.4);
+    color: var(--s-coral);
+    padding: 0.125rem 0.625rem;
+    border-radius: 0.25rem;
+    font-size: 0.6875rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .brief-retry:hover { background: rgba(255,107,107,0.1); }
+
+  .brief-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .brief-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .brief-status-dot.saved { background: var(--s-sage); }
+  .brief-status-dot.new { background: var(--s-gold); }
+
+  .brief-section {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .brief-section-title {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.4375rem;
+  }
+
+  .brief-input,
+  .brief-textarea,
+  .brief-chip-input {
+    width: 100%;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.9);
+    border-radius: 4px;
+    padding: 0.4375rem 0.5625rem;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .brief-input:focus,
+  .brief-textarea:focus,
+  .brief-chip-input:focus {
+    outline: none;
+    border-color: rgba(255,107,107,0.5);
+    background: rgba(0,0,0,0.3);
+  }
+
+  .brief-textarea {
+    resize: vertical;
+    min-height: 4rem;
+    font-family: inherit;
+  }
+
+  .brief-input::placeholder,
+  .brief-textarea::placeholder,
+  .brief-chip-input::placeholder {
+    color: rgba(255,255,255,0.25);
+  }
+
+  .brief-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3125rem;
+    margin-bottom: 0.4375rem;
+    min-height: 0;
+  }
+  .brief-chips:empty { margin-bottom: 0; }
+
+  .brief-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    background: rgba(255,107,107,0.12);
+    color: var(--s-coral);
+    border: 1px solid rgba(255,107,107,0.25);
+    padding: 0.1875rem 0.4375rem 0.1875rem 0.5625rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    max-width: 100%;
+  }
+
+  .brief-chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 11rem;
+  }
+
+  .brief-chip-remove {
+    background: none;
+    border: none;
+    color: rgba(255,107,107,0.7);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .brief-chip-remove:hover { background: rgba(255,107,107,0.25); color: white; }
+
+  .brief-chip-input {
+    font-size: 0.75rem;
+    padding: 0.3125rem 0.5625rem;
+    background: rgba(0,0,0,0.15);
+    border-style: dashed;
+  }
+
+  .brief-save-bar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    background: linear-gradient(to top, #242320 70%, rgba(36,35,32,0.85));
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 5;
+  }
+
+  .brief-save-btn {
+    background: var(--s-coral);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  .brief-save-btn:hover:not(:disabled) { background: var(--s-orange); }
+  .brief-save-btn:disabled { opacity: 0.4; cursor: default; }
+
+  .brief-saved {
+    font-size: 0.6875rem;
+    color: rgba(124,144,112,0.85);
+  }
+
+  /* Run timeline (WEBD-66) — lives in inspector "Run" tab */
+  .run-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .run-loading,
+  .run-error {
+    padding: 1.5rem 1rem;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+  .run-error { color: rgba(255,107,107,0.85); }
+
+  .run-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    color: rgba(255,255,255,0.45);
+    text-align: center;
+  }
+  .run-empty-icon {
+    font-size: 1.75rem;
+    color: rgba(255,255,255,0.2);
+  }
+  .run-empty-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+  }
+  .run-empty-hint {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    max-width: 18rem;
+  }
+
+  .run-section {
+    padding: 0.625rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .run-section:last-child { border-bottom: none; }
+
+  .run-section-title {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.25rem 0.875rem 0.4375rem;
+  }
+
+  .run-item {
+    padding: 0.5rem 0.875rem;
+    border-left: 2px solid transparent;
+  }
+  .run-item.passed { border-left-color: rgba(124,144,112,0.5); }
+  .run-item.failed { border-left-color: rgba(255,107,107,0.5); }
+  .run-item.latest { background: rgba(255,255,255,0.025); }
+
+  .run-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .run-status-pip {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .run-status-pip.passed { background: var(--s-sage); }
+  .run-status-pip.failed { background: var(--s-coral); }
+
+  .run-screen {
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .run-vp {
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.4);
+  }
+  .run-time {
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.4);
+    flex-shrink: 0;
+  }
+
+  .run-screenshot {
+    display: block;
+    margin: 0.5rem 0 0.4375rem;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #1a1917;
+  }
+  .run-screenshot img {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: top center;
+    max-height: 220px;
+  }
+  .run-screenshot:hover { border-color: rgba(255,107,107,0.5); }
+
+  .run-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.3125rem;
+    font-size: 0.6875rem;
+  }
+  .run-meta-label {
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .run-meta-mono {
+    font-family: var(--s-mono);
+    color: rgba(255,255,255,0.7);
+  }
+
+  .run-failure {
+    margin-top: 0.4375rem;
+    padding: 0.5rem 0.625rem;
+    background: rgba(255,107,107,0.08);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 4px;
+  }
+  .run-failure-stage {
+    font-size: 0.6875rem;
+    color: rgba(255,107,107,0.85);
+    margin-bottom: 0.25rem;
+  }
+  .run-failure-error {
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-height: 8rem;
+    overflow-y: auto;
+  }
+
+  .run-changed {
+    margin-top: 0.4375rem;
+    font-size: 0.75rem;
+  }
+  .run-changed > summary {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    padding: 0.1875rem 0;
+    list-style: none;
+    user-select: none;
+  }
+  .run-changed > summary::-webkit-details-marker { display: none; }
+  .run-changed > summary::before {
+    content: "▸ ";
+    color: rgba(255,255,255,0.3);
+  }
+  .run-changed[open] > summary::before {
+    content: "▾ ";
+  }
+  .run-changed-list {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    font-family: var(--s-mono);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.6);
+  }
+  .run-changed-list li {
+    padding: 0.125rem 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Trust hierarchy / advisory state (WEBD-63) — proof state coloring
+     for the inspector rail and the screen-card frame. Goal: the user
+     can never confuse a passing live preview for a passing proof. */
+
+  /* Inspector rail: 3px left edge tinted by proof state. */
+  .inspector-panel {
+    position: relative;
+    transition: border-color 0.2s ease;
+  }
+  .inspector-panel::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 3px;
+    background: transparent;
+    transition: background 0.2s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .inspector-panel.proof-passed::before { background: var(--s-sage); }
+  .inspector-panel.proof-stale::before  { background: var(--s-gold); }
+  .inspector-panel.proof-failed::before { background: var(--s-coral); }
+  .inspector-panel.proof-none::before   { background: rgba(255,255,255,0.08); }
+
+  /* Inspector header proof-state label (small lozenge near the tabs).
+     Rendered in JS via updateProofState(); CSS gives it the right
+     visual weight. */
+  .inspector-panel .panel-tabs::after {
+    content: "";
+    align-self: center;
+    margin-right: 0.5rem;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .inspector-panel.proof-passed .panel-tabs::after { background: var(--s-sage); }
+  .inspector-panel.proof-stale  .panel-tabs::after { background: var(--s-gold); }
+  .inspector-panel.proof-failed .panel-tabs::after { background: var(--s-coral); }
+  .inspector-panel.proof-none   .panel-tabs::after { background: rgba(255,255,255,0.15); }
+
+  /* Screen card: frame outline + iframe desaturation when proof not current */
+  .screen-card.proof-passed .sc-frame-content {
+    border-color: rgba(124,144,112,0.4);
+  }
+  .screen-card.proof-stale .sc-frame-content {
+    border-color: rgba(245,197,66,0.45);
+  }
+  .screen-card.proof-failed .sc-frame-content {
+    border-color: rgba(255,107,107,0.45);
+  }
+  .screen-card.proof-none .sc-frame-content {
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  /* Desaturate live preview when proof is stale, missing, or failed.
+     Restore full color only when proof is current and passing. */
+  .screen-card.proof-stale .sc-iframe,
+  .screen-card.proof-stale .sc-thumb,
+  .screen-card.proof-none .sc-iframe,
+  .screen-card.proof-none .sc-thumb,
+  .screen-card.proof-failed .sc-iframe,
+  .screen-card.proof-failed .sc-thumb {
+    filter: saturate(0.7);
+    transition: filter 0.2s ease;
+  }
+  .screen-card.proof-passed .sc-iframe,
+  .screen-card.proof-passed .sc-thumb {
+    filter: none;
+    transition: filter 0.2s ease;
+  }
+  /* Hover restores full color so reviewers can do quick visual checks */
+  .screen-card:hover .sc-iframe,
+  .screen-card:hover .sc-thumb { filter: none; }
+
+  /* Advisory chip on the frame label */
+  .sc-advisory-chip {
+    display: inline-block;
+    margin-left: 0.4375rem;
+    padding: 0.0625rem 0.4375rem;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    vertical-align: middle;
+    line-height: 1.4;
+  }
+  .sc-advisory-chip.stale {
+    background: rgba(245,197,66,0.15);
+    color: var(--s-gold);
+    border: 1px solid rgba(245,197,66,0.35);
+  }
+  .sc-advisory-chip.none {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .sc-advisory-chip.failed {
+    background: rgba(255,107,107,0.18);
+    color: var(--s-coral);
+    border: 1px solid rgba(255,107,107,0.4);
+  }
+
+  /* Live | Proof toggle (WEBD-62) — per-card mode swap */
+  .screen-card .sc-frame-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .screen-card .sc-frame-label-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sc-mode-toggle {
+    display: inline-flex;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 2px;
+    flex-shrink: 0;
+    cursor: default;
+  }
+
+  .sc-mode-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-family: inherit;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.2;
+  }
+  .sc-mode-btn:hover:not(:disabled):not(.active) { color: rgba(255,255,255,0.8); }
+  .sc-mode-btn:disabled { color: rgba(255,255,255,0.2); cursor: not-allowed; }
+  .sc-mode-btn.active {
+    background: rgba(255,107,107,0.2);
+    color: var(--s-coral);
+  }
+  /* Proof button is the authoritative mode — make it visually weightier */
+  .sc-mode-btn[data-mode="proof"].active {
+    background: var(--s-sage);
+    color: white;
+  }
+  .sc-mode-btn[data-mode="proof"].active.proof-stale {
+    background: var(--s-gold);
+  }
+  .sc-mode-btn[data-mode="proof"].active.proof-failed {
+    background: var(--s-coral);
+  }
+
+  /* Mode switching — show the right view per card class */
+  .screen-card .sc-view { display: none; }
+  .screen-card.mode-live .sc-view-live { display: block; }
+  .screen-card.mode-proof .sc-view-proof { display: block; }
+
+  /* When in proof mode the desaturation rules don't apply (proof is current
+     by definition for "passed", or shown explicitly stale with chip). Reset. */
+  .screen-card.mode-proof .sc-iframe,
+  .screen-card.mode-proof .sc-thumb { filter: none; }
+
+  /* Proof view layout */
+  .sc-proof-view {
+    position: relative;
+    background: #0f0e0d;
+    overflow: hidden;
+  }
+
+  .sc-proof-img {
+    display: block;
+    cursor: zoom-in;
+  }
+  .sc-proof-img img {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: top center;
+    max-height: 700px;
+  }
+
+  .sc-proof-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.625rem;
+    background: rgba(0,0,0,0.4);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.6875rem;
+    color: rgba(255,255,255,0.55);
+    flex-wrap: wrap;
+  }
+
+  .sc-proof-status {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.625rem;
+    padding: 0.125rem 0.4375rem;
+    border-radius: 999px;
+  }
+  .sc-proof-status.current {
+    background: rgba(124,144,112,0.2);
+    color: var(--s-sage);
+  }
+  .sc-proof-status.stale {
+    background: rgba(245,197,66,0.2);
+    color: var(--s-gold);
+  }
+  .sc-proof-status.blocked {
+    background: rgba(255,107,107,0.2);
+    color: var(--s-coral);
+  }
+
+  .sc-proof-warning {
+    padding: 0.4375rem 0.625rem;
+    background: rgba(255,107,107,0.1);
+    border-top: 1px solid rgba(255,107,107,0.25);
+    color: rgba(255,107,107,0.95);
+    font-size: 0.6875rem;
+    line-height: 1.45;
+  }
+
+  .sc-proof-meta-mono {
+    font-family: var(--s-mono);
+    color: rgba(255,255,255,0.7);
+  }
+  .sc-proof-meta-time {
+    margin-left: auto;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .sc-proof-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4rem 1.5rem;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    background: #1a1917;
+  }
+  .sc-proof-empty-icon {
+    font-size: 2rem;
+    color: rgba(255,255,255,0.2);
+  }
+  .sc-proof-empty-msg {
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    font-size: 0.875rem;
+  }
+  .sc-proof-empty-hint {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    max-width: 18rem;
+  }
+
+  /* Iframe starting / error overlays (WEBD-62 starting/live/error states) */
+  .sc-frame-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: rgba(15,14,13,0.92);
+    color: rgba(255,255,255,0.8);
+    font-size: 0.8125rem;
+    z-index: 5;
+    padding: 1rem;
+    text-align: center;
+  }
+  .sc-frame-overlay.hidden { display: none; }
+
+  .sc-frame-error {
+    color: rgba(255,107,107,0.95);
+  }
+
+  .sc-overlay-msg {
+    font-size: 0.8125rem;
+    color: inherit;
+  }
+
+  .sc-overlay-spin {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: var(--s-gold);
+    border-radius: 50%;
+    animation: scOverlaySpin 0.9s linear infinite;
+  }
+  @keyframes scOverlaySpin { to { transform: rotate(360deg); } }
+
+  .sc-overlay-retry {
+    background: rgba(255,107,107,0.15);
+    border: 1px solid rgba(255,107,107,0.4);
+    color: var(--s-coral);
+    padding: 0.3125rem 0.875rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .sc-overlay-retry:hover {
+    background: rgba(255,107,107,0.25);
+  }
+
   /* Inspector panel (right) */
   .inspector-panel {
     width: 280px;

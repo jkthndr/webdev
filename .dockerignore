@@ -1,0 +1,8 @@
+node_modules
+dist
+projects
+.git
+.github
+.claude
+*.md
+!skills/**/*.md

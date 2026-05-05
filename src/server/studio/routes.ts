@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import * as fs from "fs";
 import * as path from "path";
 import type { ProjectManager } from "../project-manager.js";
+import { ProofRunFailedError } from "../proof.js";
 import { ScreenshotCache } from "./screenshot-cache.js";
 import { galleryPage, projectPage, screenPage } from "./pages.js";
 import { canvasPage } from "./canvas-page.js";
@@ -137,6 +138,63 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     res.json({ ok: true });
   });
 
+  // Persistent design brief
+  router.get("/projects/:project/design-brief", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const existing = pm.getDesignBrief(project);
+    res.json({
+      exists: existing !== null,
+      brief: existing ?? pm.getOrCreateDesignBrief(project),
+    });
+  });
+
+  router.put("/projects/:project/design-brief", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    try {
+      const brief = pm.saveDesignBrief(project, req.body || {});
+      res.json({ ok: true, brief });
+    } catch (e) {
+      res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
+  router.get("/projects/:project/generation-context", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const screen = typeof req.query.screen === "string" ? req.query.screen : null;
+    res.json(pm.getGenerationContext(project, screen));
+  });
+
+  router.post("/projects/:project/screens-from-brief", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const screen = typeof req.body?.screen === "string" ? req.body.screen.trim() : "";
+    if (!screen) {
+      res.status(400).json({ error: "Body must include a non-empty 'screen' string" });
+      return;
+    }
+    try {
+      const result = pm.createScreenFromBrief(project, screen);
+      res.json(result);
+    } catch (e) {
+      res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
   // Screen thumbnail
   router.get("/projects/:project/screens/:screen/thumbnail", async (req: Request, res: Response) => {
     const project = String(req.params.project);
@@ -189,6 +247,54 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
       return;
     }
     res.json({ hash });
+  });
+
+  // Production proof runs
+  router.get("/projects/:project/proof-runs", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    res.json({ proofRuns: pm.listProofRuns(project) });
+  });
+
+  router.post("/projects/:project/screens/:screen/proof", async (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const screen = String(req.params.screen);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    try {
+      const run = await pm.runProof(project, screen, {
+        viewport: req.body.viewport,
+        fullPage: req.body.fullPage,
+        message: req.body.message,
+      });
+      res.json({
+        ok: true,
+        proofRun: run,
+        screenshotUrl: `/api/projects/${project}/proof-runs/${run.id}/screenshot`,
+      });
+    } catch (e) {
+      if (e instanceof ProofRunFailedError) {
+        res.status(500).json({ ok: false, error: e.message, proofRun: e.run });
+        return;
+      }
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
+  router.get("/projects/:project/proof-runs/:id/screenshot", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    const id = String(req.params.id);
+    const file = pm.getProofScreenshotPath(project, id);
+    if (!file) {
+      res.status(404).send("Proof screenshot not found");
+      return;
+    }
+    res.type("png").set("Cache-Control", "public, max-age=86400").sendFile(file);
   });
 
   // List checkpoints

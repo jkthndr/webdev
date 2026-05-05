@@ -2,6 +2,8 @@
 
 > Paste this into a fresh Claude Code session in the `C:\Users\olive\Projects\webdev` directory.
 
+> 2026-05-04 note: this is an older kickoff prompt. Current agents should start from `AGENTS.md` and `docs/webdev-deploy-target.md`. webdev runs on Dell at `http://100.115.18.15:4500`; Playbook runs on HP at `http://100.102.138.90:3095`; old TaskQ `:3090` references are deprecated.
+
 ---
 
 ## Prompt
@@ -13,7 +15,7 @@ I'm building an **agent-native design tool** — a self-hosted MCP server that l
 1. **Check memory** — project context and architectural invariants are saved there
 2. **Read the approved plan**: `docs/implementation-plan.html` (interactive HTML, but the content is readable as source)
 3. **Read the review notes**: `docs/implementation-plan-review-notes.md`
-4. **Check TaskQ for your tasks**: `curl -s "http://100.102.138.90:3090/api/tasks?project_id=0431ff3f-c6bb-48e9-889f-72457d174a13&assignee=claude&status=backlog" | head -c 2000`
+4. **Check Playbook for your tasks**: use the API-key workflow in `AGENTS.md` and `C:\Users\olive\Projects\taskq\AGENT-OPS.md` against project `migrated_webd`.
 
 ### Architectural Invariants (Non-Negotiable)
 
@@ -51,30 +53,30 @@ restore_checkpoint  — git reset to a saved checkpoint
 6. MCP server skeleton (7 tools, @modelcontextprotocol/sdk)
 7. Playwright screenshot pipeline
 8. Git-based checkpoint system
-9. Preview server (Tailscale-accessible at port 4501)
-10. Docker containerization (ports 4500/4501, restart: unless-stopped, healthcheck)
+9. Preview server routed through the webdev proxy on port 4500
+10. Docker containerization (port 4500, restart: unless-stopped, healthcheck)
 11. Claude Code skill (SKILL.md)
 12. GitHub Actions deploy pipeline + runbook entry
 
 ### Infrastructure
 
-- **Target**: HP Laptop (`jake-dev-win-hp` / `100.102.138.90`)
-- **SSH**: `ssh -i ~/.ssh/hp_laptop_key oliver@100.102.138.90`
-- **Ports**: 4500 (MCP server), 4501 (preview server)
+- **Target**: Dell laptop (`100.115.18.15`)
+- **Path**: `C:\Users\olive\Projects\webdev`
+- **Ports**: 4500 (Studio/API/MCP; live preview uses `/proxy/<project>/...`)
 - **Health check**: `GET /api/health` → `{"status":"ok","screens":N,"projects":N}`
-- **Deploy pattern**: GitHub Actions + Tailscale SSH (same as SmithBuilder/HolaCan)
+- **Deploy pattern**: GitHub Actions + Docker Compose on the Dell self-hosted runner
 - **Branching**: Work on `dev`, PR to `main`, merge triggers deploy
 - **Docker**: `restart: unless-stopped`, `mem_limit: 1536m` on preview, `shm_size: 2gb`
-- **Coexists with**: TaskQ (port 3090), GitHub Actions Android runner
+- **Coexists with**: Agent Bridge (port 3100). Playbook is separate on HP at `100.102.138.90:3095`.
 
-### TaskQ
+### Playbook
 
-Track all work on the TaskQ board:
-- **API**: `http://100.102.138.90:3090/api`
-- **Project ID**: `0431ff3f-c6bb-48e9-889f-72457d174a13`
+Track all work on the Playbook board:
+- **API**: `http://100.102.138.90:3095/api`
+- **Project ID**: `migrated_webd`
 - Move tasks to `in_progress` when starting, `complete` when done
 - Post comments on tasks as you make progress
-- Check for assigned tasks: `curl -s "http://100.102.138.90:3090/api/tasks?assignee=claude&status=backlog&project_id=0431ff3f-c6bb-48e9-889f-72457d174a13"`
+- Check `AGENTS.md` and `C:\Users\olive\Projects\taskq\AGENT-OPS.md` for the current agent API-key workflow.
 
 ### Working Style
 
@@ -86,4 +88,4 @@ Track all work on the TaskQ board:
 
 ### Begin
 
-Start by reading memory and the plan, then pick up the first spike task from TaskQ and begin.
+Start by reading memory and the plan, then pick up the first task from Playbook and begin.

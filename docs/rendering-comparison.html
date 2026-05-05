@@ -553,7 +553,7 @@
         <li class="con"><strong>Cannot run headlessly</strong> — requires Paper GUI application</li>
         <li class="con">Closed source — can't embed or self-host the rendering engine</li>
         <li class="con">Vendor dependency for a core pipeline component</li>
-        <li class="con">Not Docker-friendly on HP laptop</li>
+        <li class="con">Not Docker-friendly on the current self-hosted runtime</li>
         <li class="note">Key insight: the approach (HTML/CSS canvas) is excellent, Paper's implementation is not what we need</li>
         <li class="note">We can replicate the concept with Option 5: React components on a dev server</li>
       </ul>
@@ -574,7 +574,7 @@
         <li class="con">~700MB memory for Chromium + ~200MB for dev server (~900MB total)</li>
         <li class="con">More moving parts: dev server + browser + file system</li>
         <li class="con">Initial setup more complex than pure Playwright</li>
-        <li class="note">With 32GB RAM on the HP laptop, 900MB is trivial</li>
+        <li class="note">On a modern self-hosted runtime, 900MB is manageable</li>
         <li class="note">Hot module reload means sub-second iteration after file changes</li>
       </ul>
     </div>
@@ -652,7 +652,7 @@
 
 <!-- TAB: Docker -->
 <div id="tab-docker" class="tab-content">
-  <h2 style="font-size:1.15rem; margin-bottom:1rem;">Docker Setup for HP Laptop (Windows, 32GB RAM)</h2>
+  <h2 style="font-size:1.15rem; margin-bottom:1rem;">Docker Setup for Self-Hosted Windows Runtime</h2>
 
   <details open>
     <summary>Recommended Docker Configuration</summary>
@@ -688,7 +688,7 @@ CMD ["npm", "run", "dev"]</pre>
   </details>
 
   <details>
-    <summary>Memory Budget (32GB HP Laptop)</summary>
+    <summary>Memory Budget (Self-Hosted Runtime)</summary>
     <div class="inner">
       <div class="data-row"><span class="data-label">Headless Chromium</span><span class="data-value">~700MB</span></div>
       <div class="data-row"><span class="data-label">Node.js dev server</span><span class="data-value">~200MB</span></div>

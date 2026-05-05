@@ -14,6 +14,7 @@ RUN npx playwright install chromium
 
 # Copy source
 COPY src/ src/
+COPY skills/ skills/
 COPY tsconfig.json ./
 
 # Build server

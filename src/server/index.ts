@@ -7,11 +7,31 @@ import * as fs from "fs";
 import * as path from "path";
 import express from "express";
 import { ProjectManager } from "./project-manager.js";
+import { ProofRunFailedError } from "./proof.js";
 import { takeScreenshot, closeBrowser } from "./screenshot.js";
 import { createStudioRouter, createStudioApiRouter } from "./studio/routes.js";
 import { createProxyRouter, setupWebSocketProxy } from "./studio/proxy.js";
 
 const pm = new ProjectManager();
+
+const designBriefRouteSchema = z.object({
+  name: z.string().describe("Route/screen name, e.g. dashboard"),
+  purpose: z.string().optional().describe("What this route should help the user do"),
+  status: z.enum(["planned", "draft", "approved"]).optional().describe("Route design status"),
+});
+
+const designBriefInputSchema = {
+  title: z.string().optional().describe("Short product/design brief title"),
+  summary: z.string().optional().describe("Plain-language summary of the desired experience"),
+  audience: z.string().optional().describe("Who this design is for"),
+  goals: z.array(z.string()).optional().describe("Product/design goals"),
+  tone: z.array(z.string()).optional().describe("Visual and UX tone words"),
+  mustHaves: z.array(z.string()).optional().describe("Required content, components, or behaviors"),
+  avoid: z.array(z.string()).optional().describe("Things the generated design should avoid"),
+  routes: z.array(designBriefRouteSchema).optional().describe("Routes/screens the project should include"),
+  inspiration: z.array(z.string()).optional().describe("References, products, or design cues to consider"),
+  notes: z.string().optional().describe("Additional notes for future generation runs"),
+};
 
 // --- MCP Server Factory ---
 
@@ -50,6 +70,144 @@ function createMcpServerWithTools(): McpServer {
     }
   );
 
+  // Tool 2: get_design_brief
+  mcp.tool(
+    "get_design_brief",
+    "Get the persistent design brief for a project. Returns an empty brief if none has been saved yet.",
+    { project: z.string().describe("Project name") },
+    async ({ project }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(pm.getOrCreateDesignBrief(project), null, 2),
+        }],
+      };
+    }
+  );
+
+  // Tool 3: set_design_brief
+  mcp.tool(
+    "set_design_brief",
+    "Create or update the persistent design brief for a project. Only supplied fields are changed.",
+    {
+      project: z.string().describe("Project name"),
+      ...designBriefInputSchema,
+    },
+    async ({ project, ...input }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      const brief = pm.saveDesignBrief(project, input);
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            saved: true,
+            project,
+            updatedAt: brief.updatedAt,
+            brief,
+          }, null, 2),
+        }],
+      };
+    }
+  );
+
+  // Tool 4: run_proof
+  mcp.tool(
+    "run_proof",
+    "Run the authoritative production proof for a screen: build/start production app, capture Playwright screenshot, and checkpoint the result.",
+    {
+      project: z.string().describe("Project name"),
+      screen: z.string().describe("Screen name"),
+      viewport: z.object({
+        width: z.number().default(1280),
+        height: z.number().default(800),
+      }).optional().describe("Viewport size (default 1280x800)"),
+      fullPage: z.boolean().optional().describe("Capture full page screenshot (default true)"),
+      message: z.string().optional().describe("Optional checkpoint message"),
+    },
+    async ({ project, screen, viewport, fullPage, message }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      try {
+        const proofRun = await pm.runProof(project, screen, { viewport, fullPage, message });
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              proofRun,
+              screenshotUrl: `/api/projects/${project}/proof-runs/${proofRun.id}/screenshot`,
+            }, null, 2),
+          }],
+        };
+      } catch (e) {
+        if (e instanceof ProofRunFailedError) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({ proofRun: e.run, error: e.message }, null, 2),
+            }],
+            isError: true,
+          };
+        }
+        return {
+          content: [{ type: "text" as const, text: `Proof failed: ${e instanceof Error ? e.message : String(e)}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool 5: get_generation_context
+  mcp.tool(
+    "get_generation_context",
+    "Get the context agents should use before generating or revising a screen: design brief, current screen code, and unresolved Studio feedback.",
+    {
+      project: z.string().describe("Project name"),
+      screen: z.string().optional().describe("Optional screen name to scope code and feedback"),
+    },
+    async ({ project, screen }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found.` }], isError: true };
+      }
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(pm.getGenerationContext(project, screen), null, 2),
+        }],
+      };
+    }
+  );
+
+  // Tool 6: get_bundled_seed_provenance
+  mcp.tool(
+    "get_bundled_seed_provenance",
+    "List clean-room provenance metadata for bundled project templates, web skills, and style recipes.",
+    {
+      id: z.string().optional().describe("Optional bundled seed id to fetch one item"),
+    },
+    async ({ id }) => {
+      if (id) {
+        const item = pm.getBundledSeedProvenance(id);
+        if (!item) {
+          return { content: [{ type: "text" as const, text: `Error: Bundled seed '${id}' not found.` }], isError: true };
+        }
+        return { content: [{ type: "text" as const, text: JSON.stringify(item, null, 2) }] };
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify(pm.getBundledSeedProvenanceReport(), null, 2),
+        }],
+      };
+    }
+  );
+
   // Tool 2: create_screen
   mcp.tool(
     "create_screen",
@@ -75,6 +233,43 @@ function createMcpServerWithTools(): McpServer {
           }, null, 2),
         }],
       };
+    }
+  );
+
+  // Tool: create_screen_from_brief
+  mcp.tool(
+    "create_screen_from_brief",
+    "Scaffold a new TSX screen seeded with the project's design brief context (project title, screen purpose, audience, goals, must-haves, avoid, tone) as a header comment. Use this entrypoint before invoking a generation skill so the next agent has brief context inline.",
+    {
+      project: z.string().describe("Project name"),
+      screen: z.string().describe("Screen name (becomes the route, e.g. 'home' -> /screens/home). Should match a route name in the design brief."),
+    },
+    async ({ project, screen }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found. Call open_project first.` }], isError: true };
+      }
+      try {
+        const result = pm.createScreenFromBrief(project, screen);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              created: result.screen,
+              file: result.file,
+              route: result.route,
+              matchedRoute: result.matchedRoute,
+              briefUsed: result.brief !== null,
+              warnings: result.warnings,
+              screens: pm.listScreens(project),
+            }, null, 2),
+          }],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : String(e)}` }],
+          isError: true,
+        };
+      }
     }
   );
 
@@ -369,6 +564,21 @@ app.get("/api/health", (_req, res) => {
     screens: totalScreens,
     version: "0.1.0",
   });
+});
+
+app.get("/api/provenance", (req, res) => {
+  const id = typeof req.query.id === "string" ? req.query.id : null;
+  if (id) {
+    const item = pm.getBundledSeedProvenance(id);
+    if (!item) {
+      res.status(404).json({ error: "Bundled seed provenance not found" });
+      return;
+    }
+    res.json(item);
+    return;
+  }
+
+  res.json(pm.getBundledSeedProvenanceReport());
 });
 
 // Projects list

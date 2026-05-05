@@ -1,4 +1,4 @@
-name: Deploy to HP Laptop
+name: Deploy to Dell Laptop
 
 on:
   push:
@@ -6,31 +6,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and tag image
+        run: docker build -t ghcr.io/jkthndr/webdev:latest .
+
+      - name: Push to GHCR
+        run: docker push ghcr.io/jkthndr/webdev:latest
+
   deploy:
+    needs: build-and-push
     runs-on: [self-hosted, Windows]
+    defaults:
+      run:
+        working-directory: C:\Users\olive\Projects\webdev
+
     steps:
       - name: Pull latest code
         run: |
-          cd C:\Users\oliver\Projects\webdev
           git fetch origin main
           git reset --hard origin/main
 
-      - name: Install dependencies
+      - name: Pull image and recreate container
         run: |
-          cd C:\Users\oliver\Projects\webdev
-          npm install
+          docker compose pull
+          docker compose up -d --force-recreate
 
-      - name: Build
-        run: |
-          cd C:\Users\oliver\Projects\webdev
-          npm run build
-
-      - name: Restart server
+      - name: Wait for healthy
         shell: cmd
         run: |
-          powershell -Command "Get-NetTCPConnection -LocalPort 4500 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }"
-          ping -n 3 127.0.0.1 >nul
-          schtasks /run /tn WebdevMCP
           ping -n 12 127.0.0.1 >nul
           curl.exe -sf http://localhost:4500/api/health || exit /b 1
+          curl.exe -sf http://100.115.18.15:4500/api/health || exit /b 1
           echo Deploy successful

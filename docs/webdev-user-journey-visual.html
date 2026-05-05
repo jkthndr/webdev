@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdev User Journey Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fff5f0;
+      --paper: #fffdfa;
+      --paper-warm: #fff8ef;
+      --ink: #191817;
+      --soft: #514942;
+      --muted: #766c63;
+      --line: #efd4c7;
+      --line-strong: #e7bca8;
+      --terracotta: #c76542;
+      --terracotta-soft: #f3d9cb;
+      --sage: #5e7d63;
+      --sage-soft: #e8f0e4;
+      --proof: #295f73;
+      --proof-soft: #ddecf0;
+      --gold: #c59a42;
+      --gold-soft: #fff2c8;
+      --shadow: 0 18px 55px rgba(150, 79, 41, 0.13);
+      --shadow-sm: 0 8px 22px rgba(150, 79, 41, 0.09);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(900px 420px at 0% -10%, rgba(199, 101, 66, 0.12), transparent 62%),
+        radial-gradient(720px 360px at 100% 2%, rgba(197, 154, 66, 0.14), transparent 58%),
+        linear-gradient(180deg, #fff9f2 0%, var(--bg) 42%, #fff7eb 100%);
+    }
+
+    .page {
+      width: min(1240px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 72px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #fffdfa;
+      background: var(--ink);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .brand-copy span,
+    .chip {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 253, 250, 0.76);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 430px;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-card,
+    .preview-card,
+    .panel,
+    .journey,
+    .lane-card,
+    .decision-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 250, 0.86);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero-card {
+      padding: 28px;
+      display: grid;
+      align-content: center;
+      min-height: 310px;
+    }
+
+    .eyebrow {
+      margin: 0 0 9px;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--terracotta);
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: "Bricolage Grotesque", "Manrope", sans-serif;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 780px;
+      font-size: clamp(42px, 6vw, 82px);
+      line-height: 0.88;
+    }
+
+    .hero-card p {
+      max-width: 690px;
+      margin: 18px 0 0;
+      color: var(--soft);
+      font-size: 18px;
+      line-height: 1.45;
+    }
+
+    .preview-card {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      background: #1c1a18;
+      color: #fffdfa;
+      overflow: hidden;
+    }
+
+    .preview-card img {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 253, 250, 0.2);
+      background: var(--paper);
+    }
+
+    .preview-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      color: #eadfd7;
+      font-size: 12px;
+    }
+
+    .preview-caption code,
+    code {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 11px;
+      color: inherit;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 3px 6px;
+      border-radius: 5px;
+    }
+
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0 28px;
+    }
+
+    .loop-step {
+      min-height: 112px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      position: relative;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .loop-step::after {
+      content: "->";
+      position: absolute;
+      top: 50%;
+      right: -18px;
+      transform: translateY(-50%);
+      z-index: 2;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--terracotta);
+    }
+
+    .loop-step:last-child::after {
+      content: "";
+    }
+
+    .loop-step .num {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      margin-bottom: 12px;
+      border-radius: 999px;
+      color: #fffdfa;
+      background: var(--ink);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .loop-step strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .loop-step span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .journey {
+      padding: 18px;
+      margin-bottom: 24px;
+      background: rgba(255, 253, 250, 0.92);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(26px, 3vw, 42px);
+      line-height: 0.98;
+    }
+
+    .section-head p {
+      max-width: 430px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .swimlanes {
+      display: grid;
+      grid-template-columns: 150px repeat(6, minmax(130px, 1fr));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--paper);
+    }
+
+    .cell {
+      min-height: 92px;
+      padding: 12px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      align-content: start;
+      gap: 7px;
+    }
+
+    .cell:nth-child(7n) {
+      border-right: 0;
+    }
+
+    .cell.header {
+      min-height: 56px;
+      background: #1c1a18;
+      color: #fffdfa;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .cell.row-label {
+      background: var(--paper-warm);
+      color: var(--ink);
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .cell strong {
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .cell span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .user {
+      background: #fffdfa;
+    }
+
+    .system {
+      background: #fff8ef;
+    }
+
+    .proof {
+      background: #f2f8f9;
+    }
+
+    .trust-zone {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .decision-card {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      min-height: 230px;
+    }
+
+    .decision-card h3 {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .decision-card p {
+      margin: 0;
+      color: var(--soft);
+      line-height: 1.45;
+    }
+
+    .decision-card.live {
+      background: linear-gradient(180deg, #fff8ef, #fffdfa);
+    }
+
+    .decision-card.verified {
+      background: linear-gradient(180deg, #e9f4f6, #fffdfa);
+      border-color: #b8d4db;
+    }
+
+    .status-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 250, 0.72);
+    }
+
+    .status b {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .panel {
+      padding: 16px;
+      min-height: 170px;
+      background: var(--paper);
+    }
+
+    .panel h3 {
+      margin-bottom: 12px;
+      font-size: 22px;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mini-list li {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--soft);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .mini-list b {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--terracotta-soft);
+      color: var(--terracotta);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 10px;
+    }
+
+    .final-line {
+      margin-top: 24px;
+      padding: 18px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: #1c1a18;
+      color: #fffdfa;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .final-line strong {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .final-line span {
+      color: #eadfd7;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .final-line .badge {
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: #fffdfa;
+      color: var(--ink);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1040px) {
+      .hero,
+      .trust-zone,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .loop {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .loop-step::after {
+        display: none;
+      }
+
+      .swimlanes {
+        overflow-x: auto;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        width: min(100% - 20px, 1240px);
+        padding-top: 18px;
+      }
+
+      .topbar,
+      .section-head,
+      .final-line {
+        display: grid;
+      }
+
+      .chips {
+        justify-content: start;
+      }
+
+      .hero-card {
+        padding: 20px;
+        min-height: auto;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .loop {
+        grid-template-columns: 1fr;
+      }
+
+      .swimlanes {
+        grid-template-columns: 120px repeat(6, 136px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">w</div>
+        <div class="brand-copy">
+          <strong>webdev studio</strong>
+          <span>user journey map</span>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip">Brief first</span>
+        <span class="chip">Real app preview</span>
+        <span class="chip">Playwright proof</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card">
+        <p class="eyebrow">The simplest version</p>
+        <h1>You steer. Agents build. Proof decides.</h1>
+        <p>webdev should feel like directing a product designer and frontend engineer through a visual cockpit.</p>
+      </div>
+
+      <aside class="preview-card">
+        <img src="pencil-exports/bi8Au.png" alt="Pencil concept for the webdev studio workbench" />
+        <div class="preview-caption">
+          <span>Pencil concept anchor</span>
+          <code>Live Proof Workbench</code>
+        </div>
+      </aside>
+    </section>
+
+    <section class="loop" aria-label="Core user journey loop">
+      <div class="loop-step">
+        <span class="num">01</span>
+        <strong>Open</strong>
+        <span>Pick project and route.</span>
+      </div>
+      <div class="loop-step">
+        <span class="num">02</span>
+        <strong>Brief</strong>
+        <span>Pin audience, tone, goals.</span>
+      </div>
+      <div class="loop-step">
+        <span class="num">03</span>
+        <strong>Generate</strong>
+        <span>Agent writes real app files.</span>
+      </div>
+      <div class="loop-step">
+        <span class="num">04</span>
+        <strong>Preview</strong>
+        <span>See the live route.</span>
+      </div>
+      <div class="loop-step">
+        <span class="num">05</span>
+        <strong>Comment</strong>
+        <span>Pin visual feedback.</span>
+      </div>
+      <div class="loop-step">
+        <span class="num">06</span>
+        <strong>Proof</strong>
+        <span>Build and screenshot.</span>
+      </div>
+      <div class="loop-step">
+        <span class="num">07</span>
+        <strong>Accept</strong>
+        <span>Checkpoint the work.</span>
+      </div>
+    </section>
+
+    <section class="journey">
+      <div class="section-head">
+        <h2>What happens at each moment</h2>
+        <p>Three lanes keep the experience readable: what you do, what webdev does, and what counts as proof.</p>
+      </div>
+
+      <div class="swimlanes" role="table" aria-label="User journey swimlane map">
+        <div class="cell header">Lane</div>
+        <div class="cell header">Open</div>
+        <div class="cell header">Brief</div>
+        <div class="cell header">Generate</div>
+        <div class="cell header">Preview</div>
+        <div class="cell header">Feedback</div>
+        <div class="cell header">Proof</div>
+
+        <div class="cell row-label">You</div>
+        <div class="cell user">
+          <strong>Select project</strong>
+          <span>Choose screen or route.</span>
+        </div>
+        <div class="cell user">
+          <strong>Set direction</strong>
+          <span>Audience, tone, must-haves.</span>
+        </div>
+        <div class="cell user">
+          <strong>Start run</strong>
+          <span>Ask for a screen.</span>
+        </div>
+        <div class="cell user">
+          <strong>Inspect</strong>
+          <span>Look at the real app.</span>
+        </div>
+        <div class="cell user">
+          <strong>Pin comments</strong>
+          <span>Point at what changed.</span>
+        </div>
+        <div class="cell user">
+          <strong>Approve</strong>
+          <span>Accept or loop again.</span>
+        </div>
+
+        <div class="cell row-label">webdev</div>
+        <div class="cell system">
+          <strong>Loads state</strong>
+          <span>Project, route, history.</span>
+        </div>
+        <div class="cell system">
+          <strong>Structures brief</strong>
+          <span>Reusable design truth.</span>
+        </div>
+        <div class="cell system">
+          <strong>Writes code</strong>
+          <span>TSX, CSS, components.</span>
+        </div>
+        <div class="cell system">
+          <strong>Serves route</strong>
+          <span>Proxy to live app.</span>
+        </div>
+        <div class="cell system">
+          <strong>Feeds context</strong>
+          <span>Comments enter next run.</span>
+        </div>
+        <div class="cell system">
+          <strong>Saves checkpoint</strong>
+          <span>Files, screenshot, status.</span>
+        </div>
+
+        <div class="cell row-label">Proof</div>
+        <div class="cell proof">
+          <strong>None yet</strong>
+          <span>Just context.</span>
+        </div>
+        <div class="cell proof">
+          <strong>Brief locked</strong>
+          <span>Input is stable.</span>
+        </div>
+        <div class="cell proof">
+          <strong>Files changed</strong>
+          <span>Work exists on disk.</span>
+        </div>
+        <div class="cell proof">
+          <strong>Advisory</strong>
+          <span>Useful, not final.</span>
+        </div>
+        <div class="cell proof">
+          <strong>Pending</strong>
+          <span>Needs a build.</span>
+        </div>
+        <div class="cell proof">
+          <strong>Verified</strong>
+          <span>Build + Playwright shot.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust-zone">
+      <article class="decision-card live">
+        <p class="eyebrow">Fast loop</p>
+        <h3>Live preview helps you decide what to change.</h3>
+        <div class="status-stack">
+          <div class="status">
+            <b>Gain</b>
+            <span>Fast visual iteration against a real route.</span>
+          </div>
+          <div class="status">
+            <b>Limit</b>
+            <span>Dev preview can lie because builds can still fail.</span>
+          </div>
+          <div class="status">
+            <b>Label</b>
+            <span>Always marked advisory.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="decision-card verified">
+        <p class="eyebrow">Trust loop</p>
+        <h3>Playwright proof decides whether work is accepted.</h3>
+        <div class="status-stack">
+          <div class="status">
+            <b>Gain</b>
+            <span>Fresh build, running server, real screenshot.</span>
+          </div>
+          <div class="status">
+            <b>Limit</b>
+            <span>Slower than preview, so use it at decision points.</span>
+          </div>
+          <div class="status">
+            <b>Output</b>
+            <span>Checkpoint with changed files and screenshot.</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="footer-grid">
+      <article class="panel">
+        <h3>Left rail</h3>
+        <ul class="mini-list">
+          <li><b>1</b><span>Brief</span></li>
+          <li><b>2</b><span>Screen list</span></li>
+          <li><b>3</b><span>Style direction</span></li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h3>Center</h3>
+        <ul class="mini-list">
+          <li><b>1</b><span>Live app route</span></li>
+          <li><b>2</b><span>Proof screenshot tab</span></li>
+          <li><b>3</b><span>Visual comments</span></li>
+        </ul>
+      </article>
+
+      <article class="panel">
+        <h3>Right rail</h3>
+        <ul class="mini-list">
+          <li><b>1</b><span>Run timeline</span></li>
+          <li><b>2</b><span>Changed files</span></li>
+          <li><b>3</b><span>Pinned feedback</span></li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="final-line">
+      <div>
+        <strong>The product loop</strong>
+        <span>Brief and feedback guide generation. Live preview speeds decisions. Playwright proof earns acceptance.</span>
+      </div>
+      <div class="badge">Brief -> Preview -> Proof -> Checkpoint</div>
+    </section>
+  </main>
+</body>
+</html>
