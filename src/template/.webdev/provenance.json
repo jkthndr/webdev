@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "version": 1,
+      "id": "webdev-next-tailwind-shadcn-template",
+      "type": "project-template",
+      "name": "Webdev Next/Tailwind/shadcn Project Template",
+      "author": "webdev",
+      "license": "proprietary-webdev-seed",
+      "created": "2026-05-04",
+      "sourceNotes": "Original scaffold assembled for webdev. No Open Design source, prompts, templates, generated examples, assets, or UX copy copied. Third-party runtime packages are declared in package.json and remain under their own licenses.",
+      "files": [
+        "package.json",
+        "next.config.ts",
+        "postcss.config.mjs",
+        "tsconfig.json",
+        "src/app/globals.css",
+        "src/app/layout.tsx",
+        "src/app/page.tsx",
+        "src/components/ui",
+        "src/lib/utils.ts"
+      ],
+      "cleanRoom": {
+        "original": true,
+        "copiedThirdPartyMaterial": false,
+        "reviewNotes": "Template is webdev-authored around common Next.js, Tailwind, and shadcn/ui conventions. It does not copy Open Design materials or named brand design systems."
+      },
+      "thirdParty": [
+        {
+          "name": "Next.js",
+          "license": "MIT",
+          "usage": "Template runtime dependency declared in package.json."
+        },
+        {
+          "name": "React",
+          "license": "MIT",
+          "usage": "Template runtime dependency declared in package.json."
+        },
+        {
+          "name": "Tailwind CSS",
+          "license": "MIT",
+          "usage": "Template styling dependency declared in package.json."
+        },
+        {
+          "name": "shadcn/ui conventions",
+          "license": "MIT components when copied from the upstream registry; local component files must be reviewed before paid distribution.",
+          "usage": "Component API and utility conventions used by the generated project scaffold."
+        },
+        {
+          "name": "Lucide React",
+          "license": "ISC",
+          "usage": "Icon dependency declared in package.json."
+        }
+      ]
+    }
+  ]
+}

@@ -40,6 +40,12 @@ provenance:
   notes: Original work for webdev. No third-party source copied.
 ```
 
+Implementation anchor:
+
+- Bundled provenance metadata lives beside the bundled asset, for example `src/template/.webdev/provenance.json`.
+- `GET /api/provenance` lists bundled project templates, web skills, and style recipes that have provenance metadata.
+- MCP tool `get_bundled_seed_provenance` exposes the same clean-room record to agents.
+
 Each imported user artifact should carry metadata like:
 
 ```yaml
