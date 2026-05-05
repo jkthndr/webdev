@@ -5,3 +5,4 @@ projects
 .github
 .claude
 *.md
+!skills/**/*.md
