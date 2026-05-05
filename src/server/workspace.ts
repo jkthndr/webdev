@@ -15,7 +15,21 @@ export interface ProjectInfo {
 }
 
 const PROJECTS_DIR = path.resolve(process.cwd(), "projects");
-const TEMPLATE_DIR = path.resolve(import.meta.dirname, "../template");
+
+function resolveTemplateDir(): string {
+  const candidates = [
+    path.resolve(import.meta.dirname, "../template"),
+    path.resolve(process.cwd(), "src/template"),
+    path.resolve(process.cwd(), "dist/template"),
+  ];
+  const found = candidates.find((c) => fs.existsSync(path.join(c, "package.json")));
+  if (!found) {
+    throw new Error(`Project template directory not found. Looked in: ${candidates.join(", ")}`);
+  }
+  return found;
+}
+
+const TEMPLATE_DIR = resolveTemplateDir();
 
 const VALID_NAME = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
 
