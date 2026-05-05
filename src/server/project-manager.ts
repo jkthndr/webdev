@@ -1,6 +1,6 @@
 import { ProjectWorkspaceService, type ProjectInfo } from "./workspace.js";
 import { ProjectCheckpointService } from "./checkpoint.js";
-import { DesignBriefService, type DesignBrief, type DesignBriefInput } from "./design-brief.js";
+import { DesignBriefService, type DesignBrief, type DesignBriefInput, type DesignBriefRoute } from "./design-brief.js";
 import { GenerationContextService, type GenerationContext } from "./generation-context.js";
 import { BundledProvenanceService, type BundledSeedProvenance, type BundledSeedProvenanceReport } from "./provenance.js";
 import { ProjectProofService, type ProofRun, type ProofRunOptions } from "./proof.js";
@@ -11,6 +11,15 @@ export type { DesignBrief, DesignBriefInput };
 export type { GenerationContext };
 export type { BundledSeedProvenance, BundledSeedProvenanceReport };
 export type { ProofRun, ProofRunOptions };
+
+export interface CreateScreenFromBriefResult {
+  file: string;
+  route: string;
+  screen: string;
+  brief: DesignBrief | null;
+  matchedRoute: DesignBriefRoute | null;
+  warnings: string[];
+}
 
 /**
  * Thin facade that delegates to focused services.
@@ -55,6 +64,37 @@ export class ProjectManager {
 
   createScreen(projectName: string, screenName: string, code?: string): string {
     return this.workspace.createScreen(projectName, screenName, code);
+  }
+
+  createScreenFromBrief(projectName: string, screenName: string): CreateScreenFromBriefResult {
+    const brief = this.getDesignBrief(projectName);
+    const warnings: string[] = [];
+
+    if (!brief) {
+      warnings.push("No design brief saved for this project. Scaffolding without brief context.");
+    } else if (!brief.title.trim() && !brief.summary.trim()) {
+      warnings.push("Design brief is empty. Scaffolding without brief context.");
+    }
+
+    const matchedRoute = brief
+      ? brief.routes.find((r) => r.name.toLowerCase() === screenName.toLowerCase()) ?? null
+      : null;
+
+    if (brief && !matchedRoute) {
+      warnings.push(`Screen '${screenName}' is not declared in the design brief routes. Add it via set_design_brief if intended.`);
+    }
+
+    const code = renderBriefAwareSeed(screenName, brief, matchedRoute);
+    const file = this.workspace.createScreen(projectName, screenName, code);
+
+    return {
+      file,
+      route: `/screens/${screenName}`,
+      screen: screenName,
+      brief,
+      matchedRoute,
+      warnings,
+    };
   }
 
   readScreenCode(projectName: string, screenName: string): string | null {
@@ -165,4 +205,73 @@ export class ProjectManager {
   stopAll(): void {
     return this.runtime.stopAll();
   }
+}
+
+function pascalCase(s: string): string {
+  return s.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
+}
+
+function renderBriefAwareSeed(
+  screenName: string,
+  brief: DesignBrief | null,
+  matchedRoute: DesignBriefRoute | null,
+): string {
+  const lines: string[] = [];
+  lines.push("/**");
+  lines.push(` * Screen: ${screenName}`);
+  if (brief && brief.title.trim()) {
+    lines.push(` * Project: ${brief.title}`);
+  }
+  if (matchedRoute && matchedRoute.purpose.trim()) {
+    lines.push(" *");
+    lines.push(` * Purpose: ${matchedRoute.purpose}`);
+  } else if (brief && brief.summary.trim()) {
+    lines.push(" *");
+    lines.push(` * Project summary: ${brief.summary}`);
+  }
+  if (brief && brief.audience.trim()) {
+    lines.push(` * Audience: ${brief.audience}`);
+  }
+  if (brief && brief.goals.length > 0) {
+    lines.push(" *");
+    lines.push(" * Goals:");
+    for (const goal of brief.goals) {
+      lines.push(` *   - ${goal}`);
+    }
+  }
+  if (brief && brief.mustHaves.length > 0) {
+    lines.push(" *");
+    lines.push(" * Must have:");
+    for (const item of brief.mustHaves) {
+      lines.push(` *   - ${item}`);
+    }
+  }
+  if (brief && brief.avoid.length > 0) {
+    lines.push(" *");
+    lines.push(" * Avoid:");
+    for (const item of brief.avoid) {
+      lines.push(` *   - ${item}`);
+    }
+  }
+  if (brief && brief.tone.length > 0) {
+    lines.push(" *");
+    lines.push(` * Tone: ${brief.tone.join(", ")}`);
+  }
+  lines.push(" *");
+  lines.push(" * Replace this scaffold with the actual TSX. Keep the brief header if useful.");
+  lines.push(" */");
+  lines.push("");
+
+  const componentName = pascalCase(screenName);
+  lines.push(`export default function ${componentName}Screen() {`);
+  lines.push("  return (");
+  lines.push('    <div className="min-h-screen p-8">');
+  lines.push(`      <h1 className="text-3xl font-bold">${screenName}</h1>`);
+  lines.push('      <p className="text-muted-foreground mt-2">Scaffolded from design brief. Implement per header.</p>');
+  lines.push("    </div>");
+  lines.push("  );");
+  lines.push("}");
+  lines.push("");
+
+  return lines.join("\n");
 }

@@ -176,6 +176,25 @@ export function createStudioApiRouter(pm: ProjectManager): Router {
     res.json(pm.getGenerationContext(project, screen));
   });
 
+  router.post("/projects/:project/screens-from-brief", (req: Request, res: Response) => {
+    const project = String(req.params.project);
+    if (!pm.getProjectInfo(project)) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    const screen = typeof req.body?.screen === "string" ? req.body.screen.trim() : "";
+    if (!screen) {
+      res.status(400).json({ error: "Body must include a non-empty 'screen' string" });
+      return;
+    }
+    try {
+      const result = pm.createScreenFromBrief(project, screen);
+      res.json(result);
+    } catch (e) {
+      res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  });
+
   // Screen thumbnail
   router.get("/projects/:project/screens/:screen/thumbnail", async (req: Request, res: Response) => {
     const project = String(req.params.project);

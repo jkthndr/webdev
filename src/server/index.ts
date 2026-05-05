@@ -236,6 +236,43 @@ function createMcpServerWithTools(): McpServer {
     }
   );
 
+  // Tool: create_screen_from_brief
+  mcp.tool(
+    "create_screen_from_brief",
+    "Scaffold a new TSX screen seeded with the project's design brief context (project title, screen purpose, audience, goals, must-haves, avoid, tone) as a header comment. Use this entrypoint before invoking a generation skill so the next agent has brief context inline.",
+    {
+      project: z.string().describe("Project name"),
+      screen: z.string().describe("Screen name (becomes the route, e.g. 'home' -> /screens/home). Should match a route name in the design brief."),
+    },
+    async ({ project, screen }) => {
+      if (!pm.getProjectInfo(project)) {
+        return { content: [{ type: "text" as const, text: `Error: Project '${project}' not found. Call open_project first.` }], isError: true };
+      }
+      try {
+        const result = pm.createScreenFromBrief(project, screen);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              created: result.screen,
+              file: result.file,
+              route: result.route,
+              matchedRoute: result.matchedRoute,
+              briefUsed: result.brief !== null,
+              warnings: result.warnings,
+              screens: pm.listScreens(project),
+            }, null, 2),
+          }],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: `Error: ${e instanceof Error ? e.message : String(e)}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
   // Tool 3: edit_screen_code
   mcp.tool(
     "edit_screen_code",
