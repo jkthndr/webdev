@@ -7,6 +7,10 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   && npx playwright install-deps chromium
 
+# Default git identity for per-project checkpoint commits (no real human is committing here)
+RUN git config --global user.email "webdev@local" \
+  && git config --global user.name "webdev"
+
 WORKDIR /app
 
 # Copy package files and install
