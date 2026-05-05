@@ -65,6 +65,39 @@ try {
   assert(homeCode.includes("Tone: warm, confident"), "home file should include tone");
   assert(homeCode.includes("export default function HomeScreen()"), "home file should export PascalCase component");
 
+  // Case 2b: brief text that includes a block-comment terminator should not break TSX
+  pm.saveDesignBrief(name, {
+    title: "Comment breaker */ project",
+    summary: "Summary with newline\nand terminator */ inside.",
+    audience: "Reviewers",
+    goals: ["Keep generated TSX valid even with */ in user text"],
+    tone: [],
+    mustHaves: [],
+    avoid: [],
+    routes: [{ name: "legal", purpose: "Purpose includes */ terminator", status: "draft" }],
+    inspiration: [],
+    notes: "",
+  });
+  const legal = pm.createScreenFromBrief(name, "legal");
+  const legalCode = fs.readFileSync(legal.file, "utf-8");
+  assert(legalCode.includes("Comment breaker * / project"), "comment terminator should be escaped in title");
+  assert(legalCode.includes("Purpose includes * / terminator"), "comment terminator should be escaped in purpose");
+  assert(!legalCode.includes("*/ project"), "raw embedded comment terminator should not remain");
+
+  // Restore the original full brief for the undeclared-route case.
+  pm.saveDesignBrief(name, {
+    title: "Acme Studio",
+    summary: "Design tool for product teams.",
+    audience: "Product managers and designers at small SaaS teams.",
+    goals: ["Convey value fast", "Drive trial signups"],
+    tone: ["warm", "confident"],
+    mustHaves: ["Hero with primary CTA", "Pricing teaser"],
+    avoid: ["Carousels", "Stock photos"],
+    routes: [{ name: "home", purpose: "Landing for first-time visitors", status: "draft" }],
+    inspiration: [],
+    notes: "",
+  });
+
   // Case 3: brief saved but screen name does not match any declared route
   const unknown = pm.createScreenFromBrief(name, "settings");
   assert(unknown.brief !== null, "brief should be loaded");
@@ -76,8 +109,8 @@ try {
 
   console.log(JSON.stringify({
     smoke: "WEBD-61 create_screen_from_brief",
-    cases: 3,
-    files: [noBrief.file, matched.file, unknown.file].map((f) => path.relative(process.cwd(), f).replace(/\\/g, "/")),
+    cases: 4,
+    files: [noBrief.file, matched.file, legal.file, unknown.file].map((f) => path.relative(process.cwd(), f).replace(/\\/g, "/")),
     result: "ok",
   }, null, 2));
 } finally {

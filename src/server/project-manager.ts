@@ -211,6 +211,12 @@ function pascalCase(s: string): string {
   return s.replace(/(^|[-_])(\w)/g, (_, __, c) => c.toUpperCase());
 }
 
+function appendCommentLine(lines: string[], text: string): void {
+  for (const line of text.replace(/\*\//g, "* /").split(/\r?\n/)) {
+    lines.push(` * ${line}`);
+  }
+}
+
 function renderBriefAwareSeed(
   screenName: string,
   brief: DesignBrief | null,
@@ -218,44 +224,44 @@ function renderBriefAwareSeed(
 ): string {
   const lines: string[] = [];
   lines.push("/**");
-  lines.push(` * Screen: ${screenName}`);
+  appendCommentLine(lines, `Screen: ${screenName}`);
   if (brief && brief.title.trim()) {
-    lines.push(` * Project: ${brief.title}`);
+    appendCommentLine(lines, `Project: ${brief.title}`);
   }
   if (matchedRoute && matchedRoute.purpose.trim()) {
     lines.push(" *");
-    lines.push(` * Purpose: ${matchedRoute.purpose}`);
+    appendCommentLine(lines, `Purpose: ${matchedRoute.purpose}`);
   } else if (brief && brief.summary.trim()) {
     lines.push(" *");
-    lines.push(` * Project summary: ${brief.summary}`);
+    appendCommentLine(lines, `Project summary: ${brief.summary}`);
   }
   if (brief && brief.audience.trim()) {
-    lines.push(` * Audience: ${brief.audience}`);
+    appendCommentLine(lines, `Audience: ${brief.audience}`);
   }
   if (brief && brief.goals.length > 0) {
     lines.push(" *");
     lines.push(" * Goals:");
     for (const goal of brief.goals) {
-      lines.push(` *   - ${goal}`);
+      appendCommentLine(lines, `  - ${goal}`);
     }
   }
   if (brief && brief.mustHaves.length > 0) {
     lines.push(" *");
     lines.push(" * Must have:");
     for (const item of brief.mustHaves) {
-      lines.push(` *   - ${item}`);
+      appendCommentLine(lines, `  - ${item}`);
     }
   }
   if (brief && brief.avoid.length > 0) {
     lines.push(" *");
     lines.push(" * Avoid:");
     for (const item of brief.avoid) {
-      lines.push(` *   - ${item}`);
+      appendCommentLine(lines, `  - ${item}`);
     }
   }
   if (brief && brief.tone.length > 0) {
     lines.push(" *");
-    lines.push(` * Tone: ${brief.tone.join(", ")}`);
+    appendCommentLine(lines, `Tone: ${brief.tone.join(", ")}`);
   }
   lines.push(" *");
   lines.push(" * Replace this scaffold with the actual TSX. Keep the brief header if useful.");
