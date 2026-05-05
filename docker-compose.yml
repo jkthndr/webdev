@@ -1,6 +1,6 @@
 services:
   mcp-server:
-    image: ghcr.io/jkthndr/webdev:latest
+    image: ghcr.io/smithbuilder/webdev:latest
     build: .
     container_name: webdev-mcp
     restart: unless-stopped
