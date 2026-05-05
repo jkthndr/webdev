@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>webdev V1 Validation Handoff</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20201d;
+      --muted: #656058;
+      --paper: #fffaf4;
+      --panel: #ffffff;
+      --line: #e4d8ca;
+      --coral: #e85d4f;
+      --orange: #d97732;
+      --sage: #6f8468;
+      --gold: #c9952f;
+      --coal: #2b2926;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .hero {
+      padding: 48px clamp(20px, 4vw, 56px) 30px;
+      background: linear-gradient(120deg, #2f2b27, #5d4135 55%, #99613f);
+      color: #fff8ef;
+    }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: #ffd7b8;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      max-width: 980px;
+      font-size: clamp(32px, 5vw, 66px);
+      line-height: .98;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      max-width: 780px;
+      margin: 18px 0 0;
+      color: #fff0df;
+      font-size: clamp(17px, 2vw, 22px);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 26px clamp(16px, 3vw, 28px) 56px;
+    }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 12px 0;
+      background: rgba(255, 250, 244, .93);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav a {
+      color: var(--coal);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 22px 0;
+    }
+    .card, .wide {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 14px 35px rgba(65, 45, 28, .08);
+    }
+    .card { padding: 18px; min-height: 150px; }
+    .wide { padding: 24px; margin: 18px 0; }
+    .label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .big {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+      font-weight: 900;
+    }
+    .body {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 8px 8px 0;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: #fffaf4;
+    }
+    .ok { color: var(--sage); }
+    .warn { color: var(--gold); }
+    .hot { color: var(--coral); }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    th, td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      background: #f5eadf;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    tr:last-child td { border-bottom: 0; }
+    code {
+      background: #f4ede4;
+      border: 1px solid #eadccc;
+      border-radius: 6px;
+      padding: 2px 6px;
+      color: #3d332b;
+      font-size: .92em;
+    }
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .num {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: var(--coal);
+      color: white;
+      font-weight: 900;
+      font-size: 13px;
+    }
+    .step p { margin: 3px 0 0; color: var(--muted); }
+    .cut {
+      border-left: 6px solid var(--coral);
+    }
+    .references a {
+      color: #8d4a25;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+      .split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 34px; }
+      th, td { display: block; width: 100%; }
+      th { border-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">May 5, 2026 / Session handoff</p>
+    <h1>webdev V1 is live. The next move is validation.</h1>
+    <p class="subtitle">Use this as the quick visual readout for the next Codex or Claude session. The build phase is done enough; now prove the product loop with the real app.</p>
+  </header>
+
+  <main>
+    <nav class="nav" aria-label="Handoff sections">
+      <a href="#bottom-line">Bottom Line</a>
+      <a href="#status">Status</a>
+      <a href="#validation">Validation</a>
+      <a href="#tasks">Playbook</a>
+      <a href="#memory">Memory</a>
+    </nav>
+
+    <section id="bottom-line" class="wide cut">
+      <p class="label">Bottom line</p>
+      <h2>V1 MVP is merged to <code>main</code> and deployed on the Dell.</h2>
+      <p class="body">Validate the loop: brief, generated screen, real live preview, production Playwright proof, checkpoint, pinned feedback, follow-up run. Avoid reopening broad product planning during validation.</p>
+    </section>
+
+    <section id="status" class="grid">
+      <article class="card">
+        <p class="label">Live Studio</p>
+        <p class="big">4500</p>
+        <p class="body"><code>http://100.115.18.15:4500/studio</code></p>
+      </article>
+      <article class="card">
+        <p class="label">V1 Canary</p>
+        <p class="big ok">Green</p>
+        <p class="body"><code>/api/provenance</code> returns clean-room metadata with zero issues.</p>
+      </article>
+      <article class="card">
+        <p class="label">Bridge</p>
+        <p class="big">New slug</p>
+        <p class="body"><code>webdev-v1-validation</code></p>
+      </article>
+      <article class="card">
+        <p class="label">Open Risk</p>
+        <p class="big warn">WEBD-74</p>
+        <p class="body">Fix CI/CD so deploy and health-check target the same Dell runtime.</p>
+      </article>
+    </section>
+
+    <section class="wide">
+      <h2>What Landed</h2>
+      <div>
+        <span class="pill ok">Design brief API/MCP</span>
+        <span class="pill ok">Generation context</span>
+        <span class="pill ok">Real app preview</span>
+        <span class="pill ok">Playwright proof</span>
+        <span class="pill ok">Changed files</span>
+        <span class="pill ok">Checkpoints</span>
+        <span class="pill ok">Pinned feedback</span>
+        <span class="pill ok">Provenance</span>
+        <span class="pill ok">Docker runtime fixes</span>
+      </div>
+    </section>
+
+    <section id="validation" class="split">
+      <div class="wide">
+        <h2>Validation Journey</h2>
+        <div class="timeline">
+          <div class="step"><div class="num">1</div><div><strong>Open Studio</strong><p>Use the Dell URL and confirm health plus provenance.</p></div></div>
+          <div class="step"><div class="num">2</div><div><strong>Write a brief</strong><p>Use a real web screen prompt, not a toy example.</p></div></div>
+          <div class="step"><div class="num">3</div><div><strong>Generate screen</strong><p>Confirm the live preview is the generated Next app route.</p></div></div>
+          <div class="step"><div class="num">4</div><div><strong>Run proof</strong><p>Production build/start plus Playwright screenshot is the acceptance artifact.</p></div></div>
+          <div class="step"><div class="num">5</div><div><strong>Iterate feedback</strong><p>Pin feedback, run again, and verify feedback enters the next context.</p></div></div>
+        </div>
+      </div>
+      <div class="wide">
+        <h2>Guardrails</h2>
+        <p><span class="pill hot">Do not broaden scope</span></p>
+        <p class="body">The validation session should find gaps in the MVP loop, not start imports, billing, auth, or a design-system editor.</p>
+        <p><span class="pill hot">Do not copy outside tools</span></p>
+        <p class="body">Keep the clean-room boundary intact for anything that could become paid product surface.</p>
+        <p><span class="pill hot">Do not trust health alone</span></p>
+        <p class="body">Use V1-only canaries such as <code>/api/provenance</code> to prove the live image is the expected release.</p>
+      </div>
+    </section>
+
+    <section id="tasks" class="wide">
+      <h2>Playbook Snapshot</h2>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>Status</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>WEBD-55</code> through <code>WEBD-73</code></td><td>Complete</td><td>V1 build, proof, feedback, provenance, and smoke tests.</td></tr>
+          <tr><td><code>WEBD-74</code></td><td>Backlog</td><td>Durable CI/CD deploy-target fix for Dell.</td></tr>
+          <tr><td><code>WEBD-75</code></td><td>Backlog</td><td>Live Studio smoke on Dell.</td></tr>
+          <tr><td><code>WEBD-76</code></td><td>Backlog</td><td>Brief-to-proof real user walkthrough.</td></tr>
+          <tr><td><code>WEBD-77</code></td><td>Backlog</td><td>Pinned feedback iteration walkthrough.</td></tr>
+          <tr><td><code>WEBD-78</code></td><td>Backlog</td><td>Review and triage V1 gap list.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="memory" class="wide">
+      <h2>Memory Notes</h2>
+      <table>
+        <tbody>
+          <tr><th>Completed</th><td>V1 MVP vertical loop is live on Dell and merged to <code>main</code>.</td></tr>
+          <tr><th>In progress</th><td>Validation pass plus <code>WEBD-74</code> CI/CD hardening.</td></tr>
+          <tr><th>Blocked</th><td>Fully trustworthy CI/CD until deploy executor and health-check target are unified.</td></tr>
+          <tr><th>Learned</th><td>Health can false-green. V1-only canaries are essential for real deploy proof.</td></tr>
+          <tr><th>Future fix</th><td>Make CI/CD deploy and validate the Dell by construction.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="wide references">
+      <h2>References</h2>
+      <p class="body">
+        Source handoff:
+        <a href="./webdev-v1-validation-handoff-2026-05-05.md">webdev-v1-validation-handoff-2026-05-05.md</a>.
+        Key docs:
+        <a href="./webdev-v1-product-requirements.md">requirements</a>,
+        <a href="./license-boundary.md">license boundary</a>,
+        <a href="./webdev-deploy-target.md">deploy target</a>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

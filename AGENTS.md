@@ -68,6 +68,19 @@ Task creation convention:
 
 Current initiative: turn webdev into a self-hosted web design-to-code studio with a real live preview and Playwright proof loop.
 
+Current status as of 2026-05-05:
+
+- V1 MVP vertical loop is merged to `main` and live on the Dell at `http://100.115.18.15:4500/studio`.
+- The project has moved from active development into validation.
+- Validation handoff docs:
+  - `docs/webdev-v1-validation-handoff-2026-05-05.md`
+  - `docs/webdev-v1-validation-handoff-2026-05-05.html`
+- Completed this session: brief storage/API/MCP, generation context, real-app preview, production Playwright proof, changed files, checkpoint state, pinned feedback context, provenance metadata, smoke tests, merge to `main`, deploy recovery, and Dell live verification.
+- In progress: validation of the live MVP and `WEBD-74` CI/CD deploy-target hardening.
+- Blocked: fully trustworthy CI/CD until deploy executor and health-check target are unified on the Dell or through explicit Dell deployment transport.
+- One thing learned: health checks can false-green the wrong or old host; use a V1-only canary such as `/api/provenance` to prove the live image is really the release.
+- Future fix: make CI/CD deploy to and validate the same canonical machine by construction.
+
 Important local references:
 
 - Product/technical analysis: `docs/open-design-webdev-analysis.md`
@@ -80,7 +93,8 @@ Important local references:
 
 Active bridge coordination:
 
-- Thread slug: `webdev-design-tool-v1-plan`
+- Current validation thread slug: `webdev-v1-validation`
+- Previous active development thread slug: `webdev-design-tool-v1-plan` (closed for new V1 validation discussion)
 - Bridge URL used locally: `http://localhost:3100`
 - Bridge URL from ops inventory: `http://100.115.18.15:3100`
 - Claude can help with implementation branches. Penny is useful for product/design review, but her workspace may be locked down.
@@ -106,20 +120,20 @@ Canonical runtime target:
 
 ## V1 Branch Strategy
 
-Use `dev` as the stable upstream base and keep V1 work in small, mergeable feature branches.
+Use `main` as the stable upstream base for validation fixes and keep work in small, mergeable feature branches.
 
 Current integration base:
 
-- `codex/v1-backend-foundation`
-- Purpose: shared base containing completed V1 docs, design brief storage/API/MCP, generation context, production proof runs, failed proof state, and preview port hardening.
-- Claude should branch UI work from this branch, not from older task branches.
+- `main`
+- Purpose: shipped V1 MVP containing docs, design brief storage/API/MCP, generation context, production proof runs, failed proof state, preview port hardening, Studio UI integration, provenance, and runtime Docker fixes.
+- New validation fixes should branch from `main`, not from older task branches.
 
 Recommended active branches:
 
-- Claude UI branch: `claude/v1-studio-workbench`
+- Claude UI branch examples: `claude/validation-studio-<short-task>`
   - Owns `src/server/studio/canvas-page.ts` and `src/server/studio/styles.ts`.
   - Can call the already-built APIs for brief, generation context, proof runs, screenshots, and advisory preview state.
-- Codex backend/ops branches: keep using task-specific `codex/<short-task-name>` branches from `codex/v1-backend-foundation`.
+- Codex backend/ops branches: keep using task-specific `codex/<short-task-name>` branches from `main`.
   - Avoid editing Claude-owned Studio UI files unless coordinating on bridge first.
 
 Completed task branches kept for traceability:
@@ -133,7 +147,7 @@ Completed task branches kept for traceability:
 
 Conflict rule:
 
-- Before starting a new branch, post intended task IDs and file ownership to bridge thread `webdev-design-tool-v1-plan`.
+- Before starting a new branch, post intended task IDs and file ownership to bridge thread `webdev-v1-validation`.
 - If a task needs shared files, pick one owner and have the other agent review or add follow-up patches after the first branch lands.
 
 ## Approval Courtesy
